@@ -585,6 +585,26 @@ export default function App() {
                 break;
             } else if (cell === 1 || cell === 2) { // Wall or Crate/Door
                 hitDist = d;
+                // Record bullet decal at impact point
+                const hx = player.current.x + cos * d;
+                const hy = player.current.y + sin * d;
+                const localX = hx - (tx + 0.5) * CELL_SIZE;
+                const localY = hy - (ty + 0.5) * CELL_SIZE;
+                let nx = 0, ny = 0;
+                if (Math.abs(localX) > Math.abs(localY)) nx = Math.sign(localX) || 1;
+                else ny = Math.sign(localY) || 1;
+                decals.current.push({
+                  id: nextDecalId.current++,
+                  x: hx,
+                  y: hy,
+                  nx,
+                  ny,
+                  born: Date.now(),
+                  size: weapon.type === 'shotgun' ? 7 : weapon.type === 'sniper' ? 10 : 5,
+                });
+                if (decals.current.length > 40) {
+                  decals.current.splice(0, decals.current.length - 40);
+                }
                 break;
             }
         }
