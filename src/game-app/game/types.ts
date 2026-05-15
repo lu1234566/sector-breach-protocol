@@ -78,6 +78,16 @@ export interface Tracer {
   alpha: number;
 }
 
+export interface WallDecal {
+  id: number;
+  x: number;
+  y: number;
+  nx: number; // wall normal x
+  ny: number; // wall normal y
+  born: number; // ms timestamp
+  size: number;
+}
+
 export interface DamageIndicator {
   id: number;
   angle: number;
