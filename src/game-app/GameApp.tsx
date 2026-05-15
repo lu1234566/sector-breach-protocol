@@ -22,6 +22,7 @@ import {
   MAX_WEAPON_LEVEL,
   DIFFICULTIES
 } from './game/constants';
+import { getArenaById, ARENAS, DEFAULT_ARENA_ID, type ArenaDef } from './data/arenas';
 import { 
   Player, 
   Enemy, 
@@ -41,6 +42,8 @@ import {
   loadWeaponUpgrades, 
   loadDifficulty, 
   loadLifetimeStats,
+  loadArena,
+  saveArena,
   saveCredits,
   saveUpgrades,
   saveWeaponUpgrades,
