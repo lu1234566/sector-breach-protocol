@@ -241,8 +241,9 @@ export default function App() {
   const enemies = useRef<Enemy[]>([]);
   const particles = useRef<Particle[]>([]);
   const navGridRef = useRef<number[][]>([]);
-  const mapData = useRef([...MAP.map(row => [...row])]);
-  const [mapDataState, setMapDataState] = useState([...MAP.map(row => [...row])]);
+  const mapData = useRef(currentArenaRef.current.mapData.map(row => [...row]));
+  const [mapDataState, setMapDataState] = useState(currentArenaRef.current.mapData.map(row => [...row]));
+  const getSafePlayerStart = () => getArenaPlayerStart(currentArenaRef.current);
   const lastShotTime = useRef(0);
   const lastEnemyShotTimeGlobal = useRef(0);
   const recoilOffset = useRef(0);
@@ -311,16 +312,17 @@ export default function App() {
     enemies.current = [];
     setEnemiesState([]);
     particles.current = [];
-    navGridRef.current = MAP.map(row => row.map(() => 999));
+    const arenaMap = currentArenaRef.current.mapData;
+    navGridRef.current = arenaMap.map(row => row.map(() => 999));
     graveyard.current = [];
     killfeed.length = 0;
     setKillfeed([]);
     keys.current = {};
     joystick.current.active = false;
     touchLook.current.active = false;
-    const newMap = [...MAP.map(row => [...row])];
+    const newMap = arenaMap.map(row => [...row]);
     mapData.current = newMap;
-    setMapDataState([...newMap]);
+    setMapDataState(newMap.map(row => [...row]));
     spawnWave(1);
     sounds.init();
   };
@@ -329,9 +331,10 @@ export default function App() {
     const updateNav = () => {
       if (gameStateRef.current !== 'playing') return;
       
-      const rows = MAP.length;
-      const cols = MAP[0].length;
-      const distMap = MAP.map(row => row.map(() => 999));
+      const activeMap = mapData.current;
+      const rows = activeMap.length;
+      const cols = activeMap[0].length;
+      const distMap = activeMap.map(row => row.map(() => 999));
       
       const px = Math.floor(player.current.x / CELL_SIZE);
       const py = Math.floor(player.current.y / CELL_SIZE);
@@ -352,7 +355,7 @@ export default function App() {
           
           if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
             // Treat doors (2) as walkable for pathfinding logic so enemies wait outside or approach
-            if (MAP[ny][nx] === 0 || MAP[ny][nx] === 2) {
+            if (activeMap[ny][nx] === 0 || activeMap[ny][nx] === 2) {
               if (distMap[ny][nx] > d + 1) {
                 distMap[ny][nx] = d + 1;
                 queue.push([nx, ny, d + 1]);
@@ -435,10 +438,11 @@ export default function App() {
     let attempts = 0;
     
     // Fallback: collect all empty cells
+    const activeMap = mapData.current;
     const emptyCells: {x: number, y: number}[] = [];
-    for (let y = 0; y < MAP.length; y++) {
-      for (let x = 0; x < MAP[0].length; x++) {
-        if (MAP[y][x] === 0) {
+    for (let y = 0; y < activeMap.length; y++) {
+      for (let x = 0; x < activeMap[0].length; x++) {
+        if (activeMap[y][x] === 0) {
           emptyCells.push({ x: x * CELL_SIZE + CELL_SIZE/2, y: y * CELL_SIZE + CELL_SIZE/2 });
         }
       }
@@ -446,18 +450,18 @@ export default function App() {
     
     while (spawned < count && attempts < 100) {
         attempts++;
-        let rx = Math.random() * (MAP[0].length * CELL_SIZE);
-        let ry = Math.random() * (MAP.length * CELL_SIZE);
+        let rx = Math.random() * (activeMap[0].length * CELL_SIZE);
+        let ry = Math.random() * (activeMap.length * CELL_SIZE);
         
         const distToPlayer = Math.hypot(rx - player.current.x, ry - player.current.y);
         const mapX = Math.floor(rx / CELL_SIZE);
         const mapY = Math.floor(ry / CELL_SIZE);
         
-        let validSpawn = distToPlayer > (currentWave === 1 ? 600 : 500) && MAP[mapY]?.[mapX] === 0;
+        let validSpawn = distToPlayer > (currentWave === 1 ? 600 : 500) && activeMap[mapY]?.[mapX] === 0;
         
         // Safe spawn check for Wave 1: Avoid direct LOS
         if (validSpawn && currentWave === 1 && attempts < 80) {
-            const hasLOS = checkLineOfSight(rx, ry, player.current.x, player.current.y, MAP);
+            const hasLOS = checkLineOfSight(rx, ry, player.current.x, player.current.y, activeMap);
             if (hasLOS) validSpawn = false;
         }
 
@@ -1055,7 +1059,7 @@ export default function App() {
       const curTy = Math.floor(e.y / CELL_SIZE);
 
       const tryEnemyMove = (tx: number, ty: number) => {
-        if (tx < 0 || tx >= MAP[0].length || ty < 0 || ty >= MAP.length) return false;
+        if (tx < 0 || tx >= mapData.current[0].length || ty < 0 || ty >= mapData.current.length) return false;
         const cell = mapData.current[ty][tx];
         if (cell === 0) return true;
         if (cell === 2) {
