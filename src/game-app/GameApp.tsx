@@ -123,6 +123,9 @@ export default function App() {
   const [enemiesRemaining, setEnemiesRemaining] = useState(0);
   const [score, setScore] = useState(0);
   const [waveMessage, setWaveMessage] = useState('');
+  const objectiveRef = useRef<ObjectiveRuntime | null>(null);
+  const [objectiveSnapshot, setObjectiveSnapshot] = useState<ObjectiveRuntime | null>(null);
+  const objectiveLastSyncRef = useRef(0);
   const [mobileMode, setMobileMode] = useState(false);
   const [stats, setStats] = useState<RunStats>({ kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0 });
   const [lifetimeStats, setLifetimeStats] = useState<LifetimeStats>({
