@@ -1,7 +1,6 @@
 // @ts-nocheck
 import { useEffect } from 'react';
-import { WEAPONS } from '../constants';
-import { clamp } from '../utils';
+import { clamp } from '../helpers';
 import type { WeaponType } from '../types';
 
 interface UseInputSystemArgs {
