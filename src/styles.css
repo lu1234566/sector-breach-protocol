@@ -142,3 +142,39 @@
     color: var(--color-foreground);
   }
 }
+
+/* =====================================================================
+ * Protocol DOC — Neon Arena identity tokens
+ * Single source of truth for the game's brand colors. Use semantic
+ * tokens (e.g. text-neon-cyan, bg-arena-bg) instead of raw hex/oklch.
+ * ===================================================================*/
+@theme inline {
+  --color-neon-cyan: var(--neon-cyan);
+  --color-neon-magenta: var(--neon-magenta);
+  --color-neon-amber: var(--neon-amber);
+  --color-neon-danger: var(--neon-danger);
+  --color-arena-bg: var(--arena-bg);
+  --color-arena-panel: var(--arena-panel);
+  --color-arena-grid: var(--arena-grid);
+}
+
+:root {
+  /* Primary brand neons (bright, saturated, oklch for HDR-grade glow) */
+  --neon-cyan: oklch(0.86 0.16 210);     /* primary HUD / "Live" indicators */
+  --neon-magenta: oklch(0.72 0.27 330);  /* secondary accent / DOC mark */
+  --neon-amber: oklch(0.84 0.17 80);     /* credits, highlights, ammo */
+  --neon-danger: oklch(0.66 0.25 25);    /* damage, low HP, warnings */
+
+  /* Arena surfaces */
+  --arena-bg: oklch(0.13 0.03 265);      /* base canvas behind 3D scene */
+  --arena-panel: oklch(0.18 0.03 265 / 0.78); /* HUD panels with backdrop blur */
+  --arena-grid: oklch(0.86 0.16 210 / 0.12);  /* faint cyan tactical grid */
+
+  /* Brand glows — apply with box-shadow / drop-shadow */
+  --glow-cyan: 0 0 24px color-mix(in oklab, var(--neon-cyan) 55%, transparent);
+  --glow-magenta: 0 0 24px color-mix(in oklab, var(--neon-magenta) 55%, transparent);
+  --glow-danger: 0 0 18px color-mix(in oklab, var(--neon-danger) 60%, transparent);
+
+  /* Brand gradient — use sparingly, reserved for the DOC mark */
+  --gradient-doc: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
+}
