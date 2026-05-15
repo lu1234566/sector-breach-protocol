@@ -1,6 +1,5 @@
 // @ts-nocheck
-import React, { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import React from 'react';
 import * as THREE from 'three';
 
 interface Particle {
@@ -13,29 +12,41 @@ interface Particle {
   vy: number;
 }
 
-export function Particles3D({ particles, cellSize, mapData }: { particles: Particle[], cellSize: number, mapData: number[][] }) {
+export function Particles3D({
+  particles,
+  cellSize,
+  mapData,
+}: {
+  particles: Particle[];
+  cellSize: number;
+  mapData: number[][];
+}) {
   const mapWidth = mapData[0].length * cellSize;
   const mapHeight = mapData.length * cellSize;
 
   return (
     <>
-      {particles.map((p, i) => (
-        <mesh 
-          key={i} 
-          position={[p.x - mapWidth / 2, cellSize / 3, p.y - mapHeight / 2]}
-        >
-          {p.color === '#fef08a' ? (
-            <sphereGeometry args={[p.size / 8, 4, 4]} />
-          ) : (
-            <boxGeometry args={[p.size / 6, p.size / 6, p.size / 6]} />
-          )}
-          <meshBasicMaterial 
-            color={p.color} 
-            transparent 
-            opacity={p.life * 0.7} 
-          />
-        </mesh>
-      ))}
+      {particles.map((p, i) => {
+        const isShell = p.color === '#fef08a' || p.color === '#fbbf24';
+        const isBlood = p.color.startsWith('#e8') || p.color === '#e879f9' || p.color === '#dc2626';
+        return (
+          <mesh
+            key={i}
+            position={[p.x - mapWidth / 2, cellSize / 3 + (1 - p.life) * cellSize * 0.2, p.y - mapHeight / 2]}
+          >
+            {isShell ? (
+              <sphereGeometry args={[p.size / 7, 6, 6]} />
+            ) : (
+              <boxGeometry args={[p.size / 5, p.size / 5, p.size / 5]} />
+            )}
+            <meshBasicMaterial
+              color={p.color}
+              transparent
+              opacity={p.life * 0.85}
+            />
+          </mesh>
+        );
+      })}
     </>
   );
 }
