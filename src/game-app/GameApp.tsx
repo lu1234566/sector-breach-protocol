@@ -1249,6 +1249,10 @@ export default function App() {
     // Update Tracers
     tracers.current.forEach(t => t.alpha -= 0.05);
     tracers.current = tracers.current.filter(t => t.alpha > 0);
+
+    // Cleanup expired wall decals (6s lifetime)
+    const decalNow = Date.now();
+    decals.current = decals.current.filter(d => decalNow - d.born < 6000);
     particles.current.forEach(p => {
       p.x += p.vx; p.y += p.vy; p.life -= 0.02;
     });
