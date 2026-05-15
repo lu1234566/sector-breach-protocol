@@ -109,6 +109,3 @@ export function useInputSystem(args: UseInputSystemArgs) {
     };
   }, [gameState, currentWeapon]);
 }
-
-// Suppress unused import warning for WEAPONS — kept for future extension
-void WEAPONS;
