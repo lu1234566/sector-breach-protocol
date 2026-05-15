@@ -223,7 +223,7 @@ export default function App() {
   useEffect(() => { ammoRef.current = ammo; }, [ammo]);
 
   // Game Engine Refs
-  const safeStart = getSafePlayerStart();
+  const safeStart = getArenaPlayerStart(currentArenaRef.current);
   const player = useRef<Player>({
     x: safeStart.x, y: safeStart.y, angle: safeStart.angle, 
     velX: 0, velY: 0, 
