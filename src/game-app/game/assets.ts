@@ -29,11 +29,16 @@ export const ASSETS = {
     enemyTitan: '/assets/ui/enemy_mark_titan.png',
   },
   menu: {
-    bg: '/assets/menu/menu_bg_tactical.jpg',
+    bg: '/assets/menu/bg_arena_breach.jpg',
     commandCard: '/assets/menu/command_center_card.jpg',
     armoryCard: '/assets/menu/armory_card.jpg',
     profileCard: '/assets/menu/profile_card.jpg',
     difficultyCard: '/assets/menu/difficulty_card.jpg',
     title: '/assets/ui/title_nano_banana.png',
+    arenaThumbs: {
+      containment: '/assets/menu/arena_containment.jpg',
+      reactor: '/assets/menu/arena_reactor.jpg',
+      causeway: '/assets/menu/arena_causeway.jpg',
+    } as Record<string, string>,
   }
 };
