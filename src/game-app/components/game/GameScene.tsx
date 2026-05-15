@@ -80,8 +80,10 @@ export function GameScene({
   screenShake,
   lastShotTime,
   pickups,
+  decals,
   debugMode,
 }: GameSceneProps) {
+  const now = Date.now();
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas
@@ -104,6 +106,9 @@ export function GameScene({
 
         <Particles3D particles={particles} cellSize={cellSize} mapData={mapData} />
         <Tracers3D tracers={tracers} cellSize={cellSize} mapData={mapData} />
+        {decals && decals.length > 0 && (
+          <Decals3D decals={decals} cellSize={cellSize} mapData={mapData} now={now} />
+        )}
         <Pickups3D pickups={pickups} cellSize={cellSize} mapData={mapData} />
 
         {enemies.map((enemy) => (
