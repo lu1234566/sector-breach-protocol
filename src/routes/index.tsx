@@ -1,26 +1,61 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { lazy, Suspense, useEffect, useState } from "react";
+
+const GameApp = lazy(() => import("@/game-app/GameApp"));
 
 export const Route = createFileRoute("/")({
   component: Index,
+  head: () => ({
+    meta: [
+      { title: "Protocol DOC — Neon Arena Shooter" },
+      {
+        name: "description",
+        content:
+          "Protocol DOC: a fast neon arena shooter. Survive escalating waves, chain kills, and break the leaderboard.",
+      },
+      { property: "og:title", content: "Protocol DOC — Neon Arena Shooter" },
+      {
+        property: "og:description",
+        content:
+          "Neon arena combat. Survive the waves. Break the protocol.",
+      },
+    ],
+  }),
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
-
 function Index() {
-  return <PlaceholderIndex />;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-black font-mono">
+        <div className="text-center">
+          <div className="text-2xl tracking-[0.3em]">
+            <span className="text-white">PROTOCOL</span>
+            <span className="ml-2 bg-gradient-to-r from-cyan-300 to-fuchsia-400 bg-clip-text text-transparent">DOC</span>
+          </div>
+          <div className="mt-2 text-xs text-cyan-400/70">BOOTING ARENA UPLINK…</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-black font-mono">
+          <div className="text-center">
+            <div className="text-2xl tracking-[0.3em] animate-pulse">
+              <span className="text-white">PROTOCOL</span>
+              <span className="ml-2 bg-gradient-to-r from-cyan-300 to-fuchsia-400 bg-clip-text text-transparent">DOC</span>
+            </div>
+            <div className="mt-2 text-xs text-cyan-400/70">LOADING ARENA…</div>
+          </div>
+        </div>
+      }
+    >
+      <GameApp />
+    </Suspense>
+  );
 }
