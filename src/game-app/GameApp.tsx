@@ -34,8 +34,11 @@ import {
   LifetimeStats, 
   RunStats,
   UpgradeLevels,
-  WeaponUpgradeLevels
+  WeaponUpgradeLevels,
+  ObjectiveRuntime
 } from './game/types';
+import { getWaveObjective, createRuntime } from './game/objectives';
+import { ObjectivePanel } from './components/hud/ObjectivePanel';
 import { 
   loadCredits, 
   loadUpgrades, 
