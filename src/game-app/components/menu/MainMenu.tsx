@@ -579,6 +579,81 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             </div>
           </motion.div>
         )}
+
+        {menuView === 'arena' && (
+          <motion.div
+            key="arena"
+            initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
+            className="w-full max-w-5xl z-10 py-12"
+          >
+            <div className="bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+              <div className="p-8 md:p-10 bg-slate-950/50 border-b border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="flex items-center gap-6">
+                  <div className="w-20 h-20 bg-cyan-500/10 rounded-3xl border-2 border-cyan-500/30 flex items-center justify-center">
+                    <MapIcon size={40} className="text-cyan-400" />
+                  </div>
+                  <div className="text-left">
+                    <h2 className="text-4xl md:text-5xl font-black text-white italic uppercase tracking-tighter leading-none">Sector Select</h2>
+                    <span className="text-cyan-500/60 text-xs font-black uppercase tracking-[0.3em] mt-2 block">Choose Deployment Zone</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { sounds.playUiClick(); setMenuView('main'); }}
+                  className="w-full md:w-auto px-12 py-5 bg-white text-slate-950 font-black uppercase text-base rounded-2xl hover:bg-cyan-500 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3"
+                >
+                  <ChevronLeft size={24} /> Return
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {arenas.map((a) => {
+                    const acc = accentColors[a.accent];
+                    const selected = a.id === selectedArenaId;
+                    return (
+                      <button
+                        key={a.id}
+                        onClick={() => { sounds.playUiClick(); setSelectedArenaId(a.id); }}
+                        className={`group relative p-6 rounded-[2rem] border-2 text-left transition-all overflow-hidden bg-slate-950/60 backdrop-blur-md ${selected ? `${acc.ring} ${acc.glow} scale-[1.02]` : 'border-white/5 hover:border-white/20'}`}
+                      >
+                        <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:18px_18px]" />
+                        <div className="relative z-10 flex flex-col gap-4">
+                          <div className="flex items-center justify-between">
+                            <span className={`text-[9px] font-black uppercase tracking-[0.3em] ${acc.text}`}>{selected ? 'Active' : 'Available'}</span>
+                            <MapIcon size={18} className={acc.text} />
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">{a.name}</h3>
+                            <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-white/50">{a.tagline}</p>
+                          </div>
+                          {/* mini map preview */}
+                          <div className="aspect-square w-full rounded-xl overflow-hidden border border-white/10 bg-black/60 p-1">
+                            <div
+                              className="w-full h-full grid"
+                              style={{ gridTemplateColumns: `repeat(${a.mapData[0].length}, 1fr)`, gridTemplateRows: `repeat(${a.mapData.length}, 1fr)` }}
+                            >
+                              {a.mapData.flatMap((row, ry) => row.map((cell, cx) => (
+                                <div
+                                  key={`${a.id}-${ry}-${cx}`}
+                                  className={
+                                    cell === 1 ? `bg-white/15` :
+                                    cell === 2 ? 'bg-amber-500/40' :
+                                    cell === 3 ? 'bg-fuchsia-500/40' :
+                                    'bg-transparent'
+                                  }
+                                />
+                              )))}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
