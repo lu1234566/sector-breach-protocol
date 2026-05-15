@@ -22,6 +22,7 @@ import {
   MAX_WEAPON_LEVEL,
   DIFFICULTIES
 } from './game/constants';
+import { getArenaById, ARENAS, DEFAULT_ARENA_ID, type ArenaDef } from './data/arenas';
 import { 
   Player, 
   Enemy, 
@@ -41,6 +42,8 @@ import {
   loadWeaponUpgrades, 
   loadDifficulty, 
   loadLifetimeStats,
+  loadArena,
+  saveArena,
   saveCredits,
   saveUpgrades,
   saveWeaponUpgrades,
@@ -94,23 +97,8 @@ const checkLineOfSightInfo = (x1: number, y1: number, x2: number, y2: number, ma
   return { hasLOS: true };
 };
 
-const getSafePlayerStart = () => {
-    let px = 12 * CELL_SIZE + CELL_SIZE / 2;
-    let py = 6 * CELL_SIZE + CELL_SIZE / 2;
-    // Initial angle pointing towards an open area (East/Right in this map layout)
-    const initialAngle = -Math.PI / 2; 
-
-    if (MAP[6]?.[12] === 0) return { x: px, y: py, angle: initialAngle };
-    
-    // Fallback
-    for (let y = 1; y < MAP.length - 1; y++) {
-        for (let x = 1; x < MAP[0].length - 1; x++) {
-            if (MAP[y][x] === 0) {
-                return { x: x * CELL_SIZE + CELL_SIZE / 2, y: y * CELL_SIZE + CELL_SIZE / 2, angle: initialAngle };
-            }
-        }
-    }
-    return { x: 128, y: 128, angle: initialAngle };
+const getArenaPlayerStart = (arena: ArenaDef) => {
+  return { ...arena.playerSpawn };
 };
 
 export default function App() {
@@ -171,7 +159,9 @@ export default function App() {
   const [difficulty, setDifficulty] = useState<DifficultyKey>('normal');
   const [upgradeTab, setUpgradeTab] = useState<'biological' | 'weapon'>('biological');
   const [selectedLabWeapon, setSelectedLabWeapon] = useState<WeaponType>('pistol');
-  const [menuView, setMenuView] = useState<'main' | 'armory' | 'difficulty' | 'profile'>('main');
+  const [menuView, setMenuView] = useState<'main' | 'armory' | 'difficulty' | 'profile' | 'arena'>('main');
+  const [selectedArenaId, setSelectedArenaId] = useState<string>(DEFAULT_ARENA_ID);
+  const currentArenaRef = useRef<ArenaDef>(getArenaById(DEFAULT_ARENA_ID));
 
   // Load Meta Data
   useEffect(() => {
@@ -189,6 +179,12 @@ export default function App() {
 
     const stats = loadLifetimeStats();
     if (stats) setLifetimeStats(prev => ({ ...prev, ...stats }));
+
+    const arenaId = loadArena();
+    if (arenaId) {
+      setSelectedArenaId(arenaId);
+      currentArenaRef.current = getArenaById(arenaId);
+    }
   }, []);
 
   const saveMeta = (credits: number, upgrades: UpgradeLevels | Record<string, number>, weaponUpgrades?: WeaponUpgradeLevels, lStats?: LifetimeStats) => {
@@ -227,7 +223,7 @@ export default function App() {
   useEffect(() => { ammoRef.current = ammo; }, [ammo]);
 
   // Game Engine Refs
-  const safeStart = getSafePlayerStart();
+  const safeStart = getArenaPlayerStart(currentArenaRef.current);
   const player = useRef<Player>({
     x: safeStart.x, y: safeStart.y, angle: safeStart.angle, 
     velX: 0, velY: 0, 
