@@ -616,6 +616,9 @@ export default function App() {
               setHitMarker({ time: Date.now(), killed: true });
               sounds.playKill();
               setStats(prev => ({ ...prev, kills: prev.kills + 1 }));
+              if (objectiveRef.current && objectiveRef.current.status === 'active') {
+                objectiveRef.current.killCount += 1;
+              }
               const killScore = enemy.isBoss ? 5000 : (enemy.type === 'sniper' ? 500 : enemy.type === 'rifleman' ? 200 : 100);
               setScore(prev => prev + killScore);
               setKillfeed(prev => [{ id: nextKillfeedId.current++, text: `${enemy.isBoss ? 'TITAN' : enemy.type.toUpperCase()} NEUTRALIZED (+${killScore})` }, ...prev].slice(0, 5));
