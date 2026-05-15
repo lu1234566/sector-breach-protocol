@@ -1659,16 +1659,38 @@ export default function App() {
 
         {/* Global Damage Indicators Overlays */}
         <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
-           {damageIndicators.map(ind => (
-             <div 
-              key={ind.id}
-              className="absolute top-1/2 left-1/2 w-32 h-1 bg-red-600/50 blur-sm rounded-full origin-left"
-              style={{ 
-                transform: `translate(-50%, -50%) rotate(${ind.angle}rad) translate(100px, 0)`,
-                opacity: ind.opacity 
-              }}
-             />
-           ))}
+           {damageIndicators.map(ind => {
+             // ind.angle is the direction of the threat relative to player facing (radians).
+             // Convert to a CSS rotation around the screen center; arc renders along right edge then rotated.
+             const deg = (ind.angle * 180) / Math.PI;
+             const op = Math.max(0, Math.min(1, ind.opacity));
+             return (
+               <div
+                 key={ind.id}
+                 className="absolute top-1/2 left-1/2 pointer-events-none"
+                 style={{
+                   width: '140vmax',
+                   height: '140vmax',
+                   transform: `translate(-50%, -50%) rotate(${deg}deg)`,
+                   opacity: op * 0.85,
+                 }}
+               >
+                 {/* Conic arc on the right side = direction of threat */}
+                 <div
+                   className="absolute inset-0 rounded-full"
+                   style={{
+                     background:
+                       'conic-gradient(from 320deg at 50% 50%, transparent 0deg, rgba(220,38,38,0) 30deg, rgba(220,38,38,0.55) 40deg, rgba(248,113,113,0.85) 50deg, rgba(220,38,38,0.55) 60deg, rgba(220,38,38,0) 70deg, transparent 360deg)',
+                     WebkitMaskImage:
+                       'radial-gradient(circle at 50% 50%, transparent 36%, black 50%, black 60%, transparent 70%)',
+                     maskImage:
+                       'radial-gradient(circle at 50% 50%, transparent 36%, black 50%, black 60%, transparent 70%)',
+                     filter: 'blur(6px)',
+                   }}
+                 />
+               </div>
+             );
+           })}
 
            {hp < 30 && (
              <div className="absolute inset-0 bg-red-600/5 animate-pulse pointer-events-none z-[45]" />
