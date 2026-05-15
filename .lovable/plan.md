@@ -1,138 +1,96 @@
-# Rodada 4 — Fechamento das pendências
+# Pacote de artes — Protocol DOC
 
-Ordem fixa, cada etapa é entregável independente. Se travar numa, as anteriores já ficam de pé.
+Liberdade visual máxima, mas amarrada à identidade do art bible: cyan dominante, magenta acento, amber funcional, danger reativo. Hexágonos/trapézios em vez de cubos. Tom Doom 2016 + Tron Legacy + arcade CoD Mobile.
 
----
-
-## Etapa 1 — Áudio real via ElevenLabs
-
-Objetivo: substituir os osciladores pelos 17 arquivos do `public/audio/README.md`.
-
-- Habilitar **Lovable Cloud** e cadastrar `ELEVENLABS_API_KEY` (eu peço no início).
-- Server route `app/routes/api/public/generate-sfx.ts`: POST `{ name, prompt, duration }` → chama `https://api.elevenlabs.io/v1/sound-generation` → retorna MP3 binário. Protegida por header `x-gen-secret` (segredo separado) pra não virar endpoint aberto.
-- Server route `app/routes/api/public/generate-music.ts`: idem para `/v1/music`.
-- Script `scripts/generate-audio.ts` (rodado via `bun run`): itera sobre a lista do README, baixa cada faixa e grava em `public/audio/<name>.mp3`. Pula se já existir (idempotente). Loga progresso.
-- Sem mudança em `SoundEngine.ts`: ele já tem o fallback MP3→osc; assim que os arquivos aparecerem em `public/audio/`, o jogo passa a usá-los automaticamente.
-- Trigger de música: `playMusic('menu_theme')` no `MainMenu`, `'combat_loop'` ao iniciar Strike, `'boss_theme'` ao spawnar Titan.
-
-Critério: tirar o som do navegador, abrir o menu e ouvir música. Atirar com cada arma soa diferente do oscilador.
+Tudo gerado por IA, salvo direto em `src/assets/` ou `public/`, integrado nos componentes na mesma rodada. Inclui auditoria visual de cada lote antes de seguir.
 
 ---
 
-## Etapa 2 — 3 arenas + seleção no menu
+## Capítulo 1 — Identidade & Menu (5 artes)
 
-Objetivo: acabar com a sensação de "sempre o mesmo mapa quadrado".
+| # | Arquivo | Dimensões | Modelo | Conteúdo |
+|---|---|---|---|---|
+| 1 | `src/assets/key-art-hero.jpg` | 1920×1080 | premium | Operador silhueta contra arena reactor, núcleo magenta pulsando ao fundo, raios cyan, atmosfera densa. Sem texto. Vai virar fundo da landing + og:image. |
+| 2 | `public/menu/bg_arena_breach.jpg` | 1920×1080 | standard | Background do MainMenu — arena vista de cima, grid cyan no chão, néon magenta refletido em superfícies metálicas, fog volumétrico, profundidade extrema. |
+| 3 | `public/menu/arena_containment.jpg` | 1024×768 | standard | Card thumb arena 1: corredor claustrofóbico, cover hexagonal, faixas magenta-hazard, luz amber no fundo. |
+| 4 | `public/menu/arena_reactor.jpg` | 1024×768 | standard | Card thumb arena 2: arena circular, núcleo magenta no centro pit, 4 colunas trapezoidais, anel de luz cyan. |
+| 5 | `public/menu/arena_causeway.jpg` | 1024×768 | standard | Card thumb arena 3: corredor longo, paredes de vidro com servidor racks atrás, sniper-perspective, linhas cyan paralelas convergindo. |
 
-- Novo arquivo `src/game-app/data/arenas.ts` exportando 3 layouts:
-  - **Containment Block** (atual, retrabalhado) — corredor central + alcovas.
-  - **Reactor Ring** — arena circular com núcleo magenta no centro, 4 colunas.
-  - **Server Causeway** — corredor longo com racks de servidor laterais.
-  - Cada arena: `{ id, name, mapData: number[][], spawnPoints: {x,y}[], playerSpawn: {x,y,angle}, propSeed: number, accent: 'cyan'|'magenta'|'amber' }`.
-- `World.tsx` aceita `arena` como prop e usa `propSeed` pra distribuir barris/containers determinísticos.
-- Substitui spawn aleatório em célula livre por `spawnPoints` da arena (round-robin embaralhado por wave).
-- `MainMenu.tsx`: ao clicar Strike, abrir submenu de seleção de arena (3 cards usando o token `--arena-panel`, com nome + acento + miniatura procedural). Persiste última escolha em `persistence.ts`.
-- `GameApp.tsx`: aceita arena selecionada; reseta player, mapData e spawn points ao iniciar.
-
-Critério: 3 arenas jogáveis distintas, escolhíveis no menu.
+**Integração:** substituir o `menu_bg_tactical.jpg` atual; trocar miniaturas procedurais do `ArenaSelect.tsx` pelas 3 thumbs novas; usar key-art como `og:image` no head do `__root.tsx` + opcional como overlay no estado `'start'` do `GameApp`.
 
 ---
 
-## Etapa 3 — Objetivos por wave
+## Capítulo 2 — Inimigos & Texturas (8 artes)
 
-Objetivo: tirar o "mata onda → mata onda" como única loop.
+### Retratos de inimigos (substituem `enemy_mark_*`)
+| # | Arquivo | Dimensões | Modelo | Conteúdo |
+|---|---|---|---|---|
+| 6 | `public/ui/portrait_rusher.png` | 512×512, transparent | standard | Silhueta low/leaning, blade limbs, accent magenta, trail erratico. Retrato 3/4 estilizado. |
+| 7 | `public/ui/portrait_rifleman.png` | 512×512, transparent | standard | Boxy soldier, ombros largos, accent cyan, muzzle pre-flash visível. |
+| 8 | `public/ui/portrait_sniper.png` | 512×512, transparent | standard | Tall/thin, antenna/visor, accent amber, laser de mira saindo. |
+| 9 | `public/ui/portrait_titan.png` | 512×512, transparent | standard | Wide/hunched, core magenta+danger pulsando no peito. Boss final. |
 
-- Tipo `WaveObjective` em `game/types.ts`:
-  - `eliminate` (atual — mata todos),
-  - `defend` (proteger núcleo central por X segundos; núcleo tem HP, inimigos miram nele),
-  - `hack` (player precisa ficar dentro de zona marcada por X segundos; barra de progresso pausa se sair),
-  - `extract` (após matar X inimigos, ir até zona de extração antes do timer).
-- Novo arquivo `src/game-app/game/objectives.ts`: definição de cada objetivo, lógica de tick, condição de vitória/derrota.
-- `constants.ts`: tabela de waves passa a ter `objective: WaveObjective` (ex: wave 1 elim, wave 2 hack, wave 3 elim, wave 4 defend, wave 5 boss elim, wave 6 extract...).
-- HUD: novo painel "OBJECTIVE" no topo central usando tokens neon (substitui a mensagem genérica de wave). Mostra tipo + progresso + timer.
-- Boss wave continua `eliminate` (o boss já é o desafio).
+### Texturas 3D (re-skin das atuais)
+| # | Arquivo | Dimensões | Modelo | Conteúdo |
+|---|---|---|---|---|
+| 10 | `public/textures/floor_arena_grid.jpg` | 1024×1024 tileable | standard | Painel de chão hexagonal, linhas cyan emissive, base graphite escuro. |
+| 11 | `public/textures/wall_panel_neon.jpg` | 1024×1024 tileable | standard | Parede com painel trapezoidal, faixas magenta-hazard, parafusos amber. |
+| 12 | `public/textures/wall_reactor_core.jpg` | 1024×1024 tileable | standard | Variante reactor — gradiente cyan→magenta, ductos, calor visível. |
+| 13 | `public/decals/protocol_doc_logo.png` | 512×512, transparent | standard | Logo PROTOCOL DOC para decal de chão/parede dentro do 3D. |
 
-Critério: jogando 6 waves seguidas, vejo 4 tipos diferentes de objetivo com HUD próprio.
-
----
-
-## Etapa 4 — VFX pendentes da rodada 3
-
-Objetivo: pequenos polimentos visíveis que ficaram de fora.
-
-- **Bullet decals**: ao tracer bater em parede, spawnar plane com textura procedural circular emissive cyan, dura 5s e fade-out. Cap em 30 simultâneos (FIFO).
-- **Dano direcional**: novo overlay `DamageVignette.tsx` em `GameApp.tsx`. Quando player toma dano, calcular ângulo do agressor vs `player.angle`, mostrar gradiente radial vermelho (`--neon-danger`) do lado correto, fade 200ms.
-- **Scope do sniper**: ao apertar botão direito com sniper equipado, overlay 2D com vinheta preta, círculo central transparente, crosshair fino cyan + leve "respiração" (scale 1±0.005 a 0.5Hz). FOV da câmera vai de 75 → 35.
-
-Critério: levar tiro mostra de onde veio, sniper tem mira de verdade, paredes ficam marcadas.
+**Integração:** retratos vão pro killfeed expandido + tela de upgrades; texturas substituem `floor_panel_tactical.jpg`/`wall_panel_graphite.jpg` no `World.tsx`; decal vai como `MeshBasicMaterial` em alguns pontos do mapa.
 
 ---
 
-## Etapa 5 — Refator técnico de `GameApp.tsx`
+## Capítulo 3 — HUD & Telas (9 artes)
 
-Objetivo: tirar `// @ts-nocheck` e quebrar o monólito sem mudar gameplay.
+### Icon set (substitui Lucide nos pontos onde a marca aparece)
+| # | Arquivo | Dimensões | Modelo | Conteúdo |
+|---|---|---|---|---|
+| 14 | `public/ui/icon_health_neon.png` | 256×256, transparent | fast | Cruz médica estilizada, cyan glow, hexagonal frame. |
+| 15 | `public/ui/icon_ammo_neon.png` | 256×256, transparent | fast | Magazine vista lateral, amber accent, neon outline. |
+| 16 | `public/ui/icon_credits_neon.png` | 256×256, transparent | fast | Símbolo de crédito tactical, amber dominante. |
+| 17 | `public/ui/icon_objective_eliminate.png` | 256×256, transparent | fast | Crosshair magenta + skull stilizado. |
+| 18 | `public/ui/icon_objective_hack.png` | 256×256, transparent | fast | Terminal/cpu cyan com waveform. |
+| 19 | `public/ui/icon_objective_defend.png` | 256×256, transparent | fast | Núcleo cyan dentro de escudo hexagonal. |
+| 20 | `public/ui/icon_objective_extract.png` | 256×256, transparent | fast | Seta apontando pra zona de extração, amber+cyan. |
 
-- Quebrar em hooks dedicados em `src/game-app/game/systems/`:
-  - `useInputSystem.ts` — teclado, mouse, mobile controls.
-  - `useWaveSystem.ts` — spawn, progressão, objetivos.
-  - `useEnemyAI.ts` — movimento e ataque dos inimigos.
-  - `useCombatSystem.ts` — disparo, dano, hit detection.
-  - `usePickupSystem.ts` — drop e coleta.
-  - `useGameLoop.ts` — orquestra os ticks.
-- `GameApp.tsx` vira só composição de hooks + render (~200 linhas vs ~2000 atual).
-- Tipar tudo: remover `// @ts-nocheck` de `GameApp.tsx`, `GameScene.tsx`, `Enemy3D.tsx`, `World.tsx`, `Particles3D.tsx`, `Tracers3D.tsx`, `SoundEngine.ts`. Tipos vivem em `game/types.ts`.
-- Sem mudança de comportamento — a rodada é puramente técnica. Validação: jogar 3 waves em cada arena e confirmar que nada quebrou.
+### Splashes
+| # | Arquivo | Dimensões | Modelo | Conteúdo |
+|---|---|---|---|---|
+| 21 | `src/assets/splash_mission_complete.jpg` | 1920×1080 | premium | Tela final vitória — operador costas, arena pacificada, "MISSION COMPLETE" integrado tipograficamente em cyan. |
+| 22 | `src/assets/splash_mission_failed.jpg` | 1920×1080 | premium | Tela final derrota — visão de baixo do operador caído, arena vermelha (`--neon-danger`), "PROTOCOL TERMINATED" magenta+danger. |
 
-Critério: `tsc --noEmit` passa sem `@ts-nocheck` nos arquivos do `game-app`.
+**Integração:** icons substituem Lucide no `ObjectivePanel.tsx`, `MainHUD`, `Killfeed`; splashes viram background animado dos estados `'win'` e `'dead'` do `GameApp`.
 
 ---
 
-## Detalhes técnicos
+## Workflow de execução
 
-```text
-Arquivos novos
-├── app/routes/api/public/generate-sfx.ts
-├── app/routes/api/public/generate-music.ts
-├── scripts/generate-audio.ts
-├── public/audio/*.mp3                       (gerados)
-├── src/game-app/data/arenas.ts
-├── src/game-app/game/objectives.ts
-├── src/game-app/components/menu/ArenaSelect.tsx
-├── src/game-app/components/hud/ObjectivePanel.tsx
-├── src/game-app/components/hud/DamageVignette.tsx
-├── src/game-app/components/hud/SniperScope.tsx
-├── src/game-app/components/game/BulletDecals.tsx
-└── src/game-app/game/systems/
-    ├── useInputSystem.ts
-    ├── useWaveSystem.ts
-    ├── useEnemyAI.ts
-    ├── useCombatSystem.ts
-    ├── usePickupSystem.ts
-    └── useGameLoop.ts
+1. **Capítulo 1 (key art + menu)** — gerar 5 imagens em paralelo, integrar, QA visual no preview.
+2. **Capítulo 2 (inimigos + texturas)** — gerar 8 imagens, integrar World.tsx + retratos, QA com partida de teste.
+3. **Capítulo 3 (HUD + splashes)** — gerar 9 imagens, integrar componentes HUD, QA final.
 
-Arquivos editados
-├── src/game-app/GameApp.tsx                 (composição + tirar @ts-nocheck)
-├── src/game-app/components/menu/MainMenu.tsx (entry para ArenaSelect + música)
-├── src/game-app/components/game/World.tsx    (aceita arena prop)
-├── src/game-app/components/game/GameScene.tsx
-├── src/game-app/game/constants.ts            (waves + objectives)
-├── src/game-app/game/types.ts                (WaveObjective)
-└── src/game-app/game/persistence.ts          (lastArena)
-```
+Em cada capítulo: prompts seguem o art bible (cyan ~60%, magenta ~20%, amber ~15%, danger ~5%; hexágono/trapézio; sem texto exceto onde marcado; identidade Doom 2016 + Tron Legacy).
+
+## Limpeza
+
+Ao final, deletar legados que conflitam com a nova identidade:
+- `public/ui/title_nano_banana.png/.webp` (nome proibido).
+- `public/menu/menu_bg_tactical.*` se a nova `bg_arena_breach.jpg` ocupar o mesmo papel.
+- `public/textures/floor_panel_tactical.*` e `wall_panel_graphite.*` após confirmar substituição funcionando.
+
+## Custos
+
+- 3 imagens premium (key-art + 2 splashes) — alto custo, alto impacto.
+- 12 standard (menu, inimigos, texturas, decal) — médio.
+- 7 fast (HUD icons) — baixo.
+
+Total: **22 imagens em 3 lotes**.
 
 ## Fora desta rodada
 
-- Modelos `.glb` externos.
+- Modelos `.glb` 3D — segue regra do art bible: procedural-only sem upload do usuário.
 - Tutorial in-game.
-- Aim assist e refino mobile.
-- Conversão WebP em massa.
-- Novas armas / inimigos / progressão.
-
-## Riscos
-
-- **ElevenLabs sem chave** → etapa 1 fica pendente, etapas 2-5 seguem normais (osciladores continuam tocando).
-- **Refator etapa 5 é grande** → faço por sistema, commitando funcional a cada hook extraído. Se algo regredir, dá pra reverter sistema por sistema.
-- **Performance com decals + 3 arenas + objetivos** → cap em 30 decals, `instancedMesh` em props repetidos, perfilo após etapa 4.
-
-## Critério final
-
-Abrir o jogo, escolher uma das 3 arenas, ouvir música tema, jogar 6 waves variadas (elim/hack/defend/boss/extract), tomar dano e ver de onde veio, atirar com sniper e ver scope, terminar a partida sem `@ts-nocheck` no console de build.
+- Trailer / vídeo.
+- Refino mobile.
