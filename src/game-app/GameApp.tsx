@@ -312,6 +312,8 @@ export default function App() {
     setEnemiesRemaining(0);
     setBossHp(null);
     setWaveMessage('');
+    objectiveRef.current = null;
+    setObjectiveSnapshot(null);
     setWeaponMags({
       pistol: WEAPONS.pistol.magSize,
       rifle: WEAPONS.rifle.magSize,
