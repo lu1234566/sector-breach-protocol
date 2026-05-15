@@ -97,23 +97,8 @@ const checkLineOfSightInfo = (x1: number, y1: number, x2: number, y2: number, ma
   return { hasLOS: true };
 };
 
-const getSafePlayerStart = () => {
-    let px = 12 * CELL_SIZE + CELL_SIZE / 2;
-    let py = 6 * CELL_SIZE + CELL_SIZE / 2;
-    // Initial angle pointing towards an open area (East/Right in this map layout)
-    const initialAngle = -Math.PI / 2; 
-
-    if (MAP[6]?.[12] === 0) return { x: px, y: py, angle: initialAngle };
-    
-    // Fallback
-    for (let y = 1; y < MAP.length - 1; y++) {
-        for (let x = 1; x < MAP[0].length - 1; x++) {
-            if (MAP[y][x] === 0) {
-                return { x: x * CELL_SIZE + CELL_SIZE / 2, y: y * CELL_SIZE + CELL_SIZE / 2, angle: initialAngle };
-            }
-        }
-    }
-    return { x: 128, y: 128, angle: initialAngle };
+const getArenaPlayerStart = (arena: ArenaDef) => {
+  return { ...arena.playerSpawn };
 };
 
 export default function App() {
