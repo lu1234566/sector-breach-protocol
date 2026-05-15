@@ -1617,12 +1617,12 @@ export default function App() {
             <div className={`absolute left-0 right-0 flex justify-between items-start pointer-events-none z-40 px-4 transition-all duration-300 ${mobileMode ? 'top-16 md:top-4 scale-75 origin-top' : 'top-4'}`}>
               <div className="bg-slate-900/80 backdrop-blur-md px-3 md:px-4 py-1.5 md:py-2 rounded-lg border border-slate-700 flex items-center gap-2 md:gap-4 shadow-xl">
                 <div className="flex items-center gap-2 md:gap-3 pr-1 md:pr-2">
-                   <div className="w-8 h-8 md:w-10 md:h-10 bg-yellow-500 rounded flex items-center justify-center shadow-lg shadow-yellow-500/20">
+                   <div className="w-8 h-8 md:w-10 md:h-10 rounded flex items-center justify-center shadow-lg shadow-cyan-500/30 bg-gradient-to-br from-cyan-400 to-fuchsia-500">
                       <Zap className="text-slate-950 w-5 h-5 md:w-6 md:h-6" />
                    </div>
                    <div className="flex flex-col">
-                      <span className="text-[10px] md:text-xs font-black text-white uppercase tracking-tighter italic leading-none">Nano Banana</span>
-                      <span className="text-[8px] md:text-[9px] font-mono text-yellow-500/80 uppercase tracking-widest leading-none mt-1 font-bold">Protocol Active</span>
+                      <span className="text-[10px] md:text-xs font-black text-white uppercase tracking-tighter italic leading-none">Protocol DOC</span>
+                      <span className="text-[8px] md:text-[9px] font-mono text-cyan-400/80 uppercase tracking-widest leading-none mt-1 font-bold">Arena Live</span>
                    </div>
                 </div>
                 <div className="h-6 md:h-8 w-px bg-slate-700/50" />
