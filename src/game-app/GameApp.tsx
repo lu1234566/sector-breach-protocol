@@ -34,8 +34,11 @@ import {
   LifetimeStats, 
   RunStats,
   UpgradeLevels,
-  WeaponUpgradeLevels
+  WeaponUpgradeLevels,
+  ObjectiveRuntime
 } from './game/types';
+import { getWaveObjective, createRuntime } from './game/objectives';
+import { ObjectivePanel } from './components/hud/ObjectivePanel';
 import { 
   loadCredits, 
   loadUpgrades, 
@@ -120,6 +123,9 @@ export default function App() {
   const [enemiesRemaining, setEnemiesRemaining] = useState(0);
   const [score, setScore] = useState(0);
   const [waveMessage, setWaveMessage] = useState('');
+  const objectiveRef = useRef<ObjectiveRuntime | null>(null);
+  const [objectiveSnapshot, setObjectiveSnapshot] = useState<ObjectiveRuntime | null>(null);
+  const objectiveLastSyncRef = useRef(0);
   const [mobileMode, setMobileMode] = useState(false);
   const [stats, setStats] = useState<RunStats>({ kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0 });
   const [lifetimeStats, setLifetimeStats] = useState<LifetimeStats>({
@@ -306,6 +312,8 @@ export default function App() {
     setEnemiesRemaining(0);
     setBossHp(null);
     setWaveMessage('');
+    objectiveRef.current = null;
+    setObjectiveSnapshot(null);
     setWeaponMags({
       pistol: WEAPONS.pistol.magSize,
       rifle: WEAPONS.rifle.magSize,
@@ -391,7 +399,7 @@ export default function App() {
     }
     
     isWaveTransitionRef.current = true;
-    setWaveMessage(`WAVE ${waveNum}`);
+    // (waveMessage set after objective init below)
     
     waveTransitionTimeoutRef.current = setTimeout(() => {
       setWaveMessage('');
@@ -401,7 +409,14 @@ export default function App() {
     
     waveRef.current = waveNum;
     isSpawningRef.current = true;
-    
+
+    // Initialize objective for this wave
+    const objDef = getWaveObjective(waveNum, currentArenaRef.current);
+    const objRuntime = createRuntime(objDef);
+    objectiveRef.current = objRuntime;
+    setObjectiveSnapshot({ ...objRuntime });
+    setWaveMessage(`WAVE ${waveNum} · ${objDef.label.toUpperCase()}`);
+
     // Gradual spawning
     const count = waveNum === 1 ? 3 : 3 + waveNum * 2;
     let spawnedCount = 0;
@@ -601,6 +616,9 @@ export default function App() {
               setHitMarker({ time: Date.now(), killed: true });
               sounds.playKill();
               setStats(prev => ({ ...prev, kills: prev.kills + 1 }));
+              if (objectiveRef.current && objectiveRef.current.status === 'active') {
+                objectiveRef.current.killCount += 1;
+              }
               const killScore = enemy.isBoss ? 5000 : (enemy.type === 'sniper' ? 500 : enemy.type === 'rifleman' ? 200 : 100);
               setScore(prev => prev + killScore);
               setKillfeed(prev => [{ id: nextKillfeedId.current++, text: `${enemy.isBoss ? 'TITAN' : enemy.type.toUpperCase()} NEUTRALIZED (+${killScore})` }, ...prev].slice(0, 5));
@@ -818,8 +836,82 @@ export default function App() {
     const now = Date.now();
     enemies.current = enemies.current.filter(e => !e.dead);
     
+    // Objective tick
+    const obj = objectiveRef.current;
+    if (obj && obj.status === 'active' && gameStateRef.current === 'playing' && !isWaveTransitionRef.current) {
+      const dtMs = TICK_RATE;
+      const px = player.current.x;
+      const py = player.current.y;
+      if (obj.zone) {
+        const dz = Math.hypot(px - obj.zone.x, py - obj.zone.y);
+        obj.inZone = dz <= obj.zone.radius;
+      }
+      if (obj.kind === 'hack' && obj.zone) {
+        if (obj.inZone) {
+          obj.timer = Math.max(0, obj.timer - dtMs);
+        }
+        const total = obj.timer === 0 ? 1 : 1 - obj.timer / 12000;
+        obj.progress = total;
+        if (obj.timer <= 0) obj.status = 'complete';
+      } else if (obj.kind === 'defend' && obj.zone) {
+        // Enemies inside the larger defense radius drain core HP
+        const drainRadius = obj.zone.radius * 2.4;
+        let drainers = 0;
+        for (const e of enemies.current) {
+          if (Math.hypot(e.x - obj.zone.x, e.y - obj.zone.y) < drainRadius) drainers++;
+        }
+        const drain = drainers * 18 * (dtMs / 1000); // 18 hp/s per enemy
+        obj.coreHp = Math.max(0, (obj.coreHp ?? 0) - drain);
+        obj.timer = Math.max(0, obj.timer - dtMs);
+        obj.progress = 1 - obj.timer / 30000;
+        if ((obj.coreHp ?? 0) <= 0) {
+          obj.status = 'failed';
+          if (!isRunEndingRef.current) {
+            isRunEndingRef.current = true;
+            setKillfeed(prev => [{ id: nextKillfeedId.current++, text: 'CORE LOST · MISSION FAILED' }, ...prev].slice(0, 5));
+            setGameState('dead');
+          }
+        } else if (obj.timer <= 0) {
+          obj.status = 'complete';
+        }
+      } else if (obj.kind === 'extract' && obj.zone) {
+        if (!obj.extractActive) {
+          if (obj.killCount >= (obj.killTarget ?? 0)) {
+            obj.extractActive = true;
+            obj.timer = 25000;
+            setKillfeed(prev => [{ id: nextKillfeedId.current++, text: 'EXTRACT ZONE ACTIVE' }, ...prev].slice(0, 5));
+          }
+          obj.progress = Math.min(1, obj.killCount / Math.max(1, obj.killTarget ?? 1)) * 0.5;
+        } else {
+          obj.timer = Math.max(0, obj.timer - dtMs);
+          obj.progress = 0.5 + 0.5 * (1 - obj.timer / 25000);
+          if (obj.inZone) {
+            obj.status = 'complete';
+          } else if (obj.timer <= 0) {
+            obj.status = 'failed';
+            if (!isRunEndingRef.current) {
+              isRunEndingRef.current = true;
+              setKillfeed(prev => [{ id: nextKillfeedId.current++, text: 'EXTRACT FAILED · MISSION ABORT' }, ...prev].slice(0, 5));
+              setGameState('dead');
+            }
+          }
+        }
+      }
+      // Sync HUD snapshot ~5x/s
+      if (now - objectiveLastSyncRef.current > 200) {
+        objectiveLastSyncRef.current = now;
+        setObjectiveSnapshot({ ...obj });
+      }
+    }
+
     // Wave Management
-    if (gameStateRef.current === 'playing' && enemies.current.length === 0 && !isSpawningRef.current && !isWaveTransitionRef.current) {
+    const objCompleteForWave = (() => {
+      const o = objectiveRef.current;
+      if (!o) return enemies.current.length === 0;
+      if (o.kind === 'eliminate') return enemies.current.length === 0;
+      return o.status === 'complete';
+    })();
+    if (gameStateRef.current === 'playing' && objCompleteForWave && !isSpawningRef.current && !isWaveTransitionRef.current) {
        if (waveRef.current >= 5) {
          if (!isRunEndingRef.current) {
            isRunEndingRef.current = true;
@@ -1793,6 +1885,9 @@ export default function App() {
                  </div>
                )}
             </div>
+
+            {/* Objective Panel */}
+            <ObjectivePanel runtime={objectiveSnapshot} enemiesRemaining={enemiesRemaining} />
 
             {/* Wave Announcement */}
             {waveMessage && (
