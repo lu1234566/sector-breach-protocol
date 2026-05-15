@@ -59,6 +59,7 @@ import { sounds } from './game/SoundEngine';
 import { useInputSystem } from './game/systems/useInputSystem';
 import { useWaveSystem } from './game/systems/useWaveSystem';
 import { tickEnemyAI } from './game/systems/enemyAI';
+import { createHandleShoot, createReload } from './game/systems/combat';
 
 
 // --- Main Component ---
