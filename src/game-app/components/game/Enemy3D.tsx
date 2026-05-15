@@ -3,8 +3,6 @@ import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Billboard } from '@react-three/drei';
-import { ASSETS } from '../../game/assets';
-import { useEdgeTransparentTexture } from '../../game/useEdgeTransparentTexture';
 
 interface EnemyProps {
   x: number;
@@ -16,201 +14,421 @@ interface EnemyProps {
   cellSize: number;
   isBoss?: boolean;
   debug?: boolean;
+  lastShot?: number;
+  spawnTime?: number;
 }
 
-const getEnemyEmblemPath = (type: 'rusher' | 'rifleman' | 'sniper', isBoss?: boolean) => {
-  if (isBoss) return ASSETS.ui.enemyTitan;
-  if (type === 'rusher') return ASSETS.ui.enemyRusher;
-  if (type === 'sniper') return ASSETS.ui.enemySniper;
-  return ASSETS.ui.enemyRifleman;
+const TYPE_COLOR: Record<string, string> = {
+  rusher: '#e879f9',     // magenta
+  rifleman: '#22d3ee',   // cyan
+  sniper: '#fbbf24',     // amber
+  boss: '#f43f5e',       // danger red-pink (titan core)
 };
 
-export function Enemy3D({ x, y, type, color, cellSize, isBoss, hp, maxHp, debug }: EnemyProps) {
-  const meshRef = useRef<THREE.Group>(null);
-  const scale = isBoss ? 3 : (type === 'rusher' ? 1.05 : type === 'rifleman' ? 0.95 : 0.9);
+export function Enemy3D({
+  x,
+  y,
+  type,
+  cellSize,
+  isBoss,
+  hp,
+  maxHp,
+  lastShot = 0,
+  spawnTime = 0,
+}: EnemyProps) {
+  const root = useRef<THREE.Group>(null);
+  const tColor = isBoss ? TYPE_COLOR.boss : TYPE_COLOR[type];
+  const healthPct = Math.max(0, Math.min(1, hp / maxHp));
 
-  const healthPercent = Math.max(0, Math.min(1, hp / maxHp));
-  
-  const getHealthColor = () => {
-    if (healthPercent > 0.6) return "#22c55e";
-    if (healthPercent > 0.3) return "#eab308";
-    return "#ef4444";
-  };
+  // Death dissolve when hp drops below 0
+  const dyingProgress = useRef(0);
 
-  const healthColor = getHealthColor();
+  useFrame((state, delta) => {
+    if (!root.current) return;
+    const t = state.clock.getElapsedTime();
+    // Spawn rise animation
+    const sinceSpawn = (Date.now() - spawnTime) / 1000;
+    const spawnK = Math.max(0, Math.min(1, sinceSpawn / 0.6));
+    root.current.scale.setScalar(spawnK);
 
-  const baseMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: '#475569',
-    metalness: 0.6,
-    roughness: 0.5,
-  }), []);
-
-  const plateMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: '#64748b',
-    metalness: 0.4,
-    roughness: 0.7,
-  }), []);
-
-  const tacticalColor = useMemo(() => {
-    if (isBoss) return '#f43f5e'; 
-    if (type === 'rusher') return '#ff3434'; 
-    if (type === 'sniper') return '#06b6d4'; 
-    return '#eab308'; 
-  }, [type, isBoss]);
-
-  const emissiveMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: tacticalColor,
-    emissive: tacticalColor,
-    emissiveIntensity: isBoss ? 2.2 : 1.25,
-  }), [tacticalColor, isBoss]);
-
-  const frameMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-    color: '#0f172a',
-    metalness: 0.9,
-    roughness: 0.1,
-  }), []);
-
-  const configuredEmblemTexture = useEdgeTransparentTexture(getEnemyEmblemPath(type, isBoss));
-
-  const emblemMaterial = useMemo(() => new THREE.MeshBasicMaterial({
-    map: configuredEmblemTexture,
-    transparent: true,
-    alphaTest: 0.12,
-    side: THREE.DoubleSide,
-  }), [configuredEmblemTexture]);
-
-  const barWidth = isBoss ? (cellSize * 0.5) : (cellSize * 0.7);
-  const barHeight = isBoss ? (cellSize * 0.04) : (cellSize * 0.08);
+    // Death dissolve
+    if (hp <= 0) {
+      dyingProgress.current = Math.min(1, dyingProgress.current + delta * 2.5);
+      root.current.position.y = -dyingProgress.current * cellSize * 0.5;
+      root.current.scale.setScalar(spawnK * (1 - dyingProgress.current * 0.4));
+    }
+  });
 
   return (
-    <group position={[x, (cellSize / 2) * scale, y]} scale={scale}>
-        <group ref={meshRef}>
-          {type === 'rusher' && (
-            <group rotation={[0.5, 0, 0]} position={[0, -cellSize * 0.1, 0.1]}>
-              <mesh castShadow material={baseMaterial}>
-                <boxGeometry args={[cellSize * 0.35, cellSize * 0.25, cellSize * 0.5]} />
-              </mesh>
-              <mesh position={[0, cellSize * 0.08, cellSize * 0.22]} material={emissiveMaterial}>
-                <boxGeometry args={[cellSize * 0.2, 0.06, 0.05]} />
-              </mesh>
-              <mesh position={[0, 0, -cellSize * 0.3]} material={emissiveMaterial}>
-                 <sphereGeometry args={[cellSize * 0.1, 8, 8]} />
-              </mesh>
-            </group>
-          )}
+    <group position={[x, (cellSize / 2) * (isBoss ? 3 : 1), y]} scale={isBoss ? 2.6 : 1}>
+      <group ref={root}>
+        {!isBoss && type === 'rusher' && <RusherBody cellSize={cellSize} color={tColor} lastShot={lastShot} />}
+        {!isBoss && type === 'rifleman' && <RiflemanBody cellSize={cellSize} color={tColor} lastShot={lastShot} />}
+        {!isBoss && type === 'sniper' && <SniperBody cellSize={cellSize} color={tColor} lastShot={lastShot} />}
+        {isBoss && <TitanBody cellSize={cellSize} color={tColor} healthPct={healthPct} lastShot={lastShot} />}
 
-          {type === 'rifleman' && (
-            <group>
-              <mesh castShadow material={baseMaterial}>
-                <boxGeometry args={[cellSize * 0.5, cellSize * 0.5, cellSize * 0.35]} />
-              </mesh>
-              <mesh position={[0, cellSize * 0.35, 0]} material={plateMaterial}>
-                <boxGeometry args={[cellSize * 0.25, cellSize * 0.2, cellSize * 0.25]} />
-              </mesh>
-              <mesh position={[0, cellSize * 0.38, cellSize * 0.12]} material={emissiveMaterial}>
-                <boxGeometry args={[cellSize * 0.18, 0.04, 0.02]} />
-              </mesh>
-              <mesh position={[0, 0.05, -cellSize * 0.22]} material={frameMaterial}>
-                <boxGeometry args={[cellSize * 0.3, cellSize * 0.4, cellSize * 0.1]} />
-              </mesh>
-            </group>
-          )}
+        <HealthBar cellSize={cellSize} healthPct={healthPct} isBoss={!!isBoss} />
+      </group>
+    </group>
+  );
+}
 
-          {type === 'sniper' && (
-            <group position={[0, cellSize * 0.1, 0]}>
-              <mesh castShadow material={baseMaterial}>
-                <cylinderGeometry args={[0.04, 0.06, cellSize * 1.4, 4]} />
-              </mesh>
-              <group position={[0, cellSize * 0.65, 0]}>
-                <mesh material={plateMaterial}>
-                  <boxGeometry args={[cellSize * 0.15, cellSize * 0.12, cellSize * 0.35]} />
-                </mesh>
-                <mesh position={[0, 0.02, cellSize * 0.18]} material={emissiveMaterial}>
-                  <sphereGeometry args={[0.03, 12, 12]} />
-                </mesh>
-              </group>
-            </group>
-          )}
+/* ----------------------------- Health Bar ----------------------------- */
+function HealthBar({ cellSize, healthPct, isBoss }: any) {
+  const w = isBoss ? cellSize * 0.55 : cellSize * 0.7;
+  const h = isBoss ? cellSize * 0.05 : cellSize * 0.08;
+  const color = healthPct > 0.6 ? '#22d3ee' : healthPct > 0.3 ? '#fbbf24' : '#f43f5e';
+  return (
+    <Billboard position={[0, cellSize * 1.25, 0]}>
+      <mesh position={[0, 0, -0.01]}>
+        <planeGeometry args={[w + 0.06, h + 0.06]} />
+        <meshBasicMaterial color="#0b1220" transparent opacity={0.85} />
+      </mesh>
+      <mesh>
+        <planeGeometry args={[w, h]} />
+        <meshBasicMaterial color="#0a0f1a" />
+      </mesh>
+      <mesh position={[(-w * (1 - healthPct)) / 2, 0, 0.01]}>
+        <planeGeometry args={[w * healthPct, h * 0.7]} />
+        <meshBasicMaterial color={color} />
+      </mesh>
+    </Billboard>
+  );
+}
 
-          {isBoss && (
-            <group>
-              <mesh castShadow material={baseMaterial}>
-                <boxGeometry args={[cellSize * 0.8, cellSize * 1.2, cellSize * 0.8]} />
-              </mesh>
-              {[-1, 1].map(x => (
-                <group key={x} position={[x * cellSize * 0.5, cellSize * 0.3, 0]}>
-                  <mesh material={plateMaterial}>
-                    <boxGeometry args={[cellSize * 0.3, cellSize * 0.4, cellSize * 0.8]} />
-                  </mesh>
-                  <mesh position={[x * 0.16, 0, 0]} material={emissiveMaterial}>
-                    <boxGeometry args={[0.02, cellSize * 0.3, cellSize * 0.6]} />
-                  </mesh>
-                </group>
-              ))}
-              <mesh position={[0, 0.2, cellSize * 0.4]} rotation={[Math.PI / 2, 0, 0]} material={emissiveMaterial}>
-                 <cylinderGeometry args={[cellSize * 0.25, cellSize * 0.25, 0.1, 16]} />
-              </mesh>
-            </group>
-          )}
+/* ----------------------------- Materials ----------------------------- */
+function useEnemyMats(color: string) {
+  return useMemo(() => {
+    return {
+      shell: new THREE.MeshStandardMaterial({
+        color: '#1a1f2e',
+        metalness: 0.55,
+        roughness: 0.55,
+      }),
+      shellMid: new THREE.MeshStandardMaterial({
+        color: '#2a3145',
+        metalness: 0.45,
+        roughness: 0.6,
+      }),
+      neon: new THREE.MeshStandardMaterial({
+        color: color,
+        emissive: color,
+        emissiveIntensity: 1.4,
+      }),
+      neonSoft: new THREE.MeshStandardMaterial({
+        color: color,
+        emissive: color,
+        emissiveIntensity: 0.6,
+      }),
+      visor: new THREE.MeshStandardMaterial({
+        color: color,
+        emissive: color,
+        emissiveIntensity: 1.8,
+        transparent: true,
+        opacity: 0.85,
+      }),
+    };
+  }, [color]);
+}
 
-          <Billboard position={[0, cellSize * 0.16, cellSize * 0.36]}>
-            <mesh material={emblemMaterial}>
-              <planeGeometry args={[cellSize * 0.22, cellSize * 0.22]} />
-            </mesh>
-          </Billboard>
+/* ----------------------------- Rusher ----------------------------- */
+function RusherBody({ cellSize, color, lastShot }: any) {
+  const m = useEnemyMats(color);
+  const groupRef = useRef<THREE.Group>(null);
+  const flareRef = useRef<THREE.Mesh>(null);
+  const leftLeg = useRef<THREE.Mesh>(null);
+  const rightLeg = useRef<THREE.Mesh>(null);
 
-          <group position={[cellSize * 0.3, 0, cellSize * 0.2]}>
-             <mesh rotation={[Math.PI / 2, 0, 0]} material={frameMaterial}>
-                <cylinderGeometry 
-                  args={[
-                    type === 'sniper' ? 0.015 : 0.04, 
-                    type === 'sniper' ? 0.015 : 0.05, 
-                    type === 'sniper' ? cellSize * 1.6 : cellSize * 0.9, 
-                    8
-                  ]} 
-                />
-             </mesh>
-             <mesh position={[0, 0, type === 'sniper' ? cellSize * 0.8 : cellSize * 0.45]} rotation={[Math.PI / 2, 0, 0]} material={emissiveMaterial}>
-                <cylinderGeometry args={[type === 'sniper' ? 0.02 : 0.05, type === 'sniper' ? 0.02 : 0.05, 0.02, 16]} />
-             </mesh>
-          </group>
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+    const since = (Date.now() - lastShot) / 1000;
+    // Telegraph: pulse magenta when about to attack (last attack > 1s ago and < 1.5s ago)
+    const pulse = since > 1 && since < 1.5 ? 1 : 0.3;
+    if (flareRef.current) {
+      const k = pulse + Math.sin(t * 12) * 0.15 * pulse;
+      (flareRef.current.material as THREE.MeshStandardMaterial).emissiveIntensity = 1.0 + k * 1.2;
+      flareRef.current.scale.setScalar(0.9 + k * 0.2);
+    }
+    // Walking
+    const step = Math.sin(t * 9) * 0.12;
+    if (leftLeg.current) leftLeg.current.position.z = step;
+    if (rightLeg.current) rightLeg.current.position.z = -step;
+    if (groupRef.current) {
+      groupRef.current.rotation.x = -0.25 + Math.abs(step) * 0.3;
+      groupRef.current.position.y = Math.abs(Math.sin(t * 9)) * 0.1;
+    }
+  });
+
+  const s = cellSize;
+  return (
+    <group ref={groupRef}>
+      {/* Crouched torso, leaning forward */}
+      <mesh material={m.shell}>
+        <boxGeometry args={[s * 0.42, s * 0.32, s * 0.55]} />
+      </mesh>
+      {/* Spine ridge magenta */}
+      <mesh ref={flareRef} position={[0, s * 0.18, 0]} material={m.neon}>
+        <boxGeometry args={[s * 0.08, s * 0.06, s * 0.5]} />
+      </mesh>
+      {/* Two blade arms */}
+      {[-1, 1].map((dx) => (
+        <group key={dx} position={[dx * s * 0.28, s * 0.05, s * 0.1]}>
+          <mesh material={m.shellMid}>
+            <boxGeometry args={[s * 0.1, s * 0.12, s * 0.4]} />
+          </mesh>
+          {/* Blade */}
+          <mesh position={[dx * s * 0.06, 0, -s * 0.35]} rotation={[0, 0, dx * 0.2]} material={m.neon}>
+            <boxGeometry args={[s * 0.04, s * 0.18, s * 0.4]} />
+          </mesh>
         </group>
+      ))}
+      {/* Head — small forward visor */}
+      <mesh position={[0, s * 0.05, -s * 0.32]} material={m.shell}>
+        <boxGeometry args={[s * 0.22, s * 0.18, s * 0.18]} />
+      </mesh>
+      <mesh position={[0, s * 0.07, -s * 0.42]} material={m.visor}>
+        <boxGeometry args={[s * 0.16, s * 0.04, s * 0.02]} />
+      </mesh>
+      {/* Legs */}
+      <mesh ref={leftLeg} position={[-s * 0.12, -s * 0.3, 0]} material={m.shell}>
+        <boxGeometry args={[s * 0.12, s * 0.35, s * 0.18]} />
+      </mesh>
+      <mesh ref={rightLeg} position={[s * 0.12, -s * 0.3, 0]} material={m.shell}>
+        <boxGeometry args={[s * 0.12, s * 0.35, s * 0.18]} />
+      </mesh>
+      {/* Glow point light for arena pop */}
+      <pointLight color={color} intensity={0.6} distance={s * 1.4} position={[0, 0, 0]} />
+    </group>
+  );
+}
 
-      <Billboard
-        follow={true}
-        lockX={false}
-        lockY={false}
-        lockZ={false}
-        position={[0, cellSize * 1.2, 0]}
-      >
-        <group>
-          <mesh position={[0, 0, -0.01]}>
-            <planeGeometry args={[barWidth + 0.04, barHeight + 0.04]} />
-            <meshBasicMaterial color="#ffffff" transparent opacity={0.15} />
-          </mesh>
-          <mesh>
-            <planeGeometry args={[barWidth, barHeight]} />
-            <meshBasicMaterial color="#000000" transparent opacity={0.8} />
-          </mesh>
-          <mesh position={[(-barWidth * (1 - healthPercent)) / 2, 0, 0.01]}>
-            <planeGeometry args={[barWidth * healthPercent, barHeight * 0.7]} />
-            <meshBasicMaterial color={healthColor} />
-          </mesh>
-        </group>
-      </Billboard>
+/* ----------------------------- Rifleman ----------------------------- */
+function RiflemanBody({ cellSize, color, lastShot }: any) {
+  const m = useEnemyMats(color);
+  const muzzle = useRef<THREE.Mesh>(null);
+  const leftLeg = useRef<THREE.Mesh>(null);
+  const rightLeg = useRef<THREE.Mesh>(null);
 
-      {debug && (
-        <Billboard position={[0, cellSize * 1.5, 0]}>
-           <mesh>
-             <boxGeometry args={[cellSize/4, cellSize/4, cellSize/4]} />
-             <meshBasicMaterial color="#fbbf24" wireframe />
-           </mesh>
-           <mesh position={[0, 0, 0.01]}>
-             <planeGeometry args={[cellSize/2, cellSize/6]} />
-             <meshBasicMaterial color="black" transparent opacity={0.8} />
-           </mesh>
-        </Billboard>
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+    const since = (Date.now() - lastShot) / 1000;
+    if (muzzle.current) {
+      const flash = since < 0.08 ? 1 : 0;
+      (muzzle.current.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.6 + flash * 5;
+      muzzle.current.scale.setScalar(1 + flash * 1.5);
+    }
+    const step = Math.sin(t * 6) * 0.08;
+    if (leftLeg.current) leftLeg.current.position.z = step;
+    if (rightLeg.current) rightLeg.current.position.z = -step;
+  });
+
+  const s = cellSize;
+  return (
+    <group>
+      {/* Boxy torso */}
+      <mesh material={m.shell}>
+        <boxGeometry args={[s * 0.5, s * 0.5, s * 0.32]} />
+      </mesh>
+      {/* Chest plate cyan trim */}
+      <mesh position={[0, 0, s * 0.17]} material={m.neonSoft}>
+        <boxGeometry args={[s * 0.36, s * 0.08, s * 0.02]} />
+      </mesh>
+      {/* Wide shoulders */}
+      {[-1, 1].map((dx) => (
+        <mesh key={dx} position={[dx * s * 0.32, s * 0.18, 0]} material={m.shellMid}>
+          <boxGeometry args={[s * 0.16, s * 0.16, s * 0.3]} />
+        </mesh>
+      ))}
+      {/* Helmet */}
+      <mesh position={[0, s * 0.36, 0]} material={m.shellMid}>
+        <boxGeometry args={[s * 0.28, s * 0.22, s * 0.28]} />
+      </mesh>
+      {/* Visor */}
+      <mesh position={[0, s * 0.36, s * 0.15]} material={m.visor}>
+        <boxGeometry args={[s * 0.22, s * 0.06, s * 0.02]} />
+      </mesh>
+      {/* Rifle attached to body, front */}
+      <group position={[s * 0.18, 0, s * 0.2]}>
+        <mesh material={m.shell}>
+          <boxGeometry args={[s * 0.06, s * 0.08, s * 0.55]} />
+        </mesh>
+        <mesh ref={muzzle} position={[0, 0, -s * 0.32]} material={m.neonSoft}>
+          <sphereGeometry args={[s * 0.05, 12, 12]} />
+        </mesh>
+      </group>
+      {/* Legs */}
+      <mesh ref={leftLeg} position={[-s * 0.12, -s * 0.4, 0]} material={m.shell}>
+        <boxGeometry args={[s * 0.14, s * 0.35, s * 0.18]} />
+      </mesh>
+      <mesh ref={rightLeg} position={[s * 0.12, -s * 0.4, 0]} material={m.shell}>
+        <boxGeometry args={[s * 0.14, s * 0.35, s * 0.18]} />
+      </mesh>
+      <pointLight color={color} intensity={0.4} distance={s * 1.2} position={[0, s * 0.36, s * 0.1]} />
+    </group>
+  );
+}
+
+/* ----------------------------- Sniper ----------------------------- */
+function SniperBody({ cellSize, color, lastShot }: any) {
+  const m = useEnemyMats(color);
+  const laserRef = useRef<THREE.Mesh>(null);
+
+  useFrame(() => {
+    if (!laserRef.current) return;
+    const since = (Date.now() - lastShot) / 1000;
+    // Laser visible while charging shot (last shot was just fired, then again before next)
+    // Simulate: laser glows for ~600ms BEFORE next shot — approximated as 0.4s..1.0s after last shot
+    const visible = since > 0.4 && since < 1.0;
+    laserRef.current.visible = visible;
+    if (visible) {
+      const k = (since - 0.4) / 0.6;
+      (laserRef.current.material as THREE.MeshBasicMaterial).opacity = 0.3 + k * 0.6;
+    }
+  });
+
+  const s = cellSize;
+  return (
+    <group>
+      {/* Tall thin torso */}
+      <mesh position={[0, s * 0.1, 0]} material={m.shell}>
+        <boxGeometry args={[s * 0.22, s * 0.7, s * 0.2]} />
+      </mesh>
+      {/* Long antenna */}
+      <mesh position={[0, s * 0.7, 0]} material={m.shellMid}>
+        <cylinderGeometry args={[0.015, 0.025, s * 0.5, 6]} />
+      </mesh>
+      <mesh position={[0, s * 0.95, 0]} material={m.neon}>
+        <sphereGeometry args={[s * 0.04, 8, 8]} />
+      </mesh>
+      {/* Head */}
+      <mesh position={[0, s * 0.5, 0]} material={m.shellMid}>
+        <boxGeometry args={[s * 0.18, s * 0.18, s * 0.18]} />
+      </mesh>
+      {/* Amber visor */}
+      <mesh position={[0, s * 0.5, s * 0.1]} material={m.visor}>
+        <boxGeometry args={[s * 0.14, s * 0.04, s * 0.02]} />
+      </mesh>
+      {/* Long rifle */}
+      <group position={[s * 0.15, s * 0.2, 0]}>
+        <mesh material={m.shell}>
+          <boxGeometry args={[s * 0.05, s * 0.06, s * 0.6]} />
+        </mesh>
+        <mesh position={[0, 0, -s * 0.5]} rotation={[Math.PI / 2, 0, 0]} material={m.shellMid}>
+          <cylinderGeometry args={[0.02, 0.02, s * 0.7, 6]} />
+        </mesh>
+      </group>
+      {/* Aiming laser (amber) */}
+      <mesh ref={laserRef} visible={false} position={[s * 0.15, s * 0.2, -s * 1.5]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.012, 0.012, s * 2, 6]} />
+        <meshBasicMaterial color={color} transparent opacity={0.6} />
+      </mesh>
+      {/* Legs */}
+      <mesh position={[-s * 0.08, -s * 0.4, 0]} material={m.shell}>
+        <boxGeometry args={[s * 0.08, s * 0.35, s * 0.12]} />
+      </mesh>
+      <mesh position={[s * 0.08, -s * 0.4, 0]} material={m.shell}>
+        <boxGeometry args={[s * 0.08, s * 0.35, s * 0.12]} />
+      </mesh>
+      <pointLight color={color} intensity={0.35} distance={s * 1.4} position={[0, s * 0.5, s * 0.1]} />
+    </group>
+  );
+}
+
+/* ----------------------------- Titan (Boss) ----------------------------- */
+function TitanBody({ cellSize, color, healthPct, lastShot }: any) {
+  const m = useEnemyMats(color);
+  const coreRef = useRef<THREE.Mesh>(null);
+  const coreLightRef = useRef<THREE.PointLight>(null);
+
+  // Phase derived from hp
+  const phase = healthPct > 0.66 ? 1 : healthPct > 0.33 ? 2 : 3;
+
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+    const since = (Date.now() - lastShot) / 1000;
+    // Core flares with phase intensity + pulses before each attack
+    const baseIntensity = 1.5 + (phase - 1) * 1.2;
+    const flare = since > 0.8 && since < 1.4 ? 2.5 : 0;
+    const pulse = Math.sin(t * (3 + phase)) * 0.4;
+    const k = baseIntensity + flare + pulse;
+    if (coreRef.current) {
+      (coreRef.current.material as THREE.MeshStandardMaterial).emissiveIntensity = k;
+      coreRef.current.scale.setScalar(1 + pulse * 0.05 + flare * 0.1);
+    }
+    if (coreLightRef.current) {
+      coreLightRef.current.intensity = 0.8 + flare * 0.6 + pulse * 0.3;
+    }
+  });
+
+  const s = cellSize;
+  return (
+    <group>
+      {/* Massive curved torso - layered plates */}
+      <mesh material={m.shell}>
+        <boxGeometry args={[s * 0.85, s * 1.2, s * 0.8]} />
+      </mesh>
+      {/* Segmented chest plates */}
+      {[-1, 0, 1].map((i) => (
+        <mesh key={i} position={[0, i * s * 0.35, s * 0.41]} material={m.shellMid}>
+          <boxGeometry args={[s * 0.7, s * 0.28, s * 0.04]} />
+        </mesh>
+      ))}
+      {/* Core (magenta pulsating) */}
+      <mesh ref={coreRef} position={[0, 0, s * 0.46]} material={m.neon}>
+        <sphereGeometry args={[s * 0.18, 16, 16]} />
+      </mesh>
+      <pointLight ref={coreLightRef} color={color} intensity={0.8} distance={s * 4} position={[0, 0, s * 0.5]} />
+
+      {/* Cracks appear in phase 2+ */}
+      {phase >= 2 && (
+        <>
+          <mesh position={[s * 0.25, s * 0.2, s * 0.42]} rotation={[0, 0, 0.6]} material={m.neonSoft}>
+            <boxGeometry args={[s * 0.02, s * 0.4, s * 0.005]} />
+          </mesh>
+          <mesh position={[-s * 0.2, -s * 0.1, s * 0.42]} rotation={[0, 0, -0.5]} material={m.neonSoft}>
+            <boxGeometry args={[s * 0.02, s * 0.3, s * 0.005]} />
+          </mesh>
+        </>
       )}
+      {/* Phase 3: more cracks + secondary core glow */}
+      {phase >= 3 && (
+        <>
+          <mesh position={[s * 0.05, -s * 0.45, s * 0.42]} rotation={[0, 0, 1.2]} material={m.neonSoft}>
+            <boxGeometry args={[s * 0.02, s * 0.5, s * 0.005]} />
+          </mesh>
+          <mesh position={[0, s * 0.5, s * 0.46]} material={m.neonSoft}>
+            <sphereGeometry args={[s * 0.06, 8, 8]} />
+          </mesh>
+        </>
+      )}
+
+      {/* Heavy shoulder pauldrons */}
+      {[-1, 1].map((dx) => (
+        <group key={dx} position={[dx * s * 0.55, s * 0.4, 0]}>
+          <mesh material={m.shellMid}>
+            <boxGeometry args={[s * 0.32, s * 0.4, s * 0.7]} />
+          </mesh>
+          {/* Magenta strip */}
+          <mesh position={[dx * s * 0.17, 0, 0]} material={m.neon}>
+            <boxGeometry args={[s * 0.02, s * 0.3, s * 0.5]} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Head */}
+      <mesh position={[0, s * 0.75, 0]} material={m.shell}>
+        <boxGeometry args={[s * 0.4, s * 0.3, s * 0.4]} />
+      </mesh>
+      <mesh position={[0, s * 0.75, s * 0.21]} material={m.visor}>
+        <boxGeometry args={[s * 0.32, s * 0.08, s * 0.02]} />
+      </mesh>
+
+      {/* Heavy legs */}
+      {[-1, 1].map((dx) => (
+        <mesh key={dx} position={[dx * s * 0.22, -s * 0.85, 0]} material={m.shell}>
+          <boxGeometry args={[s * 0.28, s * 0.5, s * 0.32]} />
+        </mesh>
+      ))}
     </group>
   );
 }
