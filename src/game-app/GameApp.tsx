@@ -58,6 +58,7 @@ import { clamp } from './game/helpers';
 import { sounds } from './game/SoundEngine';
 import { useInputSystem } from './game/systems/useInputSystem';
 import { useWaveSystem } from './game/systems/useWaveSystem';
+import { tickEnemyAI } from './game/systems/enemyAI';
 
 
 // --- Main Component ---
