@@ -1307,84 +1307,25 @@ export default function App() {
     };
   }, [gameState, currentWeapon, hp, ammo]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      keys.current[e.key.toLowerCase()] = true;
-      if (e.key === 'r') reload();
-      if (['1','2','3','4'].includes(e.key)) {
-        const weaponMap: Record<string, WeaponType> = { '1': 'pistol', '2': 'rifle', '3': 'shotgun', '4': 'sniper' };
-        const next = weaponMap[e.key];
-        if (next === currentWeapon) return;
-        
-        // Sync current mag before swap
-        const currentMag = ammoRef.current.mag;
-        setWeaponMags(prev => ({ ...prev, [currentWeapon]: currentMag }));
-        
-        setCurrentWeapon(next);
-        setAmmo(prev => ({ ...prev, mag: weaponMags[next] }));
-        
-        setIsReloading(false);
-        if (reloadTimeoutRef.current) {
-          clearTimeout(reloadTimeoutRef.current);
-          reloadTimeoutRef.current = null;
-        }
-      }
-    };
-    const handleKeyUp = (e: KeyboardEvent) => keys.current[e.key.toLowerCase()] = false;
-    const handleMouseDown = (e: MouseEvent) => {
-      if (gameState !== 'playing') return;
-      if (document.pointerLockElement !== gameContainerRef.current) {
-        togglePointerLock();
-        return;
-      }
-      if (e.button === 2) keys.current['m_right'] = true;
-      if (e.button === 0) {
-        keys.current['m_left'] = true;
-        handleShoot(); // Initial shot for semi and auto
-      }
-    };
-    const handleMouseUp = (e: MouseEvent) => {
-      if (e.button === 2) keys.current['m_right'] = false;
-      if (e.button === 0) keys.current['m_left'] = false;
-    };
-    const handleMouseMove = (e: MouseEvent) => {
-        if (gameState !== 'playing' || document.pointerLockElement !== gameContainerRef.current) return;
-        const speed = player.current.isAds ? 0.001 : 0.002;
-        player.current.angle += e.movementX * speed;
-        // Standard non-inverted look: movementY > 0 (down) -> Pitch increases -> Camera rotates X positive -> Looks Down
-        player.current.pitch = clamp(player.current.pitch + e.movementY * 0.1, -25, 25);
-    };
-
-    const handlePointerLockChange = () => {
-      if (document.pointerLockElement === null) {
-        // When user exits lock, set the cooldown to prevent immediate re-entry failing
-        pointerLockCooldownRef.current = Date.now();
-      }
-    };
-    const handlePointerLockError = () => {
-      console.warn('Pointer lock error event caught');
-      // On error, reset cooldown so they can try again if the browser allows it
-      pointerLockCooldownRef.current = 0;
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    // Bind mouse events to window to capture even if out of container during drag/lock
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('pointerlockchange', handlePointerLockChange);
-    document.addEventListener('pointerlockerror', handlePointerLockError);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('pointerlockchange', handlePointerLockChange);
-      document.removeEventListener('pointerlockerror', handlePointerLockError);
-    };
-  }, [gameState, currentWeapon]);
+  useInputSystem({
+    gameState,
+    gameContainerRef,
+    pointerLockCooldownRef,
+    keys,
+    player,
+    ammoRef,
+    currentWeapon,
+    weaponMags,
+    reloadTimeoutRef,
+    setWeaponMags,
+    setCurrentWeapon,
+    setAmmo,
+    setIsReloading,
+    reload,
+    handleShoot,
+    togglePointerLock,
+    mobileMode,
+  });
 
   const togglePointerLock = () => {
     if (mobileMode) return;
