@@ -60,6 +60,7 @@ import { useInputSystem } from './game/systems/useInputSystem';
 import { useWaveSystem } from './game/systems/useWaveSystem';
 import { tickEnemyAI } from './game/systems/enemyAI';
 import { createHandleShoot, createReload } from './game/systems/combat';
+import { tickPickups } from './game/systems/pickups';
 
 
 // --- Main Component ---
