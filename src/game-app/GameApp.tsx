@@ -61,6 +61,8 @@ import { useWaveSystem } from './game/systems/useWaveSystem';
 import { tickEnemyAI } from './game/systems/enemyAI';
 import { createHandleShoot, createReload } from './game/systems/combat';
 import { tickPickups } from './game/systems/pickups';
+import splashMissionComplete from '@/assets/splash_mission_complete.jpg';
+import splashMissionFailed from '@/assets/splash_mission_failed.jpg';
 
 
 // --- Main Component ---
