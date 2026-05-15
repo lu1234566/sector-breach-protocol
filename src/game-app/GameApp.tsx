@@ -15,7 +15,7 @@ import {
   DifficultyKey, 
   UPGRADES, 
   WEAPONS, 
-  MAP, 
+   
   CELL_SIZE, 
   TICK_RATE,
   WEAPON_UPGRADE_COSTS,
@@ -548,7 +548,7 @@ export default function App() {
     for (let d = 0; d < weapon.range; d += 8) {
         const tx = Math.floor((player.current.x + cos * d) / CELL_SIZE);
         const ty = Math.floor((player.current.y + sin * d) / CELL_SIZE);
-        if (tx >= 0 && tx < MAP[0].length && ty >= 0 && ty < MAP.length) {
+        if (tx >= 0 && tx < mapData.current[0].length && ty >= 0 && ty < mapData.current.length) {
             const cell = mapData.current[ty][tx];
             if (cell === 3) { // Barrel
                 if (mapData.current[ty]) mapData.current[ty][tx] = 0; // Explode!
