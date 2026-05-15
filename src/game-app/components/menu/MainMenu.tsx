@@ -82,23 +82,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
               className="flex flex-col items-center mb-12"
             >
-              <img 
-                src={ASSETS.menu.title} 
-                alt="Nano Banana" 
-                className="h-12 md:h-16 lg:h-20 mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                  const next = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
-                  if (next) next.style.display = 'block';
-                }}
-              />
-              <h1 className="hidden text-5xl md:text-7xl lg:text-8xl font-black text-white italic tracking-tighter uppercase drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] text-center leading-none">
-                Nano Banana
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black italic tracking-tighter uppercase text-center leading-none drop-shadow-[0_0_40px_rgba(34,211,238,0.55)]">
+                <span className="text-white">PROTOCOL</span>
+                <span className="ml-3 bg-gradient-to-r from-cyan-300 via-cyan-400 to-fuchsia-400 bg-clip-text text-transparent">DOC</span>
               </h1>
-              <div className="flex items-center gap-4 text-cyan-400 font-black tracking-[0.5em] uppercase text-[9px] md:text-xs">
+              <div className="mt-3 flex items-center gap-4 text-cyan-400 font-black tracking-[0.5em] uppercase text-[9px] md:text-xs">
                 <div className="h-[2px] w-12 bg-gradient-to-r from-transparent to-cyan-500" />
-                Strategic Operations
-                <div className="h-[2px] w-12 bg-gradient-to-l from-transparent to-cyan-500" />
+                Arena Combat Protocol
+                <div className="h-[2px] w-12 bg-gradient-to-l from-transparent to-fuchsia-500" />
               </div>
             </motion.div>
 
