@@ -626,23 +626,33 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                             <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none">{a.name}</h3>
                             <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-white/50">{a.tagline}</p>
                           </div>
-                          {/* mini map preview */}
-                          <div className="aspect-square w-full rounded-xl overflow-hidden border border-white/10 bg-black/60 p-1">
-                            <div
-                              className="w-full h-full grid"
-                              style={{ gridTemplateColumns: `repeat(${a.mapData[0].length}, 1fr)`, gridTemplateRows: `repeat(${a.mapData.length}, 1fr)` }}
-                            >
-                              {a.mapData.flatMap((row, ry) => row.map((cell, cx) => (
-                                <div
-                                  key={`${a.id}-${ry}-${cx}`}
-                                  className={
-                                    cell === 1 ? `bg-white/15` :
-                                    cell === 2 ? 'bg-amber-500/40' :
-                                    cell === 3 ? 'bg-fuchsia-500/40' :
-                                    'bg-transparent'
-                                  }
-                                />
-                              )))}
+                          {/* arena thumb + mini map overlay */}
+                          <div className="aspect-square w-full rounded-xl overflow-hidden border border-white/10 bg-black/60 relative">
+                            {ASSETS.menu.arenaThumbs[a.id] && (
+                              <div
+                                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
+                                style={{ backgroundImage: `url(${ASSETS.menu.arenaThumbs[a.id]})` }}
+                              />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+                            {/* mini map badge */}
+                            <div className="absolute bottom-2 right-2 w-12 h-12 rounded-md border border-white/20 bg-black/70 backdrop-blur-sm p-0.5">
+                              <div
+                                className="w-full h-full grid"
+                                style={{ gridTemplateColumns: `repeat(${a.mapData[0].length}, 1fr)`, gridTemplateRows: `repeat(${a.mapData.length}, 1fr)` }}
+                              >
+                                {a.mapData.flatMap((row, ry) => row.map((cell, cx) => (
+                                  <div
+                                    key={`${a.id}-${ry}-${cx}`}
+                                    className={
+                                      cell === 1 ? `bg-white/30` :
+                                      cell === 2 ? 'bg-amber-500/60' :
+                                      cell === 3 ? 'bg-fuchsia-500/60' :
+                                      'bg-transparent'
+                                    }
+                                  />
+                                )))}
+                              </div>
                             </div>
                           </div>
                         </div>

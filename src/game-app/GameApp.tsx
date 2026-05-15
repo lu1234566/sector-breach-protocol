@@ -61,6 +61,8 @@ import { useWaveSystem } from './game/systems/useWaveSystem';
 import { tickEnemyAI } from './game/systems/enemyAI';
 import { createHandleShoot, createReload } from './game/systems/combat';
 import { tickPickups } from './game/systems/pickups';
+import splashMissionComplete from '@/assets/splash_mission_complete.jpg';
+import splashMissionFailed from '@/assets/splash_mission_failed.jpg';
 
 
 // --- Main Component ---
@@ -1494,6 +1496,13 @@ export default function App() {
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="absolute inset-0 bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center z-[100]"
+              style={
+                gameState === 'win'
+                  ? { backgroundImage: `linear-gradient(rgba(2,6,23,0.78), rgba(2,6,23,0.92)), url(${splashMissionComplete})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                  : gameState === 'dead'
+                  ? { backgroundImage: `linear-gradient(rgba(2,6,23,0.78), rgba(2,6,23,0.92)), url(${splashMissionFailed})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                  : undefined
+              }
             >
               {gameState === 'upgrades' ? (
                 <div className="w-full max-w-2xl bg-zinc-900/90 rounded-3xl border border-white/10 p-6 md:p-10 max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl">
