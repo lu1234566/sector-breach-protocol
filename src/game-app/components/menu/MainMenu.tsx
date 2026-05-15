@@ -23,12 +23,16 @@ import { LifetimeStats, WeaponUpgradeLevels } from '../../game/types';
 import { saveDifficulty } from '../../game/persistence';
 import { sounds } from '../../game/SoundEngine';
 import { ASSETS } from '../../game/assets';
+import type { ArenaDef } from '../../data/arenas';
+import { Map as MapIcon } from 'lucide-react';
+
+type MenuView = 'main' | 'armory' | 'difficulty' | 'profile' | 'arena';
 
 interface MainMenuProps {
   initGame: () => void;
   setGameState: (state: 'start' | 'playing' | 'dead' | 'win' | 'upgrades') => void;
-  menuView: 'main' | 'armory' | 'difficulty' | 'profile';
-  setMenuView: (view: 'main' | 'armory' | 'difficulty' | 'profile') => void;
+  menuView: MenuView;
+  setMenuView: (view: MenuView) => void;
   difficulty: DifficultyKey;
   setDifficulty: (difficulty: DifficultyKey) => void;
   tacticalCredits: number;
@@ -36,6 +40,9 @@ interface MainMenuProps {
   weaponUpgradeLevels: WeaponUpgradeLevels;
   setUpgradeTab: (tab: 'biological' | 'weapon') => void;
   setSelectedLabWeapon: (weapon: WeaponType) => void;
+  arenas: ArenaDef[];
+  selectedArenaId: string;
+  setSelectedArenaId: (id: string) => void;
 }
 
 export const MainMenu: React.FC<MainMenuProps> = ({
@@ -49,8 +56,17 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   lifetimeStats,
   weaponUpgradeLevels,
   setUpgradeTab,
-  setSelectedLabWeapon
+  setSelectedLabWeapon,
+  arenas,
+  selectedArenaId,
+  setSelectedArenaId,
 }) => {
+  const currentArena = arenas.find(a => a.id === selectedArenaId) ?? arenas[0];
+  const accentColors: Record<string, { ring: string; text: string; glow: string }> = {
+    cyan: { ring: 'border-cyan-500/60', text: 'text-cyan-400', glow: 'shadow-[0_0_40px_rgba(34,211,238,0.25)]' },
+    magenta: { ring: 'border-fuchsia-500/60', text: 'text-fuchsia-400', glow: 'shadow-[0_0_40px_rgba(232,121,249,0.25)]' },
+    amber: { ring: 'border-amber-500/60', text: 'text-amber-400', glow: 'shadow-[0_0_40px_rgba(251,191,36,0.25)]' },
+  };
   return (
     <div className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden bg-slate-950 px-4">
       {/* Dynamic Background */}
