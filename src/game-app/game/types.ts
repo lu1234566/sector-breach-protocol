@@ -104,3 +104,37 @@ export interface RunStats {
   shotsFired: number;
   shotsHit: number;
 }
+
+export type WaveObjectiveKind = 'eliminate' | 'hack' | 'defend' | 'extract';
+
+export interface ObjectiveZone {
+  x: number;
+  y: number;
+  radius: number;
+}
+
+export interface WaveObjective {
+  kind: WaveObjectiveKind;
+  label: string;
+  zone?: ObjectiveZone;
+  durationMs?: number;     // hack / defend
+  killThreshold?: number;  // extract
+  timeLimitMs?: number;    // extract
+  coreMaxHp?: number;      // defend
+}
+
+export interface ObjectiveRuntime {
+  kind: WaveObjectiveKind;
+  label: string;
+  zone?: ObjectiveZone;
+  progress: number;        // 0..1
+  timer: number;           // ms remaining (countdown) or 0
+  inZone: boolean;
+  killCount: number;
+  killTarget?: number;
+  coreHp?: number;
+  coreMaxHp?: number;
+  extractActive: boolean;  // true once extract zone is open
+  status: 'active' | 'complete' | 'failed';
+  startedAt: number;
+}
