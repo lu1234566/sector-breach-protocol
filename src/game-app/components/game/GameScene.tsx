@@ -8,9 +8,10 @@ import { Enemy3D } from './Enemy3D';
 import { Particles3D } from './Particles3D';
 import { Tracers3D } from './Tracers3D';
 import { Pickups3D } from './Pickups3D';
+import { Decals3D } from './Decals3D';
 import { Weapon3D } from '../../Weapon3D';
 
-import { Player, Enemy, Particle, Tracer, Pickup } from '../../game/types';
+import { Player, Enemy, Particle, Tracer, Pickup, WallDecal } from '../../game/types';
 
 interface GameSceneProps {
   player: React.MutableRefObject<Player>;
@@ -18,6 +19,7 @@ interface GameSceneProps {
   particles: Particle[];
   tracers: Tracer[];
   pickups: Pickup[];
+  decals?: WallDecal[];
   mapData: number[][];
   cellSize: number;
   currentWeapon: string;
@@ -78,8 +80,10 @@ export function GameScene({
   screenShake,
   lastShotTime,
   pickups,
+  decals,
   debugMode,
 }: GameSceneProps) {
+  const now = Date.now();
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas
@@ -102,6 +106,9 @@ export function GameScene({
 
         <Particles3D particles={particles} cellSize={cellSize} mapData={mapData} />
         <Tracers3D tracers={tracers} cellSize={cellSize} mapData={mapData} />
+        {decals && decals.length > 0 && (
+          <Decals3D decals={decals} cellSize={cellSize} mapData={mapData} now={now} />
+        )}
         <Pickups3D pickups={pickups} cellSize={cellSize} mapData={mapData} />
 
         {enemies.map((enemy) => (

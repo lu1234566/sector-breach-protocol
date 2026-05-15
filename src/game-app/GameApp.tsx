@@ -35,8 +35,10 @@ import {
   RunStats,
   UpgradeLevels,
   WeaponUpgradeLevels,
-  ObjectiveRuntime
+  ObjectiveRuntime,
+  WallDecal
 } from './game/types';
+import { SniperScope } from './components/hud/SniperScope';
 import { getWaveObjective, createRuntime } from './game/objectives';
 import { ObjectivePanel } from './components/hud/ObjectivePanel';
 import { 
@@ -387,6 +389,8 @@ export default function App() {
 
   const tracers = useRef<Tracer[]>([]);
   const nextTracerId = useRef(0);
+  const decals = useRef<WallDecal[]>([]);
+  const nextDecalId = useRef(0);
 
   const spawnWave = (waveNum: number) => {
     if (spawnIntervalRef.current) {
@@ -581,6 +585,26 @@ export default function App() {
                 break;
             } else if (cell === 1 || cell === 2) { // Wall or Crate/Door
                 hitDist = d;
+                // Record bullet decal at impact point
+                const hx = player.current.x + cos * d;
+                const hy = player.current.y + sin * d;
+                const localX = hx - (tx + 0.5) * CELL_SIZE;
+                const localY = hy - (ty + 0.5) * CELL_SIZE;
+                let nx = 0, ny = 0;
+                if (Math.abs(localX) > Math.abs(localY)) nx = Math.sign(localX) || 1;
+                else ny = Math.sign(localY) || 1;
+                decals.current.push({
+                  id: nextDecalId.current++,
+                  x: hx,
+                  y: hy,
+                  nx,
+                  ny,
+                  born: Date.now(),
+                  size: weapon.type === 'shotgun' ? 7 : weapon.type === 'sniper' ? 10 : 5,
+                });
+                if (decals.current.length > 40) {
+                  decals.current.splice(0, decals.current.length - 40);
+                }
                 break;
             }
         }
@@ -1225,6 +1249,10 @@ export default function App() {
     // Update Tracers
     tracers.current.forEach(t => t.alpha -= 0.05);
     tracers.current = tracers.current.filter(t => t.alpha > 0);
+
+    // Cleanup expired wall decals (6s lifetime)
+    const decalNow = Date.now();
+    decals.current = decals.current.filter(d => decalNow - d.born < 6000);
     particles.current.forEach(p => {
       p.x += p.vx; p.y += p.vy; p.life -= 0.02;
     });
@@ -1425,6 +1453,7 @@ export default function App() {
               enemies={enemiesState}
               particles={particles.current}
               tracers={tracers.current}
+              decals={decals.current}
               mapData={mapDataState}
               cellSize={CELL_SIZE}
               currentWeapon={currentWeapon}
@@ -1436,6 +1465,10 @@ export default function App() {
               debugMode={DEBUG_MODE}
             />
 
+            {/* Sniper Scope Overlay */}
+            {currentWeapon === 'sniper' && (
+              <SniperScope progress={player.current.adsProgress} />
+            )}
             {/* Boss Health Bar */}
             {bossHp && (
               <div className="absolute top-16 md:top-20 left-1/2 -translate-x-1/2 w-[70vw] md:w-80 z-50 pointer-events-none">
@@ -1626,16 +1659,38 @@ export default function App() {
 
         {/* Global Damage Indicators Overlays */}
         <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
-           {damageIndicators.map(ind => (
-             <div 
-              key={ind.id}
-              className="absolute top-1/2 left-1/2 w-32 h-1 bg-red-600/50 blur-sm rounded-full origin-left"
-              style={{ 
-                transform: `translate(-50%, -50%) rotate(${ind.angle}rad) translate(100px, 0)`,
-                opacity: ind.opacity 
-              }}
-             />
-           ))}
+           {damageIndicators.map(ind => {
+             // ind.angle is the direction of the threat relative to player facing (radians).
+             // Convert to a CSS rotation around the screen center; arc renders along right edge then rotated.
+             const deg = (ind.angle * 180) / Math.PI;
+             const op = Math.max(0, Math.min(1, ind.opacity));
+             return (
+               <div
+                 key={ind.id}
+                 className="absolute top-1/2 left-1/2 pointer-events-none"
+                 style={{
+                   width: '140vmax',
+                   height: '140vmax',
+                   transform: `translate(-50%, -50%) rotate(${deg}deg)`,
+                   opacity: op * 0.85,
+                 }}
+               >
+                 {/* Conic arc on the right side = direction of threat */}
+                 <div
+                   className="absolute inset-0 rounded-full"
+                   style={{
+                     background:
+                       'conic-gradient(from 320deg at 50% 50%, transparent 0deg, rgba(220,38,38,0) 30deg, rgba(220,38,38,0.55) 40deg, rgba(248,113,113,0.85) 50deg, rgba(220,38,38,0.55) 60deg, rgba(220,38,38,0) 70deg, transparent 360deg)',
+                     WebkitMaskImage:
+                       'radial-gradient(circle at 50% 50%, transparent 36%, black 50%, black 60%, transparent 70%)',
+                     maskImage:
+                       'radial-gradient(circle at 50% 50%, transparent 36%, black 50%, black 60%, transparent 70%)',
+                     filter: 'blur(6px)',
+                   }}
+                 />
+               </div>
+             );
+           })}
 
            {hp < 30 && (
              <div className="absolute inset-0 bg-red-600/5 animate-pulse pointer-events-none z-[45]" />
