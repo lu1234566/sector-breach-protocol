@@ -60,6 +60,7 @@ import { useInputSystem } from './game/systems/useInputSystem';
 import { useWaveSystem } from './game/systems/useWaveSystem';
 import { tickEnemyAI } from './game/systems/enemyAI';
 import { createHandleShoot, createReload } from './game/systems/combat';
+import { tickPickups } from './game/systems/pickups';
 
 
 // --- Main Component ---
@@ -611,23 +612,10 @@ export default function App() {
       player.current.y = ny;
     }
 
-    // Pickup Collection
-    pickups.current = pickups.current.filter((p) => {
-      const dist = Math.hypot(p.x - player.current.x, p.y - player.current.y);
-      if (dist < 32) {
-        if (p.type === 'health') {
-           const maxHp = 100 + (upgradeLevels.armorPlating * 5);
-           setHp(prev => Math.min(maxHp, prev + 25));
-        } else {
-           const maxReserve = 120 + (upgradeLevels.ammoReserve * 20);
-           setAmmo(prev => ({ ...prev, reserve: Math.min(maxReserve, prev.reserve + 60) }));
-        }
-        sounds.playPickup(p.type);
-        setKillfeed(prev => [{ id: nextKillfeedId.current++, text: `+ ${p.type.toUpperCase()} SECURED` }, ...prev].slice(0, 5));
-        return false;
-      }
-      p.rotation += 0.05;
-      return true;
+    // Pickup Collection (extracted to systems/pickups.ts)
+    tickPickups({
+      pickups, player, upgradeLevels, nextKillfeedId,
+      setHp, setAmmo, setKillfeed,
     });
 
     // Apply Recoil Decay & Shake
