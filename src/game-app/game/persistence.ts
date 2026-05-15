@@ -7,7 +7,22 @@ const KEYS = {
   UPGRADES: 'nano_upgrades',
   DIFFICULTY: 'nano_difficulty',
   WEAPON_UPGRADES: 'nano_weapon_upgrades',
-  STATS: 'nano_stats'
+  STATS: 'nano_stats',
+  ARENA: 'protocol_arena'
+};
+
+export const loadArena = (): string | null => {
+  try {
+    return localStorage.getItem(KEYS.ARENA);
+  } catch {
+    return null;
+  }
+};
+
+export const saveArena = (arenaId: string) => {
+  try {
+    localStorage.setItem(KEYS.ARENA, arenaId);
+  } catch {}
 };
 
 export const loadCredits = (): number | null => {
