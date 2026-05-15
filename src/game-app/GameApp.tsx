@@ -389,6 +389,8 @@ export default function App() {
 
   const tracers = useRef<Tracer[]>([]);
   const nextTracerId = useRef(0);
+  const decals = useRef<WallDecal[]>([]);
+  const nextDecalId = useRef(0);
 
   const spawnWave = (waveNum: number) => {
     if (spawnIntervalRef.current) {
