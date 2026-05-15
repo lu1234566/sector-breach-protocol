@@ -187,6 +187,12 @@ export default function App() {
     }
   }, []);
 
+  // Keep arena ref + persistence in sync with selection
+  useEffect(() => {
+    currentArenaRef.current = getArenaById(selectedArenaId);
+    saveArena(selectedArenaId);
+  }, [selectedArenaId]);
+
   const saveMeta = (credits: number, upgrades: UpgradeLevels | Record<string, number>, weaponUpgrades?: WeaponUpgradeLevels, lStats?: LifetimeStats) => {
     saveCredits(credits);
     saveUpgrades(upgrades);
