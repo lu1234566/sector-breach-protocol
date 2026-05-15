@@ -399,7 +399,7 @@ export default function App() {
     }
     
     isWaveTransitionRef.current = true;
-    setWaveMessage(`WAVE ${waveNum}`);
+    // (waveMessage set after objective init below)
     
     waveTransitionTimeoutRef.current = setTimeout(() => {
       setWaveMessage('');
