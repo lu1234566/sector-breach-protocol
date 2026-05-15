@@ -35,8 +35,10 @@ import {
   RunStats,
   UpgradeLevels,
   WeaponUpgradeLevels,
-  ObjectiveRuntime
+  ObjectiveRuntime,
+  WallDecal
 } from './game/types';
+import { SniperScope } from './components/hud/SniperScope';
 import { getWaveObjective, createRuntime } from './game/objectives';
 import { ObjectivePanel } from './components/hud/ObjectivePanel';
 import { 
