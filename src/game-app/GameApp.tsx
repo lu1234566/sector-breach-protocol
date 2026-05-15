@@ -1886,6 +1886,9 @@ export default function App() {
                )}
             </div>
 
+            {/* Objective Panel */}
+            <ObjectivePanel runtime={objectiveSnapshot} enemiesRemaining={enemiesRemaining} />
+
             {/* Wave Announcement */}
             {waveMessage && (
                <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 text-center w-full px-4">
