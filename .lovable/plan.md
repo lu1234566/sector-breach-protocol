@@ -1,141 +1,138 @@
-# Rodada 3+4 — Salto visual do gameplay + áudio real
+# Rodada 4 — Fechamento das pendências
 
-Objetivo: tirar o jogo de "tech demo geométrica" e levá-lo a "arena neon com identidade", sem trocar mecânicas. Tudo respeita a [bíblia de arte](/dev-server/docs/art-bible.md) e os tokens em `src/styles.css`.
-
-> Atualização importante sobre a rodada anterior: descobri que **posso sim gerar áudio** via API da ElevenLabs (SFX + música). Então o que ia virar "prompts pra você" agora vira arquivos reais. A única coisa que continua fora do meu alcance são modelos `.glb` riggados — e não precisamos deles, porque o caminho combinado é procedural.
+Ordem fixa, cada etapa é entregável independente. Se travar numa, as anteriores já ficam de pé.
 
 ---
 
-## 1. Armas — peso, identidade, mãos
+## Etapa 1 — Áudio real via ElevenLabs
 
-Refazer `Weapon3D.tsx` mantendo a API atual, mas trocando o visual:
+Objetivo: substituir os osciladores pelos 17 arquivos do `public/audio/README.md`.
 
-- **Pistola, Rifle, Shotgun, Sniper** ganham silhuetas distintas montadas com geometria composta (cano, corpo, carregador, mira, grip) + materiais neon-arena (corpo escuro fosco, detalhes em cyan emissive, LEDs amarelos no carregador).
-- **Mãos/braços** procedurais segurando a arma (dois braços simples com luva preta + acento cyan no antebraço). Resolve a sensação de "arma flutuante".
-- **Animações por arma** (todas em código, sem rig externo):
-  - idle sway atrelado ao movimento do mouse,
-  - recoil específico (pistola seca, rifle crescente, shotgun forte com shake, sniper longo + zoom),
-  - reload com translação/rotação do carregador,
-  - swap (arma desce/sobe ao trocar).
-- **Muzzle flash** vira um sprite radial com luz pontual cyan/magenta de 60ms.
-- **Shotgun** passa a disparar **8 pellets reais** com spread em cone (já existe sistema de tracers — só multiplico por arma).
-- **Sniper** ganha **scope overlay** 2D (vinheta + crosshair fino + leve respiração) ao segurar botão direito.
+- Habilitar **Lovable Cloud** e cadastrar `ELEVENLABS_API_KEY` (eu peço no início).
+- Server route `app/routes/api/public/generate-sfx.ts`: POST `{ name, prompt, duration }` → chama `https://api.elevenlabs.io/v1/sound-generation` → retorna MP3 binário. Protegida por header `x-gen-secret` (segredo separado) pra não virar endpoint aberto.
+- Server route `app/routes/api/public/generate-music.ts`: idem para `/v1/music`.
+- Script `scripts/generate-audio.ts` (rodado via `bun run`): itera sobre a lista do README, baixa cada faixa e grava em `public/audio/<name>.mp3`. Pula se já existir (idempotente). Loga progresso.
+- Sem mudança em `SoundEngine.ts`: ele já tem o fallback MP3→osc; assim que os arquivos aparecerem em `public/audio/`, o jogo passa a usá-los automaticamente.
+- Trigger de música: `playMusic('menu_theme')` no `MainMenu`, `'combat_loop'` ao iniciar Strike, `'boss_theme'` ao spawnar Titan.
 
-## 2. Inimigos — silhueta + telegraph
+Critério: tirar o som do navegador, abrir o menu e ouvir música. Atirar com cada arma soa diferente do oscilador.
 
-Refazer `Enemy3D.tsx` por classe, ainda procedural mas com silhueta única (regra da bíblia: precisa ser reconhecível só pela sombra):
+---
 
-| Classe   | Construção visual                                                               | Telegraph antes do ataque                |
-| -------- | -------------------------------------------------------------------------------- | ----------------------------------------- |
-| Rusher   | Corpo baixo inclinado, dois "braços-lâmina" magenta, trail de partículas        | Brilho magenta intensifica + zigue-zague |
-| Rifleman | Torso boxy, ombros largos, capacete com visor cyan, "rifle" preso ao corpo      | Pré-flash cyan no cano                   |
-| Sniper   | Corpo fino e alto, "antena" longa, visor amber                                   | **Laser amber** visível mira ~600ms      |
-| Titan    | Massa larga e curvada, **núcleo magenta pulsante** no peito, blindagem segmentada | Núcleo flares antes de cada ataque       |
+## Etapa 2 — 3 arenas + seleção no menu
 
-Cada um ganha:
+Objetivo: acabar com a sensação de "sempre o mesmo mapa quadrado".
 
-- animação procedural de andar (passos via senoide nos pés),
-- reação ao dano (flash branco + leve knockback),
-- animação de morte (colapso + dissolve emissive cyan→preto em 400ms),
-- partículas de impacto na cor da classe.
+- Novo arquivo `src/game-app/data/arenas.ts` exportando 3 layouts:
+  - **Containment Block** (atual, retrabalhado) — corredor central + alcovas.
+  - **Reactor Ring** — arena circular com núcleo magenta no centro, 4 colunas.
+  - **Server Causeway** — corredor longo com racks de servidor laterais.
+  - Cada arena: `{ id, name, mapData: number[][], spawnPoints: {x,y}[], playerSpawn: {x,y,angle}, propSeed: number, accent: 'cyan'|'magenta'|'amber' }`.
+- `World.tsx` aceita `arena` como prop e usa `propSeed` pra distribuir barris/containers determinísticos.
+- Substitui spawn aleatório em célula livre por `spawnPoints` da arena (round-robin embaralhado por wave).
+- `MainMenu.tsx`: ao clicar Strike, abrir submenu de seleção de arena (3 cards usando o token `--arena-panel`, com nome + acento + miniatura procedural). Persiste última escolha em `persistence.ts`.
+- `GameApp.tsx`: aceita arena selecionada; reseta player, mapData e spawn points ao iniciar.
 
-**Boss Titan** ganha **3 fases**:
-1. Tiros pesados de núcleo,
-2. Investida com onda de choque (área no chão com aviso magenta),
-3. Convoca 2 Rushers ao baixar de 33% HP.
+Critério: 3 arenas jogáveis distintas, escolhíveis no menu.
 
-## 3. Mundo — desquadrar a arena
+---
 
-`World.tsx` continua usando grid lógico, mas o visual esconde o grid:
+## Etapa 3 — Objetivos por wave
 
-- **Módulos de parede** sci-fi compostos (painel central + vinco + faixa cyan emissive nas bordas) substituem cubos lisos.
-- **Piso** ganha grid cyan sutil (`--arena-grid`), decals de hazard magenta nas zonas de spawn, e variação de brilho.
-- **Props variados**: 3 tipos de barril (cilindro segmentado), 2 tipos de container, cabos, tubulações, sinalização amber. Distribuição com semente fixa por mapa pra ficar consistente.
-- **Iluminação**: ambiente baixo, 2 luzes direcionais frias + spots magenta nas zonas centrais. Fog azul-escuro pra dar profundidade.
-- **Skybox/back wall** com gradiente cyan→magenta→preto pintado em `<color>` + `<fog>` do R3F.
-- **Spawn points manuais** por arena (substitui spawn aleatório em célula livre) — encontros mais legíveis.
-- **Três variações de arena** prontas (Containment Block / Reactor Ring / Server Causeway), selecionáveis no menu de Strike. Mesma lógica de grid, paletas de props e layout diferentes.
+Objetivo: tirar o "mata onda → mata onda" como única loop.
 
-## 4. VFX globais
+- Tipo `WaveObjective` em `game/types.ts`:
+  - `eliminate` (atual — mata todos),
+  - `defend` (proteger núcleo central por X segundos; núcleo tem HP, inimigos miram nele),
+  - `hack` (player precisa ficar dentro de zona marcada por X segundos; barra de progresso pausa se sair),
+  - `extract` (após matar X inimigos, ir até zona de extração antes do timer).
+- Novo arquivo `src/game-app/game/objectives.ts`: definição de cada objetivo, lógica de tick, condição de vitória/derrota.
+- `constants.ts`: tabela de waves passa a ter `objective: WaveObjective` (ex: wave 1 elim, wave 2 hack, wave 3 elim, wave 4 defend, wave 5 boss elim, wave 6 extract...).
+- HUD: novo painel "OBJECTIVE" no topo central usando tokens neon (substitui a mensagem genérica de wave). Mostra tipo + progresso + timer.
+- Boss wave continua `eliminate` (o boss já é o desafio).
 
-- **Tracers** ficam mais finos com bloom-look (cilindro emissive + sprite no fim).
-- **Hit spark**: 6 partículas radiais na cor do alvo + flash de 80ms.
-- **Decal de tiro** nas paredes (plane com textura procedural, dura 5s e some).
-- **Dano direcional**: vinheta vermelha do lado do impacto, 200ms.
-- **Kill confirm**: pulse magenta no crosshair + tick sonoro (item 5).
-- **Tela tremendo** com curva controlada (shake amplitude por arma).
+Critério: jogando 6 waves seguidas, vejo 4 tipos diferentes de objetivo com HUD próprio.
 
-## 5. Áudio real (ElevenLabs)
+---
 
-Substitui os osciladores do `SoundEngine.ts` por arquivos MP3 gerados sob demanda e cacheados.
+## Etapa 4 — VFX pendentes da rodada 3
 
-Arquitetura:
+Objetivo: pequenos polimentos visíveis que ficaram de fora.
 
-- Server route `app/routes/api/public/sfx.ts` chama ElevenLabs Sound Effects.
-- Server route `app/routes/api/public/music.ts` chama ElevenLabs Music.
-- Script `scripts/generate-audio.ts` rodado uma vez gera **todos** os SFX da lista abaixo e salva em `public/audio/`. Em runtime o jogo só consome os arquivos estáticos (sem custo por partida).
-- `SoundEngine.ts` vira uma fina camada de `HTMLAudioElement` pool com mixagem por categoria (sfx / music / ui) e fallback pros osciladores se um arquivo faltar.
+- **Bullet decals**: ao tracer bater em parede, spawnar plane com textura procedural circular emissive cyan, dura 5s e fade-out. Cap em 30 simultâneos (FIFO).
+- **Dano direcional**: novo overlay `DamageVignette.tsx` em `GameApp.tsx`. Quando player toma dano, calcular ângulo do agressor vs `player.angle`, mostrar gradiente radial vermelho (`--neon-danger`) do lado correto, fade 200ms.
+- **Scope do sniper**: ao apertar botão direito com sniper equipado, overlay 2D com vinheta preta, círculo central transparente, crosshair fino cyan + leve "respiração" (scale 1±0.005 a 0.5Hz). FOV da câmera vai de 75 → 35.
 
-SFX a gerar (15 arquivos):
+Critério: levar tiro mostra de onde veio, sniper tem mira de verdade, paredes ficam marcadas.
 
-`pistol_shot`, `rifle_shot`, `shotgun_shot`, `sniper_shot`, `reload_short`, `reload_long`, `enemy_hit`, `enemy_death`, `boss_roar`, `boss_phase`, `pickup_health`, `pickup_ammo`, `ui_click`, `ui_hover`, `wave_start`.
+---
 
-Música (3 faixas, ~60s loop cada):
+## Etapa 5 — Refator técnico de `GameApp.tsx`
 
-`menu_theme` (sintetizador frio, BPM 90), `combat_loop` (drum'n'bass agressivo cyan/magenta, BPM 140), `boss_theme` (industrial pesado, BPM 120).
+Objetivo: tirar `// @ts-nocheck` e quebrar o monólito sem mudar gameplay.
 
-> Requer **Lovable Cloud habilitado** + secret `ELEVENLABS_API_KEY`. Eu peço a habilitação no início da execução; se você recusar, o áudio fica sem ser substituído e o resto da rodada continua.
+- Quebrar em hooks dedicados em `src/game-app/game/systems/`:
+  - `useInputSystem.ts` — teclado, mouse, mobile controls.
+  - `useWaveSystem.ts` — spawn, progressão, objetivos.
+  - `useEnemyAI.ts` — movimento e ataque dos inimigos.
+  - `useCombatSystem.ts` — disparo, dano, hit detection.
+  - `usePickupSystem.ts` — drop e coleta.
+  - `useGameLoop.ts` — orquestra os ticks.
+- `GameApp.tsx` vira só composição de hooks + render (~200 linhas vs ~2000 atual).
+- Tipar tudo: remover `// @ts-nocheck` de `GameApp.tsx`, `GameScene.tsx`, `Enemy3D.tsx`, `World.tsx`, `Particles3D.tsx`, `Tracers3D.tsx`, `SoundEngine.ts`. Tipos vivem em `game/types.ts`.
+- Sem mudança de comportamento — a rodada é puramente técnica. Validação: jogar 3 waves em cada arena e confirmar que nada quebrou.
 
-## 6. HUD — só limpeza pontual
+Critério: `tsc --noEmit` passa sem `@ts-nocheck` nos arquivos do `game-app`.
 
-Sem refator pesado (isso é a rodada 2 que ficou pra depois). Só:
+---
 
-- Remover textos duplicados da barra superior (linha "Arena Live" fica, "Protocol Active" sai).
-- Aplicar tokens neon (`text-neon-cyan`, `bg-arena-panel`) onde hoje tem `bg-slate-900/80` literal nos painéis principais.
-- Indicador de dano direcional (citado no item 4) entra como overlay novo.
+## Detalhes técnicos
 
-## 7. Detalhes técnicos
+```text
+Arquivos novos
+├── app/routes/api/public/generate-sfx.ts
+├── app/routes/api/public/generate-music.ts
+├── scripts/generate-audio.ts
+├── public/audio/*.mp3                       (gerados)
+├── src/game-app/data/arenas.ts
+├── src/game-app/game/objectives.ts
+├── src/game-app/components/menu/ArenaSelect.tsx
+├── src/game-app/components/hud/ObjectivePanel.tsx
+├── src/game-app/components/hud/DamageVignette.tsx
+├── src/game-app/components/hud/SniperScope.tsx
+├── src/game-app/components/game/BulletDecals.tsx
+└── src/game-app/game/systems/
+    ├── useInputSystem.ts
+    ├── useWaveSystem.ts
+    ├── useEnemyAI.ts
+    ├── useCombatSystem.ts
+    ├── usePickupSystem.ts
+    └── useGameLoop.ts
 
-- Arquivos novos:
-  - `src/game-app/components/game/WeaponHands.tsx`
-  - `src/game-app/components/game/EnemyRusher.tsx` / `Rifleman.tsx` / `Sniper.tsx` / `Titan.tsx` (e `Enemy3D.tsx` vira só um switch)
-  - `src/game-app/components/game/ArenaProps.tsx`
-  - `src/game-app/data/arenas.ts` (3 layouts + spawn points)
-  - `src/game-app/game/audio/AudioPool.ts`
-  - `app/routes/api/public/sfx.ts`, `app/routes/api/public/music.ts`
-  - `scripts/generate-audio.ts`
-  - `public/audio/` (gerado)
-- Arquivos editados:
-  - `Weapon3D.tsx` (refeito)
-  - `World.tsx` (props + iluminação + fog)
-  - `GameApp.tsx` (limpeza pontual + integração de spawn points + scope overlay + dano direcional)
-  - `SoundEngine.ts` (vira wrapper do AudioPool)
-  - `styles.css` (sem mudanças, tokens já existem)
-- **Sem** mexer em: progressão, upgrades, balance numérico, lógica de wave, persistência, controles mobile, refator de `GameApp.tsx`. Tudo isso fica pras próximas rodadas combinadas (refator técnico + objetivos por wave + mobile refinement).
+Arquivos editados
+├── src/game-app/GameApp.tsx                 (composição + tirar @ts-nocheck)
+├── src/game-app/components/menu/MainMenu.tsx (entry para ArenaSelect + música)
+├── src/game-app/components/game/World.tsx    (aceita arena prop)
+├── src/game-app/components/game/GameScene.tsx
+├── src/game-app/game/constants.ts            (waves + objectives)
+├── src/game-app/game/types.ts                (WaveObjective)
+└── src/game-app/game/persistence.ts          (lastArena)
+```
 
-## 8. O que NÃO entra nesta rodada (consciente)
+## Fora desta rodada
 
-- Quebrar o `GameApp.tsx` em sistemas (rodada 2 técnica).
-- Tirar `// @ts-nocheck`.
-- Converter PNGs grandes pra WebP em massa.
-- Objetivos por wave além de "kill all".
-- Tutorial.
-- Aim assist e refino mobile.
 - Modelos `.glb` externos.
+- Tutorial in-game.
+- Aim assist e refino mobile.
+- Conversão WebP em massa.
+- Novas armas / inimigos / progressão.
 
-## 9. Risco e mitigação
+## Riscos
 
-- **ElevenLabs sem API key** → áudio cai em fallback de oscilador (jogo continua jogável). Aviso no início.
-- **Performance com mais geometria/luzes** → uso `instancedMesh` pra props repetidos e mantenho shadows desligadas. Se o FPS cair, primeira coisa a cortar é fog volumétrico e segundo nível de detalhe dos inimigos distantes.
-- **`Weapon3D.tsx` é central, refazê-lo pode quebrar disparo** → mantenho a mesma API (`fire()`, `reload()`, `swap()`) e refaço só o componente visual; lógica de dano fica intocada.
+- **ElevenLabs sem chave** → etapa 1 fica pendente, etapas 2-5 seguem normais (osciladores continuam tocando).
+- **Refator etapa 5 é grande** → faço por sistema, commitando funcional a cada hook extraído. Se algo regredir, dá pra reverter sistema por sistema.
+- **Performance com decals + 3 arenas + objetivos** → cap em 30 decals, `instancedMesh` em props repetidos, perfilo após etapa 4.
 
-## 10. Critério de "pronto"
+## Critério final
 
-Ao final da rodada, abrindo o jogo:
-1. Menu mostra "PROTOCOL DOC" com mock-arena de fundo + música tema.
-2. Iniciar Strike → escolho 1 das 3 arenas.
-3. A arma na minha mão tem braços, recoil real, e cada uma soa diferente.
-4. Cada inimigo é reconhecível pela silhueta e tem telegraph antes de atacar.
-5. Boss tem 3 fases visíveis.
-6. Tomar dano mostra de qual lado veio.
-7. Tudo soa como um shooter, não como um sintetizador de teste.
+Abrir o jogo, escolher uma das 3 arenas, ouvir música tema, jogar 6 waves variadas (elim/hack/defend/boss/extract), tomar dano e ver de onde veio, atirar com sniper e ver scope, terminar a partida sem `@ts-nocheck` no console de build.
