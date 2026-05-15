@@ -409,7 +409,14 @@ export default function App() {
     
     waveRef.current = waveNum;
     isSpawningRef.current = true;
-    
+
+    // Initialize objective for this wave
+    const objDef = getWaveObjective(waveNum, currentArenaRef.current);
+    const objRuntime = createRuntime(objDef);
+    objectiveRef.current = objRuntime;
+    setObjectiveSnapshot({ ...objRuntime });
+    setWaveMessage(`WAVE ${waveNum} · ${objDef.label.toUpperCase()}`);
+
     // Gradual spawning
     const count = waveNum === 1 ? 3 : 3 + waveNum * 2;
     let spawnedCount = 0;
