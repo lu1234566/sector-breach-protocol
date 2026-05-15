@@ -56,6 +56,7 @@ import {
 } from './game/persistence';
 import { clamp } from './game/helpers';
 import { sounds } from './game/SoundEngine';
+import { useInputSystem } from './game/systems/useInputSystem';
 
 
 // --- Main Component ---
