@@ -393,70 +393,21 @@ export default function App() {
   const decals = useRef<WallDecal[]>([]);
   const nextDecalId = useRef(0);
 
-  const spawnWave = (waveNum: number) => {
-    if (spawnIntervalRef.current) {
-      clearInterval(spawnIntervalRef.current);
-      spawnIntervalRef.current = null;
-    }
-    if (waveTransitionTimeoutRef.current) {
-      clearTimeout(waveTransitionTimeoutRef.current);
-      waveTransitionTimeoutRef.current = null;
-    }
-    
-    isWaveTransitionRef.current = true;
-    // (waveMessage set after objective init below)
-    
-    waveTransitionTimeoutRef.current = setTimeout(() => {
-      setWaveMessage('');
-      isWaveTransitionRef.current = false;
-      waveTransitionTimeoutRef.current = null;
-    }, 3000) as unknown as number;
-    
-    waveRef.current = waveNum;
-    isSpawningRef.current = true;
-
-    // Initialize objective for this wave
-    const objDef = getWaveObjective(waveNum, currentArenaRef.current);
-    const objRuntime = createRuntime(objDef);
-    objectiveRef.current = objRuntime;
-    setObjectiveSnapshot({ ...objRuntime });
-    setWaveMessage(`WAVE ${waveNum} · ${objDef.label.toUpperCase()}`);
-
-    // Gradual spawning
-    const count = waveNum === 1 ? 3 : 3 + waveNum * 2;
-    let spawnedCount = 0;
-    spawnIntervalRef.current = setInterval(() => {
-        if (gameStateRef.current !== 'playing') {
-            if (spawnIntervalRef.current) clearInterval(spawnIntervalRef.current);
-            return;
-        }
-
-        if (spawnedCount >= count) {
-            if (spawnIntervalRef.current) {
-              clearInterval(spawnIntervalRef.current);
-              spawnIntervalRef.current = null;
-            }
-            
-            if (waveNum === 5) {
-              isSpawningRef.current = true;
-              if (bossSpawnTimeoutRef.current) clearTimeout(bossSpawnTimeoutRef.current);
-              bossSpawnTimeoutRef.current = setTimeout(() => {
-                if (gameStateRef.current === 'playing' && waveRef.current === 5) {
-                  spawnEnemies(1, 5, true);
-                  setEnemiesRemaining(prev => prev + 1);
-                }
-                isSpawningRef.current = false;
-                bossSpawnTimeoutRef.current = null;
-              }, 4000) as unknown as number;
-            } else {
-              isSpawningRef.current = false;
-            }
-            return;
-        }
-        spawnEnemies(1, waveNum);
-        spawnedCount++;
-    }, 800) as unknown as number;
-  };
+  const { spawnWave } = useWaveSystem({
+    waveRef,
+    isWaveTransitionRef,
+    isSpawningRef,
+    spawnIntervalRef,
+    waveTransitionTimeoutRef,
+    bossSpawnTimeoutRef,
+    objectiveRef,
+    currentArenaRef,
+    gameStateRef,
+    setObjectiveSnapshot,
+    setWaveMessage,
+    setEnemiesRemaining,
+    spawnEnemies: (...args) => spawnEnemies(...args),
+  });
 
   const spawnEnemies = (count: number, currentWave: number = 1, isBoss: boolean = false) => {
     const types: ('rusher' | 'rifleman' | 'sniper')[] = ['rusher', 'rifleman', 'sniper'];
