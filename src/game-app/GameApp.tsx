@@ -1453,6 +1453,7 @@ export default function App() {
               enemies={enemiesState}
               particles={particles.current}
               tracers={tracers.current}
+              decals={decals.current}
               mapData={mapDataState}
               cellSize={CELL_SIZE}
               currentWeapon={currentWeapon}
@@ -1464,6 +1465,10 @@ export default function App() {
               debugMode={DEBUG_MODE}
             />
 
+            {/* Sniper Scope Overlay */}
+            {currentWeapon === 'sniper' && (
+              <SniperScope progress={player.current.adsProgress} />
+            )}
             {/* Boss Health Bar */}
             {bossHp && (
               <div className="absolute top-16 md:top-20 left-1/2 -translate-x-1/2 w-[70vw] md:w-80 z-50 pointer-events-none">
