@@ -109,6 +109,19 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               </div>
             </motion.div>
 
+            {/* Arena selector pill */}
+            <button
+              onClick={() => { sounds.playUiClick(); setMenuView('arena'); }}
+              className={`mb-8 group flex items-center gap-3 px-5 py-2.5 rounded-full bg-slate-950/70 backdrop-blur-xl border ${accentColors[currentArena.accent].ring} ${accentColors[currentArena.accent].glow} hover:scale-[1.03] transition-all`}
+            >
+              <MapIcon size={16} className={accentColors[currentArena.accent].text} />
+              <div className="flex flex-col items-start leading-none">
+                <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/40">Deploy Sector</span>
+                <span className={`text-sm font-black uppercase italic tracking-tight ${accentColors[currentArena.accent].text}`}>{currentArena.name}</span>
+              </div>
+              <ChevronLeft size={14} className="rotate-180 text-white/40 group-hover:text-white transition-colors" />
+            </button>
+
             {/* Menu Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl px-4">
               <button 
