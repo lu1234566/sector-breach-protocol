@@ -7,17 +7,17 @@ export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
-      { title: "DOC — Tactical Wave Shooter" },
+      { title: "Protocol DOC — Neon Arena Shooter" },
       {
         name: "description",
         content:
-          "DOC: a fast, tactical 3D wave shooter. Survive procedural waves, upgrade your arsenal, and climb the leaderboard.",
+          "Protocol DOC: a fast neon arena shooter. Survive escalating waves, chain kills, and break the leaderboard.",
       },
-      { property: "og:title", content: "DOC — Tactical Wave Shooter" },
+      { property: "og:title", content: "Protocol DOC — Neon Arena Shooter" },
       {
         property: "og:description",
         content:
-          "Fast, tactical 3D wave shooter. Survive, upgrade, dominate.",
+          "Neon arena combat. Survive the waves. Break the protocol.",
       },
     ],
   }),
@@ -29,10 +29,13 @@ function Index() {
 
   if (!mounted) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black text-emerald-400 font-mono">
+      <div className="flex min-h-screen items-center justify-center bg-black font-mono">
         <div className="text-center">
-          <div className="text-2xl tracking-[0.3em]">DOC</div>
-          <div className="mt-2 text-xs opacity-60">BOOTING TACTICAL UPLINK…</div>
+          <div className="text-2xl tracking-[0.3em]">
+            <span className="text-white">PROTOCOL</span>
+            <span className="ml-2 bg-gradient-to-r from-cyan-300 to-fuchsia-400 bg-clip-text text-transparent">DOC</span>
+          </div>
+          <div className="mt-2 text-xs text-cyan-400/70">BOOTING ARENA UPLINK…</div>
         </div>
       </div>
     );

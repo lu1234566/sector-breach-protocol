@@ -1809,7 +1809,7 @@ export default function App() {
                   transition={{ delay: 0.5 }}
                   className="text-cyan-400 font-black tracking-[0.3em] md:tracking-[0.6em] uppercase mt-4 drop-shadow-md text-[10px] md:text-sm"
                  >
-                   Tactical Superiority Required
+                   Arena Reload // Choose An Augment
                  </motion.p>
                </div>
             )}
@@ -1828,7 +1828,7 @@ export default function App() {
                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-8 text-left">
                      <div>
                        <h2 className="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">Command Center</h2>
-                       <p className="text-cyan-500 text-[10px] font-bold uppercase tracking-[0.3em] mt-2 bg-cyan-500/10 px-3 py-1 rounded w-fit">Tactical Augmentation Protocol</p>
+                       <p className="text-cyan-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-2 bg-cyan-500/10 px-3 py-1 rounded w-fit">Arena Augments</p>
                      </div>
                      <div className="w-full sm:w-auto bg-slate-950 p-1 rounded-2xl border border-white/10 shadow-inner flex shrink-0">
                         <div className="bg-yellow-500 text-slate-950 px-5 py-3 rounded-xl flex items-center gap-3">
