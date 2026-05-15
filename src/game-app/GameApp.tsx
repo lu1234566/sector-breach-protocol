@@ -836,8 +836,82 @@ export default function App() {
     const now = Date.now();
     enemies.current = enemies.current.filter(e => !e.dead);
     
+    // Objective tick
+    const obj = objectiveRef.current;
+    if (obj && obj.status === 'active' && gameStateRef.current === 'playing' && !isWaveTransitionRef.current) {
+      const dtMs = TICK_RATE;
+      const px = player.current.x;
+      const py = player.current.y;
+      if (obj.zone) {
+        const dz = Math.hypot(px - obj.zone.x, py - obj.zone.y);
+        obj.inZone = dz <= obj.zone.radius;
+      }
+      if (obj.kind === 'hack' && obj.zone) {
+        if (obj.inZone) {
+          obj.timer = Math.max(0, obj.timer - dtMs);
+        }
+        const total = obj.timer === 0 ? 1 : 1 - obj.timer / 12000;
+        obj.progress = total;
+        if (obj.timer <= 0) obj.status = 'complete';
+      } else if (obj.kind === 'defend' && obj.zone) {
+        // Enemies inside the larger defense radius drain core HP
+        const drainRadius = obj.zone.radius * 2.4;
+        let drainers = 0;
+        for (const e of enemies.current) {
+          if (Math.hypot(e.x - obj.zone.x, e.y - obj.zone.y) < drainRadius) drainers++;
+        }
+        const drain = drainers * 18 * (dtMs / 1000); // 18 hp/s per enemy
+        obj.coreHp = Math.max(0, (obj.coreHp ?? 0) - drain);
+        obj.timer = Math.max(0, obj.timer - dtMs);
+        obj.progress = 1 - obj.timer / 30000;
+        if ((obj.coreHp ?? 0) <= 0) {
+          obj.status = 'failed';
+          if (!isRunEndingRef.current) {
+            isRunEndingRef.current = true;
+            setKillfeed(prev => [{ id: nextKillfeedId.current++, text: 'CORE LOST · MISSION FAILED' }, ...prev].slice(0, 5));
+            setGameState('dead');
+          }
+        } else if (obj.timer <= 0) {
+          obj.status = 'complete';
+        }
+      } else if (obj.kind === 'extract' && obj.zone) {
+        if (!obj.extractActive) {
+          if (obj.killCount >= (obj.killTarget ?? 0)) {
+            obj.extractActive = true;
+            obj.timer = 25000;
+            setKillfeed(prev => [{ id: nextKillfeedId.current++, text: 'EXTRACT ZONE ACTIVE' }, ...prev].slice(0, 5));
+          }
+          obj.progress = Math.min(1, obj.killCount / Math.max(1, obj.killTarget ?? 1)) * 0.5;
+        } else {
+          obj.timer = Math.max(0, obj.timer - dtMs);
+          obj.progress = 0.5 + 0.5 * (1 - obj.timer / 25000);
+          if (obj.inZone) {
+            obj.status = 'complete';
+          } else if (obj.timer <= 0) {
+            obj.status = 'failed';
+            if (!isRunEndingRef.current) {
+              isRunEndingRef.current = true;
+              setKillfeed(prev => [{ id: nextKillfeedId.current++, text: 'EXTRACT FAILED · MISSION ABORT' }, ...prev].slice(0, 5));
+              setGameState('dead');
+            }
+          }
+        }
+      }
+      // Sync HUD snapshot ~5x/s
+      if (now - objectiveLastSyncRef.current > 200) {
+        objectiveLastSyncRef.current = now;
+        setObjectiveSnapshot({ ...obj });
+      }
+    }
+
     // Wave Management
-    if (gameStateRef.current === 'playing' && enemies.current.length === 0 && !isSpawningRef.current && !isWaveTransitionRef.current) {
+    const objCompleteForWave = (() => {
+      const o = objectiveRef.current;
+      if (!o) return enemies.current.length === 0;
+      if (o.kind === 'eliminate') return enemies.current.length === 0;
+      return o.status === 'complete';
+    })();
+    if (gameStateRef.current === 'playing' && objCompleteForWave && !isSpawningRef.current && !isWaveTransitionRef.current) {
        if (waveRef.current >= 5) {
          if (!isRunEndingRef.current) {
            isRunEndingRef.current = true;
