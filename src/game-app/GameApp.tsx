@@ -2001,6 +2001,9 @@ export default function App() {
                   weaponUpgradeLevels={weaponUpgradeLevels}
                   setUpgradeTab={setUpgradeTab}
                   setSelectedLabWeapon={setSelectedLabWeapon}
+                  arenas={ARENAS}
+                  selectedArenaId={selectedArenaId}
+                  setSelectedArenaId={setSelectedArenaId}
                 />
               ) : (
                 <div className={`p-8 md:p-12 rounded-[2.5rem] bg-slate-900/90 border-4 backdrop-blur-2xl ${gameState === 'win' ? 'border-yellow-500 shadow-[0_0_60px_rgba(234,179,8,0.2)]' : 'border-red-600 shadow-[0_0_60px_rgba(220,38,38,0.2)]'} w-full max-w-2xl relative overflow-hidden`}>
