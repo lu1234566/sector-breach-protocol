@@ -8,9 +8,10 @@ import { Enemy3D } from './Enemy3D';
 import { Particles3D } from './Particles3D';
 import { Tracers3D } from './Tracers3D';
 import { Pickups3D } from './Pickups3D';
+import { Decals3D } from './Decals3D';
 import { Weapon3D } from '../../Weapon3D';
 
-import { Player, Enemy, Particle, Tracer, Pickup } from '../../game/types';
+import { Player, Enemy, Particle, Tracer, Pickup, WallDecal } from '../../game/types';
 
 interface GameSceneProps {
   player: React.MutableRefObject<Player>;
@@ -18,6 +19,7 @@ interface GameSceneProps {
   particles: Particle[];
   tracers: Tracer[];
   pickups: Pickup[];
+  decals?: WallDecal[];
   mapData: number[][];
   cellSize: number;
   currentWeapon: string;
