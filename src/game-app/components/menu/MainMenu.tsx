@@ -85,7 +85,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       </div>
       
       <AnimatePresence mode="wait">
-        {(menuView === 'main' || !['armory', 'difficulty', 'profile'].includes(menuView)) && (
+        {(menuView === 'main' || !['armory', 'difficulty', 'profile', 'arena'].includes(menuView)) && (
           <motion.div 
             key="main"
             initial={{ opacity: 0, scale: 0.95 }} 
