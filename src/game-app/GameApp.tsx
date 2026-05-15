@@ -1308,6 +1308,28 @@ export default function App() {
     };
   }, [gameState, currentWeapon, hp, ammo]);
 
+  const togglePointerLock = () => {
+    if (mobileMode) return;
+    if (gameContainerRef.current) {
+        if (document.pointerLockElement === gameContainerRef.current) return;
+
+        const now = Date.now();
+        if (now - pointerLockCooldownRef.current < 1200) return; // Standard cooldown ~1.2s to be safe
+        pointerLockCooldownRef.current = now;
+
+        try {
+            const promise = gameContainerRef.current.requestPointerLock();
+            if (promise && typeof (promise as any).catch === 'function') {
+                (promise as any).catch((e: Error) => {
+                    console.warn('Pointer lock request failed:', e.message);
+                });
+            }
+        } catch (err) {
+            console.warn('Pointer lock initiation error:', err);
+        }
+    }
+  };
+
   useInputSystem({
     gameState,
     gameContainerRef,
@@ -1327,29 +1349,6 @@ export default function App() {
     togglePointerLock,
     mobileMode,
   });
-
-  const togglePointerLock = () => {
-    if (mobileMode) return;
-    if (gameContainerRef.current) {
-        if (document.pointerLockElement === gameContainerRef.current) return;
-        
-        const now = Date.now();
-        if (now - pointerLockCooldownRef.current < 1200) return; // Standard cooldown ~1.2s to be safe
-        pointerLockCooldownRef.current = now;
-
-        try {
-            const promise = gameContainerRef.current.requestPointerLock();
-            // Handle browsers that return a promise
-            if (promise && typeof (promise as any).catch === 'function') {
-                (promise as any).catch((e: Error) => {
-                    console.warn('Pointer lock request failed:', e.message);
-                });
-            }
-        } catch (err) {
-            console.warn('Pointer lock initiation error:', err);
-        }
-    }
-  };
 
   return (
     <div className="relative w-full h-[100dvh] bg-slate-950 flex flex-col items-center justify-center overflow-hidden font-sans select-none pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
