@@ -159,7 +159,9 @@ export default function App() {
   const [difficulty, setDifficulty] = useState<DifficultyKey>('normal');
   const [upgradeTab, setUpgradeTab] = useState<'biological' | 'weapon'>('biological');
   const [selectedLabWeapon, setSelectedLabWeapon] = useState<WeaponType>('pistol');
-  const [menuView, setMenuView] = useState<'main' | 'armory' | 'difficulty' | 'profile'>('main');
+  const [menuView, setMenuView] = useState<'main' | 'armory' | 'difficulty' | 'profile' | 'arena'>('main');
+  const [selectedArenaId, setSelectedArenaId] = useState<string>(DEFAULT_ARENA_ID);
+  const currentArenaRef = useRef<ArenaDef>(getArenaById(DEFAULT_ARENA_ID));
 
   // Load Meta Data
   useEffect(() => {
@@ -177,6 +179,12 @@ export default function App() {
 
     const stats = loadLifetimeStats();
     if (stats) setLifetimeStats(prev => ({ ...prev, ...stats }));
+
+    const arenaId = loadArena();
+    if (arenaId) {
+      setSelectedArenaId(arenaId);
+      currentArenaRef.current = getArenaById(arenaId);
+    }
   }, []);
 
   const saveMeta = (credits: number, upgrades: UpgradeLevels | Record<string, number>, weaponUpgrades?: WeaponUpgradeLevels, lStats?: LifetimeStats) => {
