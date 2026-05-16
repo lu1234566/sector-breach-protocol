@@ -37,18 +37,17 @@ function DragonInner({ cellSize, color, healthPct, lastShot }: Props) {
   // Clone once so multiple instances don't share transforms
   const cloned = useMemo(() => {
     const c = scene.clone(true);
-    // Center on origin + scale to ~3x cell, find mesh + retint material
+    // Normalize to ~1 cell (parent applies scale=2.6 already)
     const box = new THREE.Box3().setFromObject(c);
     const size = new THREE.Vector3();
     box.getSize(size);
-    const target = cellSize * 3.2;
+    const target = cellSize * 1.0;
     const k = target / Math.max(size.x, size.y, size.z);
     c.scale.setScalar(k);
+    // Recenter on origin (parent positions the group)
     const center = new THREE.Vector3();
     box.getCenter(center);
     c.position.sub(center.multiplyScalar(k));
-    // Lift so feet touch ground
-    c.position.y += (size.y * k) / 2;
 
     c.traverse((o: any) => {
       if (o.isMesh) {
