@@ -3,6 +3,7 @@ import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Billboard } from '@react-three/drei';
+import { DragonBoss } from './DragonBoss';
 
 interface EnemyProps {
   x: number;
@@ -65,7 +66,7 @@ export function Enemy3D({
         {!isBoss && type === 'rusher' && <RusherBody cellSize={cellSize} color={tColor} lastShot={lastShot} />}
         {!isBoss && type === 'rifleman' && <RiflemanBody cellSize={cellSize} color={tColor} lastShot={lastShot} />}
         {!isBoss && type === 'sniper' && <SniperBody cellSize={cellSize} color={tColor} lastShot={lastShot} />}
-        {isBoss && <TitanBody cellSize={cellSize} color={tColor} healthPct={healthPct} lastShot={lastShot} />}
+        {isBoss && <DragonBoss cellSize={cellSize} color={tColor} healthPct={healthPct} lastShot={lastShot} />}
 
         <HealthBar cellSize={cellSize} healthPct={healthPct} isBoss={!!isBoss} />
       </group>
