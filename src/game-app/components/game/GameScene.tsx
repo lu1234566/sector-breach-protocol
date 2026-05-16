@@ -143,6 +143,7 @@ export function GameScene({
           mapData={mapData}
           recoilOffset={recoilOffset}
           screenShake={screenShake}
+          currentWeapon={currentWeapon}
         />
       </Canvas>
 
