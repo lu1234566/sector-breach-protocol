@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { useSettings, DEFAULT_SETTINGS } from '@/game-app/game/settings';
+import { useSettings, DEFAULT_SETTINGS, type QualityTier } from '@/game-app/game/settings';
 
 interface Props {
   onBack: () => void;
@@ -43,6 +43,11 @@ export function SettingsPanel({ onBack }: Props) {
           label="Invert Mouse Y"
           value={settings.invertY}
           onChange={(v) => update({ invertY: v })}
+        />
+
+        <QualityPicker
+          value={settings.quality}
+          onChange={(q) => update({ quality: q })}
         />
 
         <button
@@ -125,5 +130,49 @@ function Toggle({
         />
       </span>
     </button>
+  );
+}
+
+function QualityPicker({
+  value,
+  onChange,
+}: {
+  value: QualityTier;
+  onChange: (q: QualityTier) => void;
+}) {
+  const options: { id: QualityTier; label: string; hint: string }[] = [
+    { id: 'auto', label: 'Auto', hint: 'Detect GPU' },
+    { id: 'low', label: 'Low', hint: 'Chromebook' },
+    { id: 'medium', label: 'Med', hint: 'Laptop' },
+    { id: 'high', label: 'High', hint: 'Desktop GPU' },
+  ];
+  return (
+    <div>
+      <div className="text-[10px] text-cyan-300/90 uppercase tracking-widest font-bold mb-2">
+        Graphics Quality
+      </div>
+      <div className="grid grid-cols-4 gap-1.5">
+        {options.map((o) => {
+          const active = value === o.id;
+          return (
+            <button
+              key={o.id}
+              onClick={() => onChange(o.id)}
+              className={`flex flex-col items-center py-2 rounded border transition-colors ${
+                active
+                  ? 'border-cyan-400 bg-cyan-400/15 text-cyan-200'
+                  : 'border-slate-700 bg-slate-900/50 text-slate-400 hover:border-cyan-500/50 hover:text-cyan-300'
+              }`}
+            >
+              <span className="text-[11px] font-bold uppercase tracking-wider">{o.label}</span>
+              <span className="text-[8px] uppercase tracking-widest opacity-70">{o.hint}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="text-[9px] text-slate-500 uppercase tracking-widest mt-2">
+        Restart match for full effect
+      </div>
+    </div>
   );
 }
