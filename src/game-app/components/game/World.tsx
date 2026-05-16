@@ -1,6 +1,15 @@
 // @ts-nocheck
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
+import { useTexture } from '@react-three/drei';
+
+const TEX_BASE = '/assets/textures';
+const TEX_URLS = {
+  wallA: `${TEX_BASE}/wall_blue.webp`,
+  wallB: `${TEX_BASE}/wall_concrete.webp`,
+  floorMain: `${TEX_BASE}/floor_concrete.webp`,
+  floorAccent: `${TEX_BASE}/floor_rubber.webp`,
+};
 
 interface MapProps {
   mapData: number[][];
@@ -25,28 +34,44 @@ export function World({ mapData, cellSize }: MapProps) {
   const mapWidth = mapData[0].length * cellSize;
   const mapHeight = mapData.length * cellSize;
 
+  const tex = useTexture(TEX_URLS) as Record<string, THREE.Texture>;
+  useMemo(() => {
+    for (const k of Object.keys(tex)) {
+      const t = tex[k];
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 4;
+      if (k.startsWith('floor')) t.repeat.set(mapWidth / 6, mapHeight / 6);
+      else t.repeat.set(1.2, 1.2);
+    }
+  }, [tex, mapWidth, mapHeight]);
+
   /* ----------------------------- Materials ----------------------------- */
   const mats = useMemo(
     () => ({
       wallDark: new THREE.MeshStandardMaterial({
-        color: '#0d1422',
+        color: '#3a4a6c',
+        map: tex.wallA,
         metalness: 0.55,
         roughness: 0.55,
       }),
       wallMid: new THREE.MeshStandardMaterial({
-        color: '#1a2335',
+        color: '#4a5a7c',
+        map: tex.wallA,
         metalness: 0.5,
         roughness: 0.55,
       }),
       panelA: new THREE.MeshStandardMaterial({
-        color: '#222c44',
-        metalness: 0.5,
-        roughness: 0.55,
+        color: '#5a6584',
+        map: tex.wallB,
+        metalness: 0.45,
+        roughness: 0.6,
       }),
       panelB: new THREE.MeshStandardMaterial({
-        color: '#1d2742',
-        metalness: 0.55,
-        roughness: 0.5,
+        color: '#4a5474',
+        map: tex.wallB,
+        metalness: 0.5,
+        roughness: 0.55,
       }),
       panelTrim: new THREE.MeshStandardMaterial({
         color: '#0a1020',
@@ -127,17 +152,20 @@ export function World({ mapData, cellSize }: MapProps) {
         side: THREE.DoubleSide,
       }),
       tilePlate: new THREE.MeshStandardMaterial({
-        color: '#0f1726',
+        color: '#5a6580',
+        map: tex.floorAccent,
         metalness: 0.35,
         roughness: 0.8,
       }),
       tilePlateAlt: new THREE.MeshStandardMaterial({
-        color: '#121a2d',
+        color: '#4a5470',
+        map: tex.floorAccent,
         metalness: 0.4,
         roughness: 0.75,
       }),
       floor: new THREE.MeshStandardMaterial({
-        color: '#080c16',
+        color: '#5a6480',
+        map: tex.floorMain,
         metalness: 0.3,
         roughness: 0.9,
       }),
@@ -167,7 +195,7 @@ export function World({ mapData, cellSize }: MapProps) {
         roughness: 0.45,
       }),
     }),
-    [],
+    [tex],
   );
 
   /* ----------------------------- Face decoration ----------------------------- */
