@@ -199,8 +199,6 @@ export function tickEnemyAI(deps: EnemyAITickDeps): void {
                 setWaveMessage('');
                 isWaveTransitionRef.current = false;
                 keys.current = {};
-                joystick.current.active = false;
-                touchLook.current.active = false;
               }
               return newHp;
             });
