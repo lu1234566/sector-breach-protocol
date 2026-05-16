@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
+import { SettingsPanel } from './SettingsPanel';
 
 interface Props {
   onResume: () => void;
@@ -7,6 +9,12 @@ interface Props {
 }
 
 export function PauseMenu({ onResume, onRestart, onExit }: Props) {
+  const [showSettings, setShowSettings] = useState(false);
+
+  if (showSettings) {
+    return <SettingsPanel onBack={() => setShowSettings(false)} />;
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -34,8 +42,8 @@ export function PauseMenu({ onResume, onRestart, onExit }: Props) {
           Restart Mission
         </button>
         <button
-          disabled
-          className="py-3 rounded-md bg-slate-900/50 border border-slate-700/50 text-slate-600 font-black uppercase tracking-widest text-xs cursor-not-allowed"
+          onClick={() => setShowSettings(true)}
+          className="py-3 rounded-md bg-slate-800/70 border border-cyan-500/20 text-white font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-colors"
         >
           Settings
         </button>
