@@ -20,7 +20,7 @@ interface UseInputSystemArgs {
   reload: () => void;
   handleShoot: () => void;
   togglePointerLock: () => void;
-  mobileMode: boolean;
+  onPauseToggle: () => void;
 }
 
 /**
