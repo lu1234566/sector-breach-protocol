@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Billboard } from '@react-three/drei';
 import { DragonBoss } from './DragonBoss';
+import { EnemyMesh } from './EnemyMesh';
 
 interface EnemyProps {
   x: number;
@@ -63,9 +64,7 @@ export function Enemy3D({
   return (
     <group position={[x, (cellSize / 2) * (isBoss ? 3 : 1), y]} scale={isBoss ? 2.6 : 1}>
       <group ref={root}>
-        {!isBoss && type === 'rusher' && <RusherBody cellSize={cellSize} color={tColor} lastShot={lastShot} />}
-        {!isBoss && type === 'rifleman' && <RiflemanBody cellSize={cellSize} color={tColor} lastShot={lastShot} />}
-        {!isBoss && type === 'sniper' && <SniperBody cellSize={cellSize} color={tColor} lastShot={lastShot} />}
+        {!isBoss && <EnemyMesh type={type} cellSize={cellSize} color={tColor} lastShot={lastShot} />}
         {isBoss && <DragonBoss cellSize={cellSize} color={tColor} healthPct={healthPct} lastShot={lastShot} />}
 
         <HealthBar cellSize={cellSize} healthPct={healthPct} isBoss={!!isBoss} />
