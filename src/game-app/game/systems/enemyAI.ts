@@ -31,8 +31,6 @@ interface EnemyAITickDeps {
   waveTransitionTimeoutRef: React.MutableRefObject<number | null>;
   bossSpawnTimeoutRef: React.MutableRefObject<number | null>;
   keys: React.MutableRefObject<Record<string, boolean>>;
-  joystick: React.MutableRefObject<{ active: boolean }>;
-  touchLook: React.MutableRefObject<{ active: boolean }>;
   // Stats / setters
   difficulty: keyof typeof DIFFICULTIES;
   stats: RunStats;
