@@ -82,9 +82,9 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
     const swayY = Math.cos(t * 1.1) * 0.018;
 
     // ADS lerp
-    const targetX = isAds ? 0 : 0.85;
-    const targetY = isAds ? -0.42 : -1.15 + swapRef.current.y;
-    const targetZ = isAds ? 2.6 : 1.2;
+    const targetX = isAds ? 0 : 0.95;
+    const targetY = isAds ? -0.38 : -0.85 + swapRef.current.y;
+    const targetZ = isAds ? 2.8 : 1.6;
 
     group.current.position.x = THREE.MathUtils.lerp(group.current.position.x, targetX + swayX, 0.16);
     group.current.position.y = THREE.MathUtils.lerp(
