@@ -195,7 +195,7 @@ export function World({ mapData, cellSize }: MapProps) {
         roughness: 0.45,
       }),
     }),
-    [],
+    [tex],
   );
 
   /* ----------------------------- Face decoration ----------------------------- */
