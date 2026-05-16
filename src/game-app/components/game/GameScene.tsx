@@ -10,6 +10,8 @@ import { Tracers3D } from './Tracers3D';
 import { Pickups3D } from './Pickups3D';
 import { Decals3D } from './Decals3D';
 import { Weapon3D } from '../../Weapon3D';
+import { resolveQuality } from '../../game/quality';
+import { useSettings } from '../../game/settings';
 
 import { Player, Enemy, Particle, Tracer, Pickup, WallDecal } from '../../game/types';
 
@@ -99,12 +101,14 @@ export function GameScene({
   debugMode,
 }: GameSceneProps) {
   const now = Date.now();
+  const [settingsState] = useSettings();
+  const quality = resolveQuality(settingsState.quality);
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas
-        shadows={false}
-        dpr={[0.6, 1]}
-        gl={{ antialias: false, powerPreference: 'high-performance' }}
+        shadows={quality.shadows !== false}
+        dpr={[quality.pixelRatio * 0.75, quality.pixelRatio]}
+        gl={{ antialias: quality.tier === 'high', powerPreference: 'high-performance' }}
       >
         <PerspectiveCamera makeDefault fov={75} />
         {/* Neon arena ambience */}
