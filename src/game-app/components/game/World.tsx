@@ -1,6 +1,15 @@
 // @ts-nocheck
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
+import { useTexture } from '@react-three/drei';
+
+const TEX_BASE = '/assets/textures';
+const TEX_URLS = {
+  wallA: `${TEX_BASE}/wall_blue.webp`,
+  wallB: `${TEX_BASE}/wall_concrete.webp`,
+  floorMain: `${TEX_BASE}/floor_concrete.webp`,
+  floorAccent: `${TEX_BASE}/floor_rubber.webp`,
+};
 
 interface MapProps {
   mapData: number[][];
@@ -24,6 +33,18 @@ const isWall = (c?: number) => c === 1; // visual occluder
 export function World({ mapData, cellSize }: MapProps) {
   const mapWidth = mapData[0].length * cellSize;
   const mapHeight = mapData.length * cellSize;
+
+  const tex = useTexture(TEX_URLS) as Record<string, THREE.Texture>;
+  useMemo(() => {
+    for (const k of Object.keys(tex)) {
+      const t = tex[k];
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 4;
+      if (k.startsWith('floor')) t.repeat.set(mapWidth / 6, mapHeight / 6);
+      else t.repeat.set(1.2, 1.2);
+    }
+  }, [tex, mapWidth, mapHeight]);
 
   /* ----------------------------- Materials ----------------------------- */
   const mats = useMemo(
