@@ -31,8 +31,6 @@ interface EnemyAITickDeps {
   waveTransitionTimeoutRef: React.MutableRefObject<number | null>;
   bossSpawnTimeoutRef: React.MutableRefObject<number | null>;
   keys: React.MutableRefObject<Record<string, boolean>>;
-  joystick: React.MutableRefObject<{ active: boolean }>;
-  touchLook: React.MutableRefObject<{ active: boolean }>;
   // Stats / setters
   difficulty: keyof typeof DIFFICULTIES;
   stats: RunStats;
@@ -70,7 +68,7 @@ export function tickEnemyAI(deps: EnemyAITickDeps): void {
     tracers, nextTracerId, nextDamageId, screenShake,
     waveRef, gameStateRef, isRunEndingRef, isWaveTransitionRef,
     spawnIntervalRef, reloadTimeoutRef, waveTransitionTimeoutRef, bossSpawnTimeoutRef,
-    keys, joystick, touchLook,
+    keys,
     difficulty, stats, score, lifetimeStats, upgradeLevels, weaponUpgradeLevels,
     setHp, setEarnedCredits, setLifetimeStats, setTacticalCredits,
     setGameState, setIsReloading, setWaveMessage, setDamageIndicators,
@@ -201,8 +199,6 @@ export function tickEnemyAI(deps: EnemyAITickDeps): void {
                 setWaveMessage('');
                 isWaveTransitionRef.current = false;
                 keys.current = {};
-                joystick.current.active = false;
-                touchLook.current.active = false;
               }
               return newHp;
             });

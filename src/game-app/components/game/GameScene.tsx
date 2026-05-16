@@ -93,14 +93,14 @@ export function GameScene({
       >
         <PerspectiveCamera makeDefault fov={75} />
         {/* Neon arena ambience */}
-        <color attach="background" args={['#05060f']} />
-        <fog attach="fog" args={['#0a0f1f', cellSize * 8, cellSize * 28]} />
+        <color attach="background" args={['#0a0e1a']} />
+        <fog attach="fog" args={['#0f1730', cellSize * 12, cellSize * 34]} />
 
-        <ambientLight intensity={0.3} color="#1a223a" />
-        <hemisphereLight intensity={0.45} groundColor="#020617" color="#22d3ee" />
-        <directionalLight position={[20, 50, 10]} intensity={0.6} color="#bae6fd" />
+        <ambientLight intensity={0.85} color="#2d3a55" />
+        <hemisphereLight intensity={0.7} groundColor="#0a0f1e" color="#7dd3fc" />
+        <directionalLight position={[20, 50, 10]} intensity={0.95} color="#e0f2fe" />
         {/* Subtle rim from magenta side */}
-        <directionalLight position={[-20, 30, -10]} intensity={0.35} color="#e879f9" />
+        <directionalLight position={[-20, 30, -10]} intensity={0.45} color="#f0abfc" />
 
         <World mapData={mapData} cellSize={cellSize} />
 

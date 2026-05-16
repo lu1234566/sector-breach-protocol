@@ -20,7 +20,7 @@ interface UseInputSystemArgs {
   reload: () => void;
   handleShoot: () => void;
   togglePointerLock: () => void;
-  mobileMode: boolean;
+  onPauseToggle: () => void;
 }
 
 /**
@@ -32,11 +32,12 @@ export function useInputSystem(args: UseInputSystemArgs) {
     gameState, gameContainerRef, pointerLockCooldownRef,
     keys, player, ammoRef, currentWeapon, weaponMags, reloadTimeoutRef,
     setWeaponMags, setCurrentWeapon, setAmmo, setIsReloading,
-    reload, handleShoot, togglePointerLock,
+    reload, handleShoot, togglePointerLock, onPauseToggle,
   } = args;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onPauseToggle(); return; }
       keys.current[e.key.toLowerCase()] = true;
       if (e.key === 'r') reload();
       if (['1', '2', '3', '4'].includes(e.key)) {
