@@ -36,12 +36,14 @@ function PlayerController({
   mapData,
   recoilOffset,
   screenShake,
+  currentWeapon,
 }: {
   player: React.MutableRefObject<Player>;
   cellSize: number;
   mapData: number[][];
   recoilOffset: number;
   screenShake: number;
+  currentWeapon: string;
 }) {
   const { camera } = useThree();
   const mapWidth = mapData[0].length * cellSize;
@@ -62,6 +64,19 @@ function PlayerController({
     const visualPitch = THREE.MathUtils.clamp(player.current.pitch - recoilPitch, -25, 25);
     camera.rotation.x = THREE.MathUtils.degToRad(visualPitch) + shakeY;
     camera.rotation.z = shakeX * 0.3;
+
+    // Per-weapon FOV — sniper zooms hard on ADS
+    const ads = player.current.adsProgress;
+    const baseFov = 75;
+    let adsFov = 60;
+    if (currentWeapon === 'sniper') adsFov = 22;
+    else if (currentWeapon === 'rifle') adsFov = 55;
+    const targetFov = baseFov + (adsFov - baseFov) * ads;
+    const cam = camera as THREE.PerspectiveCamera;
+    if ((cam as any).isPerspectiveCamera) {
+      cam.fov = THREE.MathUtils.lerp(cam.fov, targetFov, 0.18);
+      cam.updateProjectionMatrix();
+    }
   });
 
   return null;
@@ -128,6 +143,7 @@ export function GameScene({
           mapData={mapData}
           recoilOffset={recoilOffset}
           screenShake={screenShake}
+          currentWeapon={currentWeapon}
         />
       </Canvas>
 
