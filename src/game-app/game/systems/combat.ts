@@ -79,117 +79,134 @@ export function createHandleShoot(deps: CombatDeps) {
     screenShake.current = Math.min(15, screenShake.current + recoilForce / 4);
 
     const spreadMult = 1 - (weaponLevels.stability * 0.05);
-    const spread = (Math.random() - 0.5) * weapon.spread * (1 - player.current.adsProgress * 0.8) * spreadMult;
-    const shotAngle = player.current.angle + spread;
-    const cos = Math.cos(shotAngle);
-    const sin = Math.sin(shotAngle);
+    const damageMult = 1 + (weaponLevels.damage * 0.05);
 
-    let hitDist = weapon.range;
-    let hitSomething = false;
+    // Shotgun fires multiple pellets; other weapons single ray.
+    const isShotgun = weapon.type === 'shotgun';
+    const pelletCount = isShotgun ? 8 : 1;
+    const perPelletDamage = (weapon.damage * damageMult) / pelletCount;
+    // Per-pellet spread is wider for shotgun (the cone), narrow for others
+    const pelletSpread = isShotgun
+      ? weapon.spread * 1.4
+      : weapon.spread * (1 - player.current.adsProgress * 0.8) * spreadMult;
 
-    for (let d = 0; d < weapon.range; d += 8) {
-      const tx = Math.floor((player.current.x + cos * d) / CELL_SIZE);
-      const ty = Math.floor((player.current.y + sin * d) / CELL_SIZE);
-      if (tx >= 0 && tx < mapData.current[0].length && ty >= 0 && ty < mapData.current.length) {
-        const cell = mapData.current[ty][tx];
-        if (cell === 3) {
-          if (mapData.current[ty]) mapData.current[ty][tx] = 0;
-          setMapDataState([...mapData.current.map(row => [...row])]);
-          spawnParticles(player.current.x + cos * d, player.current.y + sin * d, 'explosion');
-          sounds.playShot('sniper');
-          hitDist = d;
-          hitSomething = true;
-          break;
-        } else if (cell === 1 || cell === 2) {
-          hitDist = d;
-          const hx = player.current.x + cos * d;
-          const hy = player.current.y + sin * d;
-          const localX = hx - (tx + 0.5) * CELL_SIZE;
-          const localY = hy - (ty + 0.5) * CELL_SIZE;
-          let nx = 0, ny = 0;
-          if (Math.abs(localX) > Math.abs(localY)) nx = Math.sign(localX) || 1;
-          else ny = Math.sign(localY) || 1;
-          decals.current.push({
-            id: nextDecalId.current++,
-            x: hx, y: hy, nx, ny,
-            born: Date.now(),
-            size: weapon.type === 'shotgun' ? 7 : weapon.type === 'sniper' ? 10 : 5,
-          });
-          if (decals.current.length > 40) {
-            decals.current.splice(0, decals.current.length - 40);
+    let anyHit = false;
+
+    for (let p = 0; p < pelletCount; p++) {
+      const spread = (Math.random() - 0.5) * pelletSpread;
+      const shotAngle = player.current.angle + spread;
+      const cos = Math.cos(shotAngle);
+      const sin = Math.sin(shotAngle);
+
+      let hitDist = weapon.range;
+      let pelletHit = false;
+
+      for (let d = 0; d < weapon.range; d += 8) {
+        const tx = Math.floor((player.current.x + cos * d) / CELL_SIZE);
+        const ty = Math.floor((player.current.y + sin * d) / CELL_SIZE);
+        if (tx >= 0 && tx < mapData.current[0].length && ty >= 0 && ty < mapData.current.length) {
+          const cell = mapData.current[ty][tx];
+          if (cell === 3) {
+            if (mapData.current[ty]) mapData.current[ty][tx] = 0;
+            setMapDataState([...mapData.current.map(row => [...row])]);
+            spawnParticles(player.current.x + cos * d, player.current.y + sin * d, 'explosion');
+            sounds.playShot('sniper');
+            hitDist = d;
+            pelletHit = true;
+            break;
+          } else if (cell === 1 || cell === 2) {
+            hitDist = d;
+            const hx = player.current.x + cos * d;
+            const hy = player.current.y + sin * d;
+            const localX = hx - (tx + 0.5) * CELL_SIZE;
+            const localY = hy - (ty + 0.5) * CELL_SIZE;
+            let nx = 0, ny = 0;
+            if (Math.abs(localX) > Math.abs(localY)) nx = Math.sign(localX) || 1;
+            else ny = Math.sign(localY) || 1;
+            decals.current.push({
+              id: nextDecalId.current++,
+              x: hx, y: hy, nx, ny,
+              born: Date.now(),
+              size: weapon.type === 'shotgun' ? 5 : weapon.type === 'sniper' ? 10 : 5,
+            });
+            if (decals.current.length > 40) {
+              decals.current.splice(0, decals.current.length - 40);
+            }
+            break;
           }
-          break;
         }
       }
+
+      enemies.current.forEach(enemy => {
+        if (enemy.dead) return;
+        const dx = enemy.x - player.current.x;
+        const dy = enemy.y - player.current.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > hitDist) return;
+
+        const angleToEnemy = Math.atan2(dy, dx);
+        const angleDiff = Math.atan2(Math.sin(angleToEnemy - shotAngle), Math.cos(angleToEnemy - shotAngle));
+
+        // Per-pellet narrow hit cone; size scales with distance for fairness
+        if (Math.abs(angleDiff) < 0.12) {
+          if (!checkLineOfSight(player.current.x, player.current.y, enemy.x, enemy.y, mapData.current)) return;
+
+          enemy.hp -= perPelletDamage;
+          pelletHit = true;
+
+          if (enemy.isBoss) {
+            setBossHp({ current: Math.max(0, enemy.hp), max: enemy.maxHp });
+          }
+
+          sounds.playHit();
+          spawnParticles(enemy.x, enemy.y, 'blood');
+          if (enemy.hp <= 0) {
+            enemy.dead = true;
+            setHitMarker({ time: Date.now(), killed: true });
+            sounds.playKill();
+            setStats(prev => ({ ...prev, kills: prev.kills + 1 }));
+            if (objectiveRef.current && objectiveRef.current.status === 'active') {
+              objectiveRef.current.killCount += 1;
+            }
+            const killScore = enemy.isBoss ? 5000 : (enemy.type === 'sniper' ? 500 : enemy.type === 'rifleman' ? 200 : 100);
+            setScore(prev => prev + killScore);
+            setKillfeed(prev => [{ id: nextKillfeedId.current++, text: `${enemy.isBoss ? 'TITAN' : enemy.type.toUpperCase()} NEUTRALIZED (+${killScore})` }, ...prev].slice(0, 5));
+            graveyard.current.push({ x: enemy.x, y: enemy.y, color: enemy.color, type: enemy.type });
+            spawnParticles(enemy.x, enemy.y, 'explosion');
+
+            const baseDropChance = 0.35;
+            const dropChance = baseDropChance + (upgradeLevels.scavenger * 0.05);
+            if (Math.random() < dropChance || enemy.isBoss) {
+              const type = Math.random() > 0.5 ? 'health' : 'ammo';
+              pickups.current.push({
+                id: Math.random(),
+                x: enemy.x, y: enemy.y, type, rotation: 0,
+              });
+            }
+
+            if (enemy.isBoss) setBossHp(null);
+          } else {
+            setHitMarker({ time: Date.now(), killed: false });
+          }
+        }
+      });
+
+      tracers.current.push({
+        id: nextTracerId.current++,
+        x1: player.current.x, y1: player.current.y,
+        x2: player.current.x + cos * hitDist,
+        y2: player.current.y + sin * hitDist,
+        alpha: 1,
+      });
+
+      if (pelletHit) anyHit = true;
     }
 
-    enemies.current.forEach(enemy => {
-      if (enemy.dead) return;
-      const dx = enemy.x - player.current.x;
-      const dy = enemy.y - player.current.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist > hitDist) return;
-
-      const angleToEnemy = Math.atan2(dy, dx);
-      const angleDiff = Math.atan2(Math.sin(angleToEnemy - shotAngle), Math.cos(angleToEnemy - shotAngle));
-
-      if (Math.abs(angleDiff) < 0.15 * (weapon.type === 'shotgun' ? 3 : 1)) {
-        if (!checkLineOfSight(player.current.x, player.current.y, enemy.x, enemy.y, mapData.current)) return;
-
-        const damageMult = 1 + (weaponUpgradeLevels[currentWeapon].damage * 0.05);
-        enemy.hp -= weapon.damage * damageMult;
-        hitSomething = true;
-
-        if (enemy.isBoss) {
-          setBossHp({ current: Math.max(0, enemy.hp), max: enemy.maxHp });
-        }
-
-        sounds.playHit();
-        spawnParticles(enemy.x, enemy.y, 'blood');
-        if (enemy.hp <= 0) {
-          enemy.dead = true;
-          setHitMarker({ time: Date.now(), killed: true });
-          sounds.playKill();
-          setStats(prev => ({ ...prev, kills: prev.kills + 1 }));
-          if (objectiveRef.current && objectiveRef.current.status === 'active') {
-            objectiveRef.current.killCount += 1;
-          }
-          const killScore = enemy.isBoss ? 5000 : (enemy.type === 'sniper' ? 500 : enemy.type === 'rifleman' ? 200 : 100);
-          setScore(prev => prev + killScore);
-          setKillfeed(prev => [{ id: nextKillfeedId.current++, text: `${enemy.isBoss ? 'TITAN' : enemy.type.toUpperCase()} NEUTRALIZED (+${killScore})` }, ...prev].slice(0, 5));
-          graveyard.current.push({ x: enemy.x, y: enemy.y, color: enemy.color, type: enemy.type });
-          spawnParticles(enemy.x, enemy.y, 'explosion');
-
-          const baseDropChance = 0.35;
-          const dropChance = baseDropChance + (upgradeLevels.scavenger * 0.05);
-          if (Math.random() < dropChance || enemy.isBoss) {
-            const type = Math.random() > 0.5 ? 'health' : 'ammo';
-            pickups.current.push({
-              id: Math.random(),
-              x: enemy.x, y: enemy.y, type, rotation: 0,
-            });
-          }
-
-          if (enemy.isBoss) setBossHp(null);
-        } else {
-          setHitMarker({ time: Date.now(), killed: false });
-        }
-      }
-    });
-
-    if (hitSomething) {
+    if (anyHit) {
       setStats(prev => ({ ...prev, shotsHit: prev.shotsHit + 1 }));
     }
 
     spawnParticles(player.current.x, player.current.y, 'shell');
-
-    tracers.current.push({
-      id: nextTracerId.current++,
-      x1: player.current.x, y1: player.current.y,
-      x2: player.current.x + cos * hitDist,
-      y2: player.current.y + sin * hitDist,
-      alpha: 1,
-    });
   };
 }
 
