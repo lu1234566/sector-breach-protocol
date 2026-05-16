@@ -68,7 +68,7 @@ export function tickEnemyAI(deps: EnemyAITickDeps): void {
     tracers, nextTracerId, nextDamageId, screenShake,
     waveRef, gameStateRef, isRunEndingRef, isWaveTransitionRef,
     spawnIntervalRef, reloadTimeoutRef, waveTransitionTimeoutRef, bossSpawnTimeoutRef,
-    keys, joystick, touchLook,
+    keys,
     difficulty, stats, score, lifetimeStats, upgradeLevels, weaponUpgradeLevels,
     setHp, setEarnedCredits, setLifetimeStats, setTacticalCredits,
     setGameState, setIsReloading, setWaveMessage, setDamageIndicators,
