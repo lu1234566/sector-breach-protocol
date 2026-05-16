@@ -115,11 +115,11 @@ export function GameScene({
         <color attach="background" args={['#0a0e1a']} />
         <fog attach="fog" args={['#0f1730', cellSize * 14, cellSize * 38]} />
 
-        <ambientLight intensity={1.0} color="#3a4868" />
-        <hemisphereLight intensity={0.85} groundColor="#0c1322" color="#a5d8ff" />
-        <directionalLight position={[20, 50, 10]} intensity={1.05} color="#e0f2fe" />
+        <ambientLight intensity={1.8} color="#6a7ca0" />
+        <hemisphereLight intensity={1.4} groundColor="#1a2238" color="#cfe6ff" />
+        <directionalLight position={[20, 50, 10]} intensity={1.6} color="#e0f2fe" />
         {/* Magenta rim from opposite side */}
-        <directionalLight position={[-20, 30, -10]} intensity={0.55} color="#f0abfc" />
+        <directionalLight position={[-20, 30, -10]} intensity={0.9} color="#f0abfc" />
 
         <World mapData={mapData} cellSize={cellSize} />
 
