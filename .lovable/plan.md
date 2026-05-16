@@ -1,96 +1,140 @@
-# Pacote de artes — Protocol DOC
+# Plano de aplicação — assets escolhidos (alvo: Chromebook)
 
-Liberdade visual máxima, mas amarrada à identidade do art bible: cyan dominante, magenta acento, amber funcional, danger reativo. Hexágonos/trapézios em vez de cubos. Tom Doom 2016 + Tron Legacy + arcade CoD Mobile.
+Aplicar os assets aprovados no Protocol DOC sem quebrar gameplay, com orçamento agressivo de performance para hardware fraco (Intel UHD, 4 GB RAM, GPU integrada).
 
-Tudo gerado por IA, salvo direto em `src/assets/` ou `public/`, integrado nos componentes na mesma rodada. Inclui auditoria visual de cada lote antes de seguir.
+## Orçamento de performance (regra dura)
 
----
+| Recurso | Limite | Estratégia |
+|---|---|---|
+| Triângulos visíveis | ≤ 350k | Decimação + InstancedMesh + frustum culling |
+| Draw calls | ≤ 120 | Instancing para paredes/props repetidos; merge de estáticos |
+| Texturas (GPU) | ≤ 180 MB | Diff 1K WebP, normal+rough+metal empacotados em ORM 1K PNG |
+| Bundle inicial | ≤ 8 MB | Boss e kits carregados sob demanda (lazy) |
+| Boss | ≤ 80k tris, textura 2K | Carrega só na wave do boss |
 
-## Capítulo 1 — Identidade & Menu (5 artes)
+## Etapas
 
-| # | Arquivo | Dimensões | Modelo | Conteúdo |
-|---|---|---|---|---|
-| 1 | `src/assets/key-art-hero.jpg` | 1920×1080 | premium | Operador silhueta contra arena reactor, núcleo magenta pulsando ao fundo, raios cyan, atmosfera densa. Sem texto. Vai virar fundo da landing + og:image. |
-| 2 | `public/menu/bg_arena_breach.jpg` | 1920×1080 | standard | Background do MainMenu — arena vista de cima, grid cyan no chão, néon magenta refletido em superfícies metálicas, fog volumétrico, profundidade extrema. |
-| 3 | `public/menu/arena_containment.jpg` | 1024×768 | standard | Card thumb arena 1: corredor claustrofóbico, cover hexagonal, faixas magenta-hazard, luz amber no fundo. |
-| 4 | `public/menu/arena_reactor.jpg` | 1024×768 | standard | Card thumb arena 2: arena circular, núcleo magenta no centro pit, 4 colunas trapezoidais, anel de luz cyan. |
-| 5 | `public/menu/arena_causeway.jpg` | 1024×768 | standard | Card thumb arena 3: corredor longo, paredes de vidro com servidor racks atrás, sniper-perspective, linhas cyan paralelas convergindo. |
+### 1. Pipeline de conversão (fora do app)
+Script Node em `scripts/assets/` que processa os ZIPs originais (em `assets-source/`, fora de `src/`) e cospe arquivos otimizados em `public/assets/`:
 
-**Integração:** substituir o `menu_bg_tactical.jpg` atual; trocar miniaturas procedurais do `ArenaSelect.tsx` pelas 3 thumbs novas; usar key-art como `og:image` no head do `__root.tsx` + opcional como overlay no estado `'start'` do `GameApp`.
+- **GLB/FBX**: FBX → GLB (gltf-pipeline), depois `gltf-transform`:
+  - `weld` + `simplify` (ratio 0.3-0.5 para inimigos, 0.08 para o boss)
+  - `dedup`, `prune`
+  - `draco` compression (geometria)
+  - `meshopt` compression (fallback)
+- **Texturas Poly Haven** (.exr/.png 4K):
+  - diff → WebP 1024, q=82
+  - normal_gl → PNG 1024 (canal RGB)
+  - rough + metal → empacotados num único ORM PNG 1024 (R=AO, G=Roughness, B=Metalness)
+  - .exr é convertido com `sharp` (suporta via libvips) ou `oiiotool` se preciso
+- **Kenney FBX**: convertidos em batch para GLB, sem textura (paint via shader neon).
 
----
+Output final esperado:
+```
+public/assets/
+  boss/dragon.glb               (~3-5 MB)
+  enemies/eyedrone.glb, quad.glb, trilobite.glb
+  pickups/health.glb, ammo.glb, keycard.glb
+  props/barrel.glb, crate.glb, mine.glb, terminal.glb
+  modules/wall-a.glb, wall-b.glb, floor-a.glb, corridor.glb, gate.glb
+  textures/wall_blue_diff.webp + wall_blue_orm.png + wall_blue_normal.png
+  textures/wall_concrete_*.{webp,png}
+  textures/floor_concrete_*.{webp,png}
+  textures/floor_rubber_*.{webp,png}
+```
 
-## Capítulo 2 — Inimigos & Texturas (8 artes)
+### 2. Sistema de loader (`src/game-app/assets/`)
+- `loader.ts`: singleton `GLTFLoader` + `DRACOLoader` (CDN decoder) + `KTX2Loader` opcional.
+- `assetRegistry.ts`: mapa `{ id → { url, preload: bool, tier: 'core'|'boss' }}`.
+- `useAssets.ts`: hook React que dá Promise/Suspense para um id; cacheia globalmente.
+- Boss é tier `boss`, só pré-carrega quando a wave do boss está a 2 ondas de distância (warmup).
 
-### Retratos de inimigos (substituem `enemy_mark_*`)
-| # | Arquivo | Dimensões | Modelo | Conteúdo |
-|---|---|---|---|---|
-| 6 | `public/ui/portrait_rusher.png` | 512×512, transparent | standard | Silhueta low/leaning, blade limbs, accent magenta, trail erratico. Retrato 3/4 estilizado. |
-| 7 | `public/ui/portrait_rifleman.png` | 512×512, transparent | standard | Boxy soldier, ombros largos, accent cyan, muzzle pre-flash visível. |
-| 8 | `public/ui/portrait_sniper.png` | 512×512, transparent | standard | Tall/thin, antenna/visor, accent amber, laser de mira saindo. |
-| 9 | `public/ui/portrait_titan.png` | 512×512, transparent | standard | Wide/hunched, core magenta+danger pulsando no peito. Boss final. |
+### 3. Substituição visual (sem mudar lógica)
 
-### Texturas 3D (re-skin das atuais)
-| # | Arquivo | Dimensões | Modelo | Conteúdo |
-|---|---|---|---|---|
-| 10 | `public/textures/floor_arena_grid.jpg` | 1024×1024 tileable | standard | Painel de chão hexagonal, linhas cyan emissive, base graphite escuro. |
-| 11 | `public/textures/wall_panel_neon.jpg` | 1024×1024 tileable | standard | Parede com painel trapezoidal, faixas magenta-hazard, parafusos amber. |
-| 12 | `public/textures/wall_reactor_core.jpg` | 1024×1024 tileable | standard | Variante reactor — gradiente cyan→magenta, ductos, calor visível. |
-| 13 | `public/decals/protocol_doc_logo.png` | 512×512, transparent | standard | Logo PROTOCOL DOC para decal de chão/parede dentro do 3D. |
+**Paredes (`World3D` / `World.tsx`)**:
+- Mesmo MAP, mesma colisão.
+- Cada célula sólida vira `InstancedMesh` do módulo `wall-a` ou `wall-b` (variação determinística por seed (x,z)).
+- Material: PBR com `blue_metal` ou `concrete_wall`, emissive cyan baixo nas faixas (faixas seguem usando o procedural atual por cima — bordas neon ficam).
 
-**Integração:** retratos vão pro killfeed expandido + tela de upgrades; texturas substituem `floor_panel_tactical.jpg`/`wall_panel_graphite.jpg` no `World.tsx`; decal vai como `MeshBasicMaterial` em alguns pontos do mapa.
+**Chão**:
+- Plano único com `floor_concrete` (Arena Breach) ou `floor_rubber` (Hub). Repete via `texture.repeat`.
+- Grid neon procedural fica como overlay shader (não alterado).
 
----
+**Props decorativos** (Kenney Factory + Cyberpunk Kit):
+- Spawn determinístico em pontos vazios do MAP (terminais, barricadas, painéis, hazard stripes, turrets-cosméticas).
+- Tudo via InstancedMesh; cap em 60 props por arena.
 
-## Capítulo 3 — HUD & Telas (9 artes)
+**Inimigos** (Sci-Fi Essentials):
+- Substituir mesh procedural por GLB respectivo no `EnemyMesh`:
+  - drone → EyeDrone, quad → QuadShell, swarmer → Trilobite.
+- Lógica (HP, IA, drop, dano) permanece intacta.
+- Animação procedural já existente (bob, lookAt) aplicada nos objetos do GLB.
 
-### Icon set (substitui Lucide nos pontos onde a marca aparece)
-| # | Arquivo | Dimensões | Modelo | Conteúdo |
-|---|---|---|---|---|
-| 14 | `public/ui/icon_health_neon.png` | 256×256, transparent | fast | Cruz médica estilizada, cyan glow, hexagonal frame. |
-| 15 | `public/ui/icon_ammo_neon.png` | 256×256, transparent | fast | Magazine vista lateral, amber accent, neon outline. |
-| 16 | `public/ui/icon_credits_neon.png` | 256×256, transparent | fast | Símbolo de crédito tactical, amber dominante. |
-| 17 | `public/ui/icon_objective_eliminate.png` | 256×256, transparent | fast | Crosshair magenta + skull stilizado. |
-| 18 | `public/ui/icon_objective_hack.png` | 256×256, transparent | fast | Terminal/cpu cyan com waveform. |
-| 19 | `public/ui/icon_objective_defend.png` | 256×256, transparent | fast | Núcleo cyan dentro de escudo hexagonal. |
-| 20 | `public/ui/icon_objective_extract.png` | 256×256, transparent | fast | Seta apontando pra zona de extração, amber+cyan. |
+**Pickups**:
+- Mesh atual substituído pelos GLBs (HealthPack, AmmoBox, KeyCard).
+- Rotação/float idle preservados.
 
-### Splashes
-| # | Arquivo | Dimensões | Modelo | Conteúdo |
-|---|---|---|---|---|
-| 21 | `src/assets/splash_mission_complete.jpg` | 1920×1080 | premium | Tela final vitória — operador costas, arena pacificada, "MISSION COMPLETE" integrado tipograficamente em cyan. |
-| 22 | `src/assets/splash_mission_failed.jpg` | 1920×1080 | premium | Tela final derrota — visão de baixo do operador caído, arena vermelha (`--neon-danger`), "PROTOCOL TERMINATED" magenta+danger. |
+**Arma (P-99, M4-A1, KRM-262, DL-Q33)**:
+- Opcional: pegar 4 silhuetas do Ultimate Gun Pack que combinem com neon. Manter `Weapon3D` atual como fallback se um GLB falhar.
 
-**Integração:** icons substituem Lucide no `ObjectivePanel.tsx`, `MainHUD`, `Killfeed`; splashes viram background animado dos estados `'win'` e `'dead'` do `GameApp`.
+### 4. Boss dragão
 
----
+- **Pré-processamento** (offline): 1.27M → 80k tris (`gltf-transform simplify --ratio 0.06 --error 0.01`), textura 4K → 2K WebP.
+- **Componente**: `<DragonBoss />` em `src/game-app/components/enemies/DragonBoss.tsx`.
+- **Material**: PBR com a textura escamada + emissive mask cyan/magenta vibrando (uniform tempo).
+- **Animação procedural** (sem rig):
+  - Idle: bob vertical 0.05u, breathing scale 1±0.01.
+  - Wing flap: vertex shader desloca vértices da asa (mask por região via UV.x bounds) com sen(t).
+  - Cabeça: rotação Y/X do mesh inteiro rastreando player (suave, lerp 0.05).
+  - Ataques: VFX externos (cone de fogo neon, shockwave) — mesh fica parado.
+- **Fases (3)**: tiros plasma → asas/shockwave → cone de fogo. Hitboxes esféricas (cabeça crit 3x, torso 1x, asas 0.5x).
+- **Trigger**: wave 15 (boss único da run). `BossHealthBar` já criada é reutilizada.
+- **Lazy load**: só baixa o GLB quando a wave 13 começa.
 
-## Workflow de execução
+### 5. Quality tiers (auto-detect)
 
-1. **Capítulo 1 (key art + menu)** — gerar 5 imagens em paralelo, integrar, QA visual no preview.
-2. **Capítulo 2 (inimigos + texturas)** — gerar 8 imagens, integrar World.tsx + retratos, QA com partida de teste.
-3. **Capítulo 3 (HUD + splashes)** — gerar 9 imagens, integrar componentes HUD, QA final.
+`src/game-app/game/quality.ts`:
+- Detecta GPU via `WebGLRenderer.getContext().getParameter(UNMASKED_RENDERER_WEBGL)`.
+- 3 presets:
+  - **Low** (default Chromebook/UHD): pixel ratio 1, shadows OFF, props 50%, bloom OFF, anisotropy 1.
+  - **Medium**: pixel ratio 1, shadows soft, props 100%, bloom leve.
+  - **High**: pixel ratio devicePixelRatio, shadows PCF, props 100%, bloom + SSAO leve.
+- Botão no SettingsPanel para forçar manual.
 
-Em cada capítulo: prompts seguem o art bible (cyan ~60%, magenta ~20%, amber ~15%, danger ~5%; hexágono/trapézio; sem texto exceto onde marcado; identidade Doom 2016 + Tron Legacy).
+### 6. Validação e fallback
 
-## Limpeza
+- Cada loader tem try/catch → se GLB falhar, volta pro mesh procedural antigo (mantemos `World3DProcedural` como fallback).
+- Testar com throttling de CPU 4x e GPU "low-end" no DevTools.
+- Smoke test: rodar 1 partida completa, medir fps médio nas 3 arenas + boss.
 
-Ao final, deletar legados que conflitam com a nova identidade:
-- `public/ui/title_nano_banana.png/.webp` (nome proibido).
-- `public/menu/menu_bg_tactical.*` se a nova `bg_arena_breach.jpg` ocupar o mesmo papel.
-- `public/textures/floor_panel_tactical.*` e `wall_panel_graphite.*` após confirmar substituição funcionando.
+## Arquivos novos / tocados
 
-## Custos
+```
+NOVO  scripts/assets/build.mjs                (pipeline conversão)
+NOVO  src/game-app/assets/loader.ts
+NOVO  src/game-app/assets/registry.ts
+NOVO  src/game-app/assets/useAsset.ts
+NOVO  src/game-app/components/enemies/DragonBoss.tsx
+NOVO  src/game-app/game/quality.ts
+EDIT  src/game-app/components/game/World.tsx           (InstancedMesh modular)
+EDIT  src/game-app/components/game/GameScene.tsx       (quality preset, lazy boss)
+EDIT  src/game-app/components/enemies/EnemyMesh.tsx    (usa GLB)
+EDIT  src/game-app/components/pickups/PickupMesh.tsx   (usa GLB)
+EDIT  src/game-app/components/hud/SettingsPanel.tsx    (quality picker)
+EDIT  src/game-app/game/waves.ts                       (wave 15 = boss)
+```
 
-- 3 imagens premium (key-art + 2 splashes) — alto custo, alto impacto.
-- 12 standard (menu, inimigos, texturas, decal) — médio.
-- 7 fast (HUD icons) — baixo.
+Dependências novas: `three/examples/jsm/loaders/{GLTFLoader,DRACOLoader,KTX2Loader}` (já em three), e ferramentas dev `@gltf-transform/cli` + `sharp` (só em `scripts/`, fora do bundle).
 
-Total: **22 imagens em 3 lotes**.
+## Não vai mudar
 
-## Fora desta rodada
+ondas, IA de inimigo, tiros, dano, pickups (lógica), upgrades, dificuldade, persistência localStorage, HUD atual, pointer lock, settings (mouse sensitivity/invert).
 
-- Modelos `.glb` 3D — segue regra do art bible: procedural-only sem upload do usuário.
-- Tutorial in-game.
-- Trailer / vídeo.
-- Refino mobile.
+## Ordem de execução sugerida
+
+1. Pipeline de conversão + commit dos assets otimizados em `public/assets/`.
+2. Loader + registry + quality preset.
+3. Trocar paredes/chão (visual da arena).
+4. Trocar inimigos e pickups.
+5. Boss dragão (último, isolado).
+6. QA: 1 run completa em modo Low; ajustar.
