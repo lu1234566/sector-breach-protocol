@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { clamp } from '../helpers';
 import type { WeaponType } from '../types';
+import { getSettings } from '../settings';
 
 interface UseInputSystemArgs {
   gameState: string;
@@ -77,9 +78,17 @@ export function useInputSystem(args: UseInputSystemArgs) {
     };
     const handleMouseMove = (e: MouseEvent) => {
       if (gameState !== 'playing' || document.pointerLockElement !== gameContainerRef.current) return;
-      const speed = player.current.isAds ? 0.001 : 0.002;
-      player.current.angle += e.movementX * speed;
-      player.current.pitch = clamp(player.current.pitch + e.movementY * 0.1, -25, 25);
+      const s = getSettings();
+      const baseX = player.current.isAds ? 0.001 : 0.002;
+      const xSign = s.invertX ? -1 : 1;
+      // Natural look: mouse down = look down. Original code inverted Y, so flip default sign here.
+      const ySign = s.invertY ? 1 : -1;
+      player.current.angle += e.movementX * baseX * s.mouseSensX * xSign;
+      player.current.pitch = clamp(
+        player.current.pitch + e.movementY * 0.1 * s.mouseSensY * ySign,
+        -25,
+        25,
+      );
     };
 
     const handlePointerLockChange = () => {
