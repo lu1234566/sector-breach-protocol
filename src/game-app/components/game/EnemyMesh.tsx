@@ -21,6 +21,32 @@ const TARGET: Record<string, number> = {
   sniper: 0.7,
 };
 
+const BODY_TINT: Record<string, string> = {
+  rusher: '#f6c2ff',
+  rifleman: '#bff8ff',
+  sniper: '#ffe9a6',
+};
+
+function readableEnemyMaterial(source: any, color: string, type: string) {
+  const map = source?.map ?? null;
+  if (map) {
+    map.colorSpace = THREE.SRGBColorSpace;
+    map.anisotropy = 1;
+  }
+
+  const mat = new THREE.MeshStandardMaterial({
+    map,
+    color: new THREE.Color(BODY_TINT[type] ?? '#dff7ff'),
+    emissive: new THREE.Color(color),
+    emissiveIntensity: 0.9,
+    metalness: 0.08,
+    roughness: 0.68,
+    side: THREE.DoubleSide,
+  });
+  mat.toneMapped = false;
+  return mat;
+}
+
 function Model({ url, cellSize, color, type, lastShot }: any) {
   const { scene } = useGLTF(url) as any;
   const cloned = useMemo(() => scene.clone(true), [scene]);
@@ -46,19 +72,17 @@ function Model({ url, cellSize, color, type, lastShot }: any) {
     // Drop slightly so they sit at floor level (parent positions them at cellSize/2)
     cloned.position.y -= cellSize * 0.5;
 
-    // Tint with neon emissive accent
+    // Replace kit materials with readable neon-lit variants. The source GLBs are
+    // valid, but their dark PBR textures disappear in this low-light FPS view.
     const c3 = new THREE.Color(color);
     emissiveMats.current = [];
     cloned.traverse((o: any) => {
       if (o.isMesh) {
         o.castShadow = false;
         o.receiveShadow = false;
-        const mat = o.material as THREE.MeshStandardMaterial;
-        if (mat && 'emissive' in mat) {
-          mat.emissive = c3;
-          mat.emissiveIntensity = 0.4;
-          emissiveMats.current.push(mat);
-        }
+        const mat = readableEnemyMaterial(o.material, color, type);
+        o.material = mat;
+        emissiveMats.current.push(mat);
       }
     });
   }, [cloned, cellSize, color, type]);
@@ -87,7 +111,11 @@ function Model({ url, cellSize, color, type, lastShot }: any) {
   return (
     <group ref={ref}>
       <primitive object={cloned} />
-      <pointLight color={color} intensity={0.45} distance={cellSize * 1.6} position={[0, cellSize * 0.3, 0]} />
+      <pointLight color={color} intensity={0.9} distance={cellSize * 2.4} position={[0, cellSize * 0.45, 0]} />
+      <mesh position={[0, -cellSize * 0.49, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[cellSize * 0.34, cellSize * 0.42, 24]} />
+        <meshBasicMaterial color={color} transparent opacity={0.65} toneMapped={false} />
+      </mesh>
     </group>
   );
 }
