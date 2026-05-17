@@ -55,14 +55,21 @@ function DragonInner({ cellSize, color, healthPct, lastShot }: Props) {
         o.castShadow = false;
         o.receiveShadow = false;
         const oldMat = o.material as THREE.MeshStandardMaterial;
+        const map = oldMat?.map ?? null;
+        if (map) {
+          map.colorSpace = THREE.SRGBColorSpace;
+          map.anisotropy = 1;
+        }
         const mat = new THREE.MeshStandardMaterial({
-          map: oldMat.map ?? null,
-          color: new THREE.Color('#5a82c8'),
+          map,
+          color: new THREE.Color('#d6e6ff'),
           emissive: new THREE.Color(color),
-          emissiveIntensity: 0.6,
-          metalness: 0.4,
-          roughness: 0.55,
+          emissiveIntensity: 1.0,
+          metalness: 0.08,
+          roughness: 0.65,
+          side: THREE.DoubleSide,
         });
+        mat.toneMapped = false;
         o.material = mat;
       }
     });
@@ -102,7 +109,7 @@ function DragonInner({ cellSize, color, healthPct, lastShot }: Props) {
   return (
     <group ref={root}>
       <primitive object={cloned} />
-      <pointLight ref={lightRef} color={color} intensity={1.2} distance={cellSize * 6} position={[0, cellSize * 0.5, 0]} />
+      <pointLight ref={lightRef} color={color} intensity={1.8} distance={cellSize * 7} position={[0, cellSize * 0.6, 0]} />
       {phase >= 2 && (
         <pointLight color="#e879f9" intensity={0.8} distance={cellSize * 5} position={[0, cellSize * 1.2, cellSize * 0.4]} />
       )}
