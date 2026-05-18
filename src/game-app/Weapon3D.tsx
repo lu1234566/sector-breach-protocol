@@ -253,23 +253,29 @@ function useNeonMats() {
   return useMemo(() => {
     const body = new THREE.MeshStandardMaterial({
       color: BODY_DARK,
-      metalness: 0.55,
-      roughness: 0.4,
+      metalness: 0.25,
+      roughness: 0.55,
+      emissive: '#1a2236',
+      emissiveIntensity: 0.35,
     });
     const bodyMid = new THREE.MeshStandardMaterial({
       color: BODY_MID,
-      metalness: 0.5,
-      roughness: 0.35,
+      metalness: 0.22,
+      roughness: 0.5,
+      emissive: '#243049',
+      emissiveIntensity: 0.3,
     });
     const dark = new THREE.MeshStandardMaterial({
       color: FRAME_DARK,
-      metalness: 0.75,
-      roughness: 0.25,
+      metalness: 0.35,
+      roughness: 0.45,
+      emissive: '#10182a',
+      emissiveIntensity: 0.4,
     });
     const grip = new THREE.MeshStandardMaterial({
-      color: '#0a0f1a',
+      color: '#2a3145',
       metalness: 0.05,
-      roughness: 0.95,
+      roughness: 0.9,
     });
     const cyan = new THREE.MeshStandardMaterial({
       color: NEON_CYAN,
