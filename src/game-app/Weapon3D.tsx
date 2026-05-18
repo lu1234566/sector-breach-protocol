@@ -13,9 +13,10 @@ import * as THREE from 'three';
 const NEON_CYAN = '#22d3ee';
 const NEON_MAGENTA = '#e879f9';
 const NEON_AMBER = '#fbbf24';
-const FRAME_DARK = '#0b1220';
-const BODY_DARK = '#1f2937';
-const BODY_MID = '#374151';
+// Brightened palette so the viewmodel reads against dark arenas
+const FRAME_DARK = '#3a4660';
+const BODY_DARK = '#5b6b85';
+const BODY_MID = '#7c8aa3';
 
 export function Weapon3D({
   type,
