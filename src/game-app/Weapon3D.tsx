@@ -77,14 +77,14 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
   const restPose = useMemo(() => {
     switch (type) {
       case 'sniper':
-        return { x: 1.05, y: -0.95, z: 1.2, ry: -0.13, rx: 0.04 };
+        return { x: 1.15, y: -1.05, z: 2.4, ry: -0.13, rx: 0.04 };
       case 'shotgun':
-        return { x: 1.0, y: -0.95, z: 1.55, ry: -0.12, rx: 0.05 };
+        return { x: 1.1, y: -1.05, z: 2.7, ry: -0.12, rx: 0.05 };
       case 'rifle':
-        return { x: 0.95, y: -0.9, z: 1.6, ry: -0.11, rx: 0.04 };
+        return { x: 1.05, y: -1.0, z: 2.8, ry: -0.11, rx: 0.04 };
       case 'pistol':
       default:
-        return { x: 0.7, y: -0.75, z: 1.9, ry: -0.18, rx: 0.06 };
+        return { x: 0.95, y: -0.9, z: 3.1, ry: -0.18, rx: 0.06 };
     }
   }, [type]);
 
