@@ -44,12 +44,12 @@ export function Weapon3D({
       }}
     >
       <Canvas camera={{ position: [0, 0, 5], fov: 50 }} style={{ pointerEvents: 'none' }}>
-        {/* Brighter rig lighting for clearer weapon read */}
-        <ambientLight intensity={0.8} color="#475569" />
-        <hemisphereLight intensity={0.7} color="#a5f3fc" groundColor="#020617" />
-        <directionalLight position={[3, 5, 4]} intensity={1.25} color="#e0f7ff" />
-        <directionalLight position={[-2, 2, 3]} intensity={0.5} color={NEON_MAGENTA} />
-        <pointLight position={[1.2, -0.5, 2.5]} intensity={0.9} color={NEON_CYAN} distance={6} />
+        {/* Brighter rig lighting so the weapon reads on dark arenas */}
+        <ambientLight intensity={1.6} color="#cfd8e8" />
+        <hemisphereLight intensity={1.2} color="#bff5ff" groundColor="#1a2236" />
+        <directionalLight position={[3, 5, 4]} intensity={2.0} color="#ffffff" />
+        <directionalLight position={[-2, 2, 3]} intensity={0.9} color={NEON_MAGENTA} />
+        <pointLight position={[1.2, -0.5, 2.5]} intensity={1.4} color={NEON_CYAN} distance={6} />
         <WeaponRig
           type={type}
           isReloading={isReloading}
