@@ -595,24 +595,28 @@ function Hands({ type, reloadProgress }: any) {
   const m = useMemo(
     () => ({
       glove: new THREE.MeshStandardMaterial({
-        color: '#0b1220',
-        metalness: 0.2,
+        color: '#3a4660',
+        metalness: 0.15,
         roughness: 0.85,
+        emissive: '#10182a',
+        emissiveIntensity: 0.3,
       }),
       sleeve: new THREE.MeshStandardMaterial({
-        color: '#1a1f2e',
-        metalness: 0.25,
+        color: '#4a5470',
+        metalness: 0.2,
         roughness: 0.7,
+        emissive: '#1a2236',
+        emissiveIntensity: 0.3,
       }),
       cuff: new THREE.MeshStandardMaterial({
         color: NEON_CYAN,
         emissive: NEON_CYAN,
-        emissiveIntensity: 1.1,
+        emissiveIntensity: 1.4,
       }),
       knuckle: new THREE.MeshStandardMaterial({
-        color: '#1f2937',
-        metalness: 0.6,
-        roughness: 0.4,
+        color: '#5b6b85',
+        metalness: 0.5,
+        roughness: 0.45,
       }),
     }),
     [],
