@@ -13,9 +13,10 @@ import * as THREE from 'three';
 const NEON_CYAN = '#22d3ee';
 const NEON_MAGENTA = '#e879f9';
 const NEON_AMBER = '#fbbf24';
-const FRAME_DARK = '#0b1220';
-const BODY_DARK = '#1f2937';
-const BODY_MID = '#374151';
+// Brightened palette so the viewmodel reads against dark arenas
+const FRAME_DARK = '#3a4660';
+const BODY_DARK = '#5b6b85';
+const BODY_MID = '#7c8aa3';
 
 export function Weapon3D({
   type,
@@ -43,12 +44,12 @@ export function Weapon3D({
       }}
     >
       <Canvas camera={{ position: [0, 0, 5], fov: 50 }} style={{ pointerEvents: 'none' }}>
-        {/* Brighter rig lighting for clearer weapon read */}
-        <ambientLight intensity={0.8} color="#475569" />
-        <hemisphereLight intensity={0.7} color="#a5f3fc" groundColor="#020617" />
-        <directionalLight position={[3, 5, 4]} intensity={1.25} color="#e0f7ff" />
-        <directionalLight position={[-2, 2, 3]} intensity={0.5} color={NEON_MAGENTA} />
-        <pointLight position={[1.2, -0.5, 2.5]} intensity={0.9} color={NEON_CYAN} distance={6} />
+        {/* Brighter rig lighting so the weapon reads on dark arenas */}
+        <ambientLight intensity={1.6} color="#cfd8e8" />
+        <hemisphereLight intensity={1.2} color="#bff5ff" groundColor="#1a2236" />
+        <directionalLight position={[3, 5, 4]} intensity={2.0} color="#ffffff" />
+        <directionalLight position={[-2, 2, 3]} intensity={0.9} color={NEON_MAGENTA} />
+        <pointLight position={[1.2, -0.5, 2.5]} intensity={1.4} color={NEON_CYAN} distance={6} />
         <WeaponRig
           type={type}
           isReloading={isReloading}
@@ -76,14 +77,14 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
   const restPose = useMemo(() => {
     switch (type) {
       case 'sniper':
-        return { x: 1.05, y: -0.95, z: 1.2, ry: -0.13, rx: 0.04 };
+        return { x: 1.15, y: -1.05, z: 2.4, ry: -0.13, rx: 0.04 };
       case 'shotgun':
-        return { x: 1.0, y: -0.95, z: 1.55, ry: -0.12, rx: 0.05 };
+        return { x: 1.1, y: -1.05, z: 2.7, ry: -0.12, rx: 0.05 };
       case 'rifle':
-        return { x: 0.95, y: -0.9, z: 1.6, ry: -0.11, rx: 0.04 };
+        return { x: 1.05, y: -1.0, z: 2.8, ry: -0.11, rx: 0.04 };
       case 'pistol':
       default:
-        return { x: 0.7, y: -0.75, z: 1.9, ry: -0.18, rx: 0.06 };
+        return { x: 0.95, y: -0.9, z: 3.1, ry: -0.18, rx: 0.06 };
     }
   }, [type]);
 
@@ -252,23 +253,29 @@ function useNeonMats() {
   return useMemo(() => {
     const body = new THREE.MeshStandardMaterial({
       color: BODY_DARK,
-      metalness: 0.55,
-      roughness: 0.4,
+      metalness: 0.25,
+      roughness: 0.55,
+      emissive: '#1a2236',
+      emissiveIntensity: 0.35,
     });
     const bodyMid = new THREE.MeshStandardMaterial({
       color: BODY_MID,
-      metalness: 0.5,
-      roughness: 0.35,
+      metalness: 0.22,
+      roughness: 0.5,
+      emissive: '#243049',
+      emissiveIntensity: 0.3,
     });
     const dark = new THREE.MeshStandardMaterial({
       color: FRAME_DARK,
-      metalness: 0.75,
-      roughness: 0.25,
+      metalness: 0.35,
+      roughness: 0.45,
+      emissive: '#10182a',
+      emissiveIntensity: 0.4,
     });
     const grip = new THREE.MeshStandardMaterial({
-      color: '#0a0f1a',
+      color: '#2a3145',
       metalness: 0.05,
-      roughness: 0.95,
+      roughness: 0.9,
     });
     const cyan = new THREE.MeshStandardMaterial({
       color: NEON_CYAN,
@@ -588,24 +595,28 @@ function Hands({ type, reloadProgress }: any) {
   const m = useMemo(
     () => ({
       glove: new THREE.MeshStandardMaterial({
-        color: '#0b1220',
-        metalness: 0.2,
+        color: '#3a4660',
+        metalness: 0.15,
         roughness: 0.85,
+        emissive: '#10182a',
+        emissiveIntensity: 0.3,
       }),
       sleeve: new THREE.MeshStandardMaterial({
-        color: '#1a1f2e',
-        metalness: 0.25,
+        color: '#4a5470',
+        metalness: 0.2,
         roughness: 0.7,
+        emissive: '#1a2236',
+        emissiveIntensity: 0.3,
       }),
       cuff: new THREE.MeshStandardMaterial({
         color: NEON_CYAN,
         emissive: NEON_CYAN,
-        emissiveIntensity: 1.1,
+        emissiveIntensity: 1.4,
       }),
       knuckle: new THREE.MeshStandardMaterial({
-        color: '#1f2937',
-        metalness: 0.6,
-        roughness: 0.4,
+        color: '#5b6b85',
+        metalness: 0.5,
+        roughness: 0.45,
       }),
     }),
     [],
