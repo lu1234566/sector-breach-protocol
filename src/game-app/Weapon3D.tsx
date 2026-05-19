@@ -1,7 +1,13 @@
 // @ts-nocheck
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+
+useGLTF.preload('/assets/weapons/pistol.glb');
+useGLTF.preload('/assets/weapons/rifle.glb');
+useGLTF.preload('/assets/weapons/shotgun.glb');
+useGLTF.preload('/assets/weapons/sniper.glb');
 
 /**
  * Weapon3D — Protocol DOC neon arena weapons.
