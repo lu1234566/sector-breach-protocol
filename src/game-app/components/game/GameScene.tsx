@@ -106,20 +106,19 @@ export function GameScene({
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas
-        shadows={quality.shadows !== false}
-        dpr={[quality.pixelRatio * 0.75, quality.pixelRatio]}
-        gl={{ antialias: quality.tier === 'high', powerPreference: 'high-performance' }}
+        shadows={false}
+        dpr={[0.6, Math.min(quality.pixelRatio, 1)]}
+        gl={{ antialias: false, powerPreference: 'high-performance', stencil: false, depth: true }}
+        performance={{ min: 0.5 }}
       >
         <PerspectiveCamera makeDefault fov={75} />
         {/* Neon arena ambience */}
         <color attach="background" args={['#121a2a']} />
-        <fog attach="fog" args={['#16233a', cellSize * 18, cellSize * 48]} />
+        <fog attach="fog" args={['#16233a', cellSize * 14, cellSize * 38]} />
 
-        <ambientLight intensity={2.6} color="#b8d8ff" />
-        <hemisphereLight intensity={2.0} groundColor="#3a4f74" color="#ffffff" />
-        <directionalLight position={[20, 50, 10]} intensity={2.2} color="#ffffff" />
-        {/* Magenta rim from opposite side */}
-        <directionalLight position={[-20, 30, -10]} intensity={1.25} color="#f0abfc" />
+        <ambientLight intensity={2.4} color="#b8d8ff" />
+        <hemisphereLight intensity={1.6} groundColor="#3a4f74" color="#ffffff" />
+        <directionalLight position={[20, 50, 10]} intensity={1.6} color="#ffffff" />
 
         <World mapData={mapData} cellSize={cellSize} />
 
