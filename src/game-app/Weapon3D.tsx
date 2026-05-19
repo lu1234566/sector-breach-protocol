@@ -49,13 +49,16 @@ export function Weapon3D({
         zIndex: 10,
       }}
     >
-      <Canvas camera={{ position: [0, 0, 5], fov: 50 }} style={{ pointerEvents: 'none' }}>
-        {/* Brighter rig lighting so the weapon reads on dark arenas */}
-        <ambientLight intensity={1.6} color="#cfd8e8" />
-        <hemisphereLight intensity={1.2} color="#bff5ff" groundColor="#1a2236" />
-        <directionalLight position={[3, 5, 4]} intensity={2.0} color="#ffffff" />
-        <directionalLight position={[-2, 2, 3]} intensity={0.9} color={NEON_MAGENTA} />
-        <pointLight position={[1.2, -0.5, 2.5]} intensity={1.4} color={NEON_CYAN} distance={6} />
+      <Canvas
+        camera={{ position: [0, 0, 5], fov: 50 }}
+        style={{ pointerEvents: 'none' }}
+        dpr={[0.75, 1]}
+        gl={{ antialias: false, powerPreference: 'low-power' }}
+      >
+        {/* Minimal lighting for the viewmodel rig */}
+        <ambientLight intensity={1.4} color="#cfd8e8" />
+        <directionalLight position={[3, 5, 4]} intensity={1.6} color="#ffffff" />
+        <pointLight position={[1.2, -0.5, 2.5]} intensity={1.0} color={NEON_CYAN} distance={6} />
         <WeaponRig
           type={type}
           isReloading={isReloading}
@@ -162,7 +165,7 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
       <Suspense fallback={null}>
         <WeaponModel type={type} fireKick={fireKickRef} />
       </Suspense>
-      <Hands type={type} reloadProgress={reloadProgress} />
+      {/* Hands disabled: weapon GLBs include their own arms */}
     </group>
   );
 }
