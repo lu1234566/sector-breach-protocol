@@ -165,7 +165,7 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
       <Suspense fallback={null}>
         <WeaponModel type={type} fireKick={fireKickRef} />
       </Suspense>
-      <Hands type={type} reloadProgress={reloadProgress} />
+      {/* Hands disabled: weapon GLBs include their own arms */}
     </group>
   );
 }
