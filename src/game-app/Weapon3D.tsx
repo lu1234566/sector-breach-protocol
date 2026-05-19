@@ -1,7 +1,13 @@
 // @ts-nocheck
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+
+useGLTF.preload('/assets/weapons/pistol.glb');
+useGLTF.preload('/assets/weapons/rifle.glb');
+useGLTF.preload('/assets/weapons/shotgun.glb');
+useGLTF.preload('/assets/weapons/sniper.glb');
 
 /**
  * Weapon3D — Protocol DOC neon arena weapons.
@@ -153,11 +159,96 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
   return (
     <group ref={group}>
       <MuzzleFlash lastShotTime={lastShotTime} type={type} />
-      {type === 'pistol' && <Pistol fireKick={fireKickRef} />}
-      {type === 'rifle' && <Rifle fireKick={fireKickRef} />}
-      {type === 'shotgun' && <Shotgun fireKick={fireKickRef} />}
-      {type === 'sniper' && <Sniper fireKick={fireKickRef} isAds={isAds} />}
+      <Suspense fallback={null}>
+        <WeaponModel type={type} fireKick={fireKickRef} />
+      </Suspense>
       <Hands type={type} reloadProgress={reloadProgress} />
+    </group>
+  );
+}
+
+/* ----------------------------- GLB Weapon Model ----------------------------- */
+const WEAPON_MODELS: Record<string, {
+  url: string;
+  targetLength: number; // desired Z-extent (forward axis) in scene units
+  rotation: [number, number, number];
+  offset: [number, number, number];
+  kickZ: number;
+}> = {
+  pistol:  { url: '/assets/weapons/pistol.glb',  targetLength: 1.4, rotation: [0, Math.PI, 0], offset: [0, 0, 0.2],  kickZ: 0.18 },
+  rifle:   { url: '/assets/weapons/rifle.glb',   targetLength: 2.6, rotation: [0, Math.PI, 0], offset: [0, 0, 0.1],  kickZ: 0.14 },
+  shotgun: { url: '/assets/weapons/shotgun.glb', targetLength: 2.6, rotation: [0, Math.PI, 0], offset: [0, 0, 0.1],  kickZ: 0.28 },
+  sniper:  { url: '/assets/weapons/sniper.glb',  targetLength: 3.4, rotation: [0, Math.PI, 0], offset: [0, 0, -0.2], kickZ: 0.22 },
+};
+
+function WeaponModel({ type, fireKick }: { type: string; fireKick: any }) {
+  const cfg = WEAPON_MODELS[type] ?? WEAPON_MODELS.pistol;
+  const gltf = useGLTF(cfg.url);
+  const groupRef = useRef<THREE.Group>(null);
+
+  // Clone the scene so each mount is isolated, then auto-fit and boost emissive.
+  const { scene, fit } = useMemo(() => {
+    const cloned = gltf.scene.clone(true);
+    // Compute bounding box at identity to derive fit scale + recenter offset.
+    const box = new THREE.Box3().setFromObject(cloned);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+    const longest = Math.max(size.x, size.y, size.z) || 1;
+    const scale = cfg.targetLength / longest;
+
+    cloned.traverse((obj: any) => {
+      if (obj.isMesh) {
+        obj.castShadow = false;
+        obj.receiveShadow = false;
+        const mat = obj.material;
+        const boost = (mm: any) => {
+          if (!mm) return;
+          if (mm.color && mm.color.isColor) {
+            // Lighten very dark base colors so the model reads in dark arenas.
+            const hsl = { h: 0, s: 0, l: 0 };
+            mm.color.getHSL(hsl);
+            if (hsl.l < 0.25) mm.color.setHSL(hsl.h, hsl.s, 0.35);
+          }
+          if ('emissive' in mm && mm.emissive) {
+            if (mm.emissive.getHex() === 0x000000) mm.emissive.set('#1a2236');
+            mm.emissiveIntensity = Math.max(mm.emissiveIntensity ?? 0, 0.35);
+          }
+          if ('metalness' in mm) mm.metalness = Math.min(mm.metalness ?? 0.3, 0.6);
+          if ('roughness' in mm) mm.roughness = Math.max(mm.roughness ?? 0.5, 0.4);
+          mm.needsUpdate = true;
+        };
+        if (Array.isArray(mat)) mat.forEach(boost);
+        else boost(mat);
+      }
+    });
+
+    return { scene: cloned, fit: { scale, center } };
+  }, [gltf.scene, cfg.targetLength]);
+
+  useFrame(() => {
+    if (!groupRef.current) return;
+    const k = fireKick?.current ?? 0;
+    groupRef.current.position.z = cfg.offset[2] + k * cfg.kickZ;
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      position={cfg.offset}
+      rotation={cfg.rotation as any}
+    >
+      {/* Inner wrapper recenters + scales the loaded model */}
+      <primitive
+        object={scene}
+        scale={fit.scale}
+        position={[
+          -fit.center.x * fit.scale,
+          -fit.center.y * fit.scale,
+          -fit.center.z * fit.scale,
+        ]}
+      />
     </group>
   );
 }
