@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useRef, useMemo, Suspense } from 'react';
+import React, { useRef, useMemo, Suspense, Component } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -162,26 +162,45 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
   return (
     <group ref={group}>
       <MuzzleFlash lastShotTime={lastShotTime} type={type} />
-      <Suspense fallback={null}>
-        <WeaponModel type={type} fireKick={fireKickRef} />
-      </Suspense>
-      {/* Hands disabled: weapon GLBs include their own arms */}
+      <WeaponErrorBoundary type={type}>
+        <Suspense fallback={null}>
+          <WeaponModel type={type} fireKick={fireKickRef} />
+        </Suspense>
+      </WeaponErrorBoundary>
     </group>
   );
 }
 
+/* --------------------------- Error boundary --------------------------- */
+class WeaponErrorBoundary extends Component<any, { err: boolean }> {
+  state = { err: false };
+  static getDerivedStateFromError() { return { err: true }; }
+  componentDidCatch(e: any) { console.error('[Weapon3D] failed to render', this.props.type, e); }
+  componentDidUpdate(prev: any) { if (prev.type !== this.props.type && this.state.err) this.setState({ err: false }); }
+  render() { return this.state.err ? null : this.props.children; }
+}
+
 /* ----------------------------- GLB Weapon Model ----------------------------- */
+// Per-weapon config. Each source GLB has a different "forward" axis and origin,
+// so we apply a manual rotation that points the barrel toward -Z, then auto-fit
+// the rotated bounding box to targetLength. Meshes matching `hideMeshes`
+// (e.g. baked-in arms) are hidden so the weapon shows without duplicate hands.
 const WEAPON_MODELS: Record<string, {
   url: string;
-  targetLength: number; // desired Z-extent (forward axis) in scene units
+  targetLength: number;
   rotation: [number, number, number];
   offset: [number, number, number];
   kickZ: number;
+  hideMeshes?: RegExp;
 }> = {
-  pistol:  { url: '/assets/weapons/pistol.glb',  targetLength: 1.4, rotation: [0, Math.PI, 0], offset: [0, 0, 0.2],  kickZ: 0.18 },
-  rifle:   { url: '/assets/weapons/rifle.glb',   targetLength: 2.6, rotation: [0, Math.PI, 0], offset: [0, 0, 0.1],  kickZ: 0.14 },
-  shotgun: { url: '/assets/weapons/shotgun.glb', targetLength: 2.6, rotation: [0, Math.PI, 0], offset: [0, 0, 0.1],  kickZ: 0.28 },
-  sniper:  { url: '/assets/weapons/sniper.glb',  targetLength: 3.4, rotation: [0, Math.PI, 0], offset: [0, 0, -0.2], kickZ: 0.22 },
+  // pistol: longest axis Z, barrel toward -Z → no rotation needed
+  pistol:  { url: '/assets/weapons/pistol.glb',  targetLength: 1.6, rotation: [0, 0, 0],            offset: [0.05, -0.05, 0.2],  kickZ: 0.18, hideMeshes: /arm/i },
+  // rifle: longest axis Y, barrel toward -Y → rotate -90° around X
+  rifle:   { url: '/assets/weapons/rifle.glb',   targetLength: 2.4, rotation: [-Math.PI / 2, 0, 0], offset: [0, -0.1, 0.1],      kickZ: 0.14 },
+  // shotgun: longest axis X, barrel toward +X → rotate -90° around Y
+  shotgun: { url: '/assets/weapons/shotgun.glb', targetLength: 2.4, rotation: [0, -Math.PI / 2, 0], offset: [0, -0.05, 0.1],     kickZ: 0.28 },
+  // sniper: longest axis X, barrel toward +X → rotate -90° around Y
+  sniper:  { url: '/assets/weapons/sniper.glb',  targetLength: 3.2, rotation: [0, -Math.PI / 2, 0], offset: [0, -0.05, -0.2],    kickZ: 0.22 },
 };
 
 function WeaponModel({ type, fireKick }: { type: string; fireKick: any }) {
@@ -189,11 +208,51 @@ function WeaponModel({ type, fireKick }: { type: string; fireKick: any }) {
   const gltf = useGLTF(cfg.url);
   const groupRef = useRef<THREE.Group>(null);
 
-  // Clone the scene so each mount is isolated, then auto-fit and boost emissive.
   const { scene, fit } = useMemo(() => {
     const cloned = gltf.scene.clone(true);
-    // Compute bounding box at identity to derive fit scale + recenter offset.
-    const box = new THREE.Box3().setFromObject(cloned);
+
+    // Hide unwanted meshes (e.g. baked arms on pistol).
+    if (cfg.hideMeshes) {
+      cloned.traverse((obj: any) => {
+        if (obj.isMesh && cfg.hideMeshes!.test(obj.name ?? '')) obj.visible = false;
+      });
+    }
+
+    // Material polish: lift very dark colors so the model reads in dark scenes.
+    cloned.traverse((obj: any) => {
+      if (!obj.isMesh) return;
+      obj.castShadow = false;
+      obj.receiveShadow = false;
+      const mat = obj.material;
+      const boost = (mm: any) => {
+        if (!mm) return;
+        if (mm.color?.isColor) {
+          const hsl = { h: 0, s: 0, l: 0 };
+          mm.color.getHSL(hsl);
+          if (hsl.l < 0.25) mm.color.setHSL(hsl.h, hsl.s, 0.35);
+        }
+        if (mm.emissive) {
+          if (mm.emissive.getHex() === 0x000000) mm.emissive.set('#1a2236');
+          mm.emissiveIntensity = Math.max(mm.emissiveIntensity ?? 0, 0.35);
+        }
+        if ('metalness' in mm) mm.metalness = Math.min(mm.metalness ?? 0.3, 0.6);
+        if ('roughness' in mm) mm.roughness = Math.max(mm.roughness ?? 0.5, 0.4);
+        mm.needsUpdate = true;
+      };
+      Array.isArray(mat) ? mat.forEach(boost) : boost(mat);
+    });
+
+    // Compute bbox AFTER applying the configured rotation so the fit is in
+    // the final, barrel-forward space. Visible meshes only.
+    const rotated = new THREE.Group();
+    rotated.rotation.set(cfg.rotation[0], cfg.rotation[1], cfg.rotation[2]);
+    rotated.add(cloned);
+    rotated.updateMatrixWorld(true);
+
+    const box = new THREE.Box3();
+    cloned.traverse((obj: any) => {
+      if (obj.isMesh && obj.visible) box.expandByObject(obj);
+    });
     const size = new THREE.Vector3();
     const center = new THREE.Vector3();
     box.getSize(size);
@@ -201,34 +260,9 @@ function WeaponModel({ type, fireKick }: { type: string; fireKick: any }) {
     const longest = Math.max(size.x, size.y, size.z) || 1;
     const scale = cfg.targetLength / longest;
 
-    cloned.traverse((obj: any) => {
-      if (obj.isMesh) {
-        obj.castShadow = false;
-        obj.receiveShadow = false;
-        const mat = obj.material;
-        const boost = (mm: any) => {
-          if (!mm) return;
-          if (mm.color && mm.color.isColor) {
-            // Lighten very dark base colors so the model reads in dark arenas.
-            const hsl = { h: 0, s: 0, l: 0 };
-            mm.color.getHSL(hsl);
-            if (hsl.l < 0.25) mm.color.setHSL(hsl.h, hsl.s, 0.35);
-          }
-          if ('emissive' in mm && mm.emissive) {
-            if (mm.emissive.getHex() === 0x000000) mm.emissive.set('#1a2236');
-            mm.emissiveIntensity = Math.max(mm.emissiveIntensity ?? 0, 0.35);
-          }
-          if ('metalness' in mm) mm.metalness = Math.min(mm.metalness ?? 0.3, 0.6);
-          if ('roughness' in mm) mm.roughness = Math.max(mm.roughness ?? 0.5, 0.4);
-          mm.needsUpdate = true;
-        };
-        if (Array.isArray(mat)) mat.forEach(boost);
-        else boost(mat);
-      }
-    });
-
+    rotated.remove(cloned); // detach so we can mount via <primitive>
     return { scene: cloned, fit: { scale, center } };
-  }, [gltf.scene, cfg.targetLength]);
+  }, [gltf.scene, cfg.targetLength, cfg.rotation, cfg.hideMeshes]);
 
   useFrame(() => {
     if (!groupRef.current) return;
@@ -236,22 +270,20 @@ function WeaponModel({ type, fireKick }: { type: string; fireKick: any }) {
     groupRef.current.position.z = cfg.offset[2] + k * cfg.kickZ;
   });
 
+  // Outer group: scene-space position + per-weapon rotation.
+  // Inner primitive: recenter the model around its (post-rotation) center, then scale.
+  // Recenter is computed in WORLD space (post-rotation), so we have to unrotate
+  // it back into the model's local frame before applying.
+  const invRot = useMemo(() => {
+    const e = new THREE.Euler(cfg.rotation[0], cfg.rotation[1], cfg.rotation[2]);
+    const q = new THREE.Quaternion().setFromEuler(e).invert();
+    const c = new THREE.Vector3(fit.center.x, fit.center.y, fit.center.z).applyQuaternion(q);
+    return [-c.x * fit.scale, -c.y * fit.scale, -c.z * fit.scale] as [number, number, number];
+  }, [cfg.rotation, fit.center, fit.scale]);
+
   return (
-    <group
-      ref={groupRef}
-      position={cfg.offset}
-      rotation={cfg.rotation as any}
-    >
-      {/* Inner wrapper recenters + scales the loaded model */}
-      <primitive
-        object={scene}
-        scale={fit.scale}
-        position={[
-          -fit.center.x * fit.scale,
-          -fit.center.y * fit.scale,
-          -fit.center.z * fit.scale,
-        ]}
-      />
+    <group ref={groupRef} position={cfg.offset} rotation={cfg.rotation as any}>
+      <primitive object={scene} scale={fit.scale} position={invRot} />
     </group>
   );
 }
