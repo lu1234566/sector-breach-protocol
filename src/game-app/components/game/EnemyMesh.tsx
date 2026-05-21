@@ -27,10 +27,12 @@ useGLTF.preload(URLS.rusher);
 useGLTF.preload(URLS.rifleman);
 useGLTF.preload(URLS.sniper);
 
+// Smaller FPS-readable targets. The previous values filled almost a full map
+// cell, which made enemies look like giant debug objects when close to camera.
 const TARGET: Record<string, number> = {
-  rusher: 0.85,
-  rifleman: 1.0,
-  sniper: 0.7,
+  rusher: 0.48,
+  rifleman: 0.58,
+  sniper: 0.42,
 };
 
 const BODY_TINT: Record<string, string> = {
@@ -49,7 +51,7 @@ function makeMaterial(source: any, color: string, type: string) {
     map,
     color: map ? '#ffffff' : (BODY_TINT[type] ?? '#dbeafe'),
     emissive: color,
-    emissiveIntensity: 0.75,
+    emissiveIntensity: 0.38,
     metalness: 0.25,
     roughness: 0.55,
     transparent: false,
@@ -114,7 +116,7 @@ function Model({ url, cellSize, color, type, lastShot }: any) {
       return { cloned: null, invalid: true };
     }
 
-    const target = cellSize * (TARGET[type] ?? 0.9);
+    const target = cellSize * (TARGET[type] ?? 0.5);
     cloned.scale.setScalar(target / before.maxDim);
     cloned.updateMatrixWorld(true);
 
@@ -133,17 +135,17 @@ function Model({ url, cellSize, color, type, lastShot }: any) {
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
     const since = (Date.now() - (lastShot ?? 0)) / 1000;
-    let glow = 0.45 + Math.sin(t * 4) * 0.1;
-    if (since > 0.4 && since < 1.0) glow = 1.6;
-    if (since < 0.1) glow = 2.4;
+    let glow = 0.25 + Math.sin(t * 4) * 0.08;
+    if (since > 0.4 && since < 1.0) glow = 1.15;
+    if (since < 0.1) glow = 1.75;
     for (const m of emissiveMats.current) if (m) m.emissiveIntensity = glow;
 
     if (ref.current) {
       if (type === 'sniper') {
-        ref.current.position.y = Math.sin(t * 2) * cellSize * 0.08 + cellSize * 0.25;
+        ref.current.position.y = Math.sin(t * 2) * cellSize * 0.06 + cellSize * 0.16;
         ref.current.rotation.y = t * 0.4;
       } else if (type === 'rusher') {
-        ref.current.rotation.x = -0.15 + Math.sin(t * 9) * 0.08;
+        ref.current.rotation.x = -0.12 + Math.sin(t * 9) * 0.06;
       }
     }
   });
@@ -155,10 +157,10 @@ function Model({ url, cellSize, color, type, lastShot }: any) {
   return (
     <group ref={ref}>
       <primitive object={modelData.cloned} />
-      <SafetyMarker cellSize={cellSize} color={color} type={type} />
+      <SafetyMarker cellSize={cellSize} color={color} type={type} subtle />
       {DEBUG_ENEMY_RENDER && (
-        <mesh position={[0, cellSize * 0.45, 0]}>
-          <boxGeometry args={[cellSize * 0.9, cellSize * 0.9, cellSize * 0.9]} />
+        <mesh position={[0, cellSize * 0.3, 0]}>
+          <boxGeometry args={[cellSize * 0.55, cellSize * 0.55, cellSize * 0.55]} />
           <meshBasicMaterial color={color} wireframe transparent opacity={0.7} depthWrite={false} />
         </mesh>
       )}
@@ -166,19 +168,21 @@ function Model({ url, cellSize, color, type, lastShot }: any) {
   );
 }
 
-function SafetyMarker({ cellSize, color, type }: any) {
-  const y = type === 'sniper' ? cellSize * 0.08 : cellSize * 0.22;
-  const coreSize = type === 'sniper' ? cellSize * 0.055 : cellSize * 0.075;
+function SafetyMarker({ cellSize, color, type, subtle = false }: any) {
+  const y = subtle ? cellSize * 0.08 : cellSize * 0.2;
+  const coreSize = cellSize * (subtle ? 0.018 : 0.04);
+  const ringInner = cellSize * (subtle ? 0.18 : 0.26);
+  const ringOuter = cellSize * (subtle ? 0.21 : 0.32);
   return (
     <group>
-      <pointLight color={color} intensity={0.9} distance={cellSize * 2.4} position={[0, cellSize * 0.45, 0]} />
+      <pointLight color={color} intensity={subtle ? 0.35 : 0.7} distance={cellSize * 1.6} position={[0, cellSize * 0.35, 0]} />
       <mesh position={[0, y, 0]}>
-        <sphereGeometry args={[coreSize, 12, 12]} />
-        <meshBasicMaterial color={color} transparent opacity={0.95} toneMapped={false} />
+        <sphereGeometry args={[coreSize, 10, 10]} />
+        <meshBasicMaterial color={color} transparent opacity={subtle ? 0.45 : 0.85} toneMapped={false} depthWrite={false} />
       </mesh>
       <mesh position={[0, -cellSize * 0.49, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[cellSize * 0.34, cellSize * 0.42, 24]} />
-        <meshBasicMaterial color={color} transparent opacity={0.75} toneMapped={false} depthWrite={false} />
+        <ringGeometry args={[ringInner, ringOuter, 24]} />
+        <meshBasicMaterial color={color} transparent opacity={subtle ? 0.28 : 0.65} toneMapped={false} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -186,11 +190,13 @@ function SafetyMarker({ cellSize, color, type }: any) {
 
 function Fallback({ cellSize, color, type }: any) {
   const accent = BODY_TINT[type] ?? color;
+  const height = type === 'sniper' ? cellSize * 0.5 : type === 'rusher' ? cellSize * 0.32 : cellSize * 0.48;
+  const width = type === 'sniper' ? cellSize * 0.2 : type === 'rusher' ? cellSize * 0.42 : cellSize * 0.36;
   return (
     <group>
-      <mesh position={[0, -cellSize * 0.05, 0]}>
-        <boxGeometry args={[cellSize * 0.42, cellSize * 0.65, cellSize * 0.42]} />
-        <meshStandardMaterial color={accent} emissive={color} emissiveIntensity={0.85} roughness={0.5} metalness={0.2} side={THREE.DoubleSide} toneMapped={false} />
+      <mesh position={[0, height * 0.5 - cellSize * 0.48, 0]}>
+        <boxGeometry args={[width, height, width]} />
+        <meshStandardMaterial color={accent} emissive={color} emissiveIntensity={0.55} roughness={0.5} metalness={0.2} side={THREE.DoubleSide} toneMapped={false} />
       </mesh>
       <SafetyMarker cellSize={cellSize} color={color} type={type} />
     </group>
