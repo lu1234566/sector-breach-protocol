@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { Suspense, useMemo, useRef, useEffect } from 'react';
+import React, { Suspense, useMemo, useRef, useEffect, Component } from 'react';
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -9,6 +9,13 @@ const URLS = {
   rifleman: '/assets/enemies/enemy_quadshell.glb',
   sniper: '/assets/enemies/enemy_eyedrone.glb',
 } as const;
+
+class EnemyErrorBoundary extends Component<any, { err: boolean }> {
+  state = { err: false };
+  static getDerivedStateFromError() { return { err: true }; }
+  componentDidCatch(e: any) { console.error('[EnemyMesh] failed', this.props.type, e); }
+  render() { return this.state.err ? <Fallback cellSize={this.props.cellSize} color={this.props.color} /> : this.props.children; }
+}
 
 useGLTF.preload(URLS.rusher);
 useGLTF.preload(URLS.rifleman);
@@ -27,31 +34,30 @@ const BODY_TINT: Record<string, string> = {
   sniper: '#ffe9a6',
 };
 
-function readableEnemyMaterial(source: any, color: string, type: string) {
-  const map = source?.map ?? null;
-  if (map) {
-    map.colorSpace = THREE.SRGBColorSpace;
-    map.anisotropy = 1;
+function boostEnemyMaterial(mm: any, color: string) {
+  if (!mm) return;
+  if (mm.color?.isColor) {
+    const hsl = { h: 0, s: 0, l: 0 };
+    mm.color.getHSL(hsl);
+    if (hsl.l < 0.25) mm.color.setHSL(hsl.h, hsl.s, 0.45);
   }
-
-  const mat = new THREE.MeshStandardMaterial({
-    map,
-    color: new THREE.Color(BODY_TINT[type] ?? '#dff7ff'),
-    emissive: new THREE.Color(color),
-    emissiveIntensity: 0.9,
-    metalness: 0.08,
-    roughness: 0.68,
-    side: THREE.DoubleSide,
-  });
-  mat.toneMapped = false;
-  return mat;
+  if (mm.emissive) {
+    mm.emissive.set(color);
+    mm.emissiveIntensity = Math.max(mm.emissiveIntensity ?? 0, 0.6);
+  }
+  if ('metalness' in mm) mm.metalness = Math.min(mm.metalness ?? 0.3, 0.4);
+  if ('roughness' in mm) mm.roughness = Math.max(mm.roughness ?? 0.5, 0.55);
+  if (mm.map) mm.map.colorSpace = THREE.SRGBColorSpace;
+  mm.side = THREE.DoubleSide;
+  mm.toneMapped = false;
+  mm.needsUpdate = true;
 }
 
 function Model({ url, cellSize, color, type, lastShot }: any) {
   const { scene } = useGLTF(url) as any;
   const cloned = useMemo(() => scene.clone(true), [scene]);
   const ref = useRef<THREE.Group>(null);
-  const emissiveMats = useRef<THREE.MeshStandardMaterial[]>([]);
+  const emissiveMats = useRef<any[]>([]);
 
   useEffect(() => {
     // Normalize to TARGET * cellSize
@@ -68,21 +74,28 @@ function Model({ url, cellSize, color, type, lastShot }: any) {
     box2.getCenter(c);
     cloned.position.x -= c.x;
     cloned.position.z -= c.z;
-    cloned.position.y -= box2.min.y; // feet at y=0
-    // Drop slightly so they sit at floor level (parent positions them at cellSize/2)
+    cloned.position.y -= box2.min.y;
     cloned.position.y -= cellSize * 0.5;
 
-    // Replace kit materials with readable neon-lit variants. The source GLBs are
-    // valid, but their dark PBR textures disappear in this low-light FPS view.
-    const c3 = new THREE.Color(color);
+    // Preserve original materials (with their maps) and only boost them.
     emissiveMats.current = [];
     cloned.traverse((o: any) => {
-      if (o.isMesh) {
-        o.castShadow = false;
-        o.receiveShadow = false;
-        const mat = readableEnemyMaterial(o.material, color, type);
-        o.material = mat;
-        emissiveMats.current.push(mat);
+      if (!o.isMesh) return;
+      o.castShadow = false;
+      o.receiveShadow = false;
+      o.frustumCulled = false;
+      // Clone material so per-instance tweaks don't bleed across enemies.
+      if (Array.isArray(o.material)) {
+        o.material = o.material.map((m: any) => {
+          const cl = m.clone();
+          boostEnemyMaterial(cl, color);
+          emissiveMats.current.push(cl);
+          return cl;
+        });
+      } else if (o.material) {
+        o.material = o.material.clone();
+        boostEnemyMaterial(o.material, color);
+        emissiveMats.current.push(o.material);
       }
     });
   }, [cloned, cellSize, color, type]);
@@ -131,8 +144,14 @@ function Fallback({ cellSize, color }: any) {
 
 export function EnemyMesh({ type, cellSize, color, lastShot }: any) {
   return (
-    <Suspense fallback={<Fallback cellSize={cellSize} color={color} />}>
-      <Model url={URLS[type]} type={type} cellSize={cellSize} color={color} lastShot={lastShot} />
-    </Suspense>
+    <EnemyErrorBoundary type={type} cellSize={cellSize} color={color}>
+      <Suspense fallback={<Fallback cellSize={cellSize} color={color} />}>
+        <Model url={URLS[type]} type={type} cellSize={cellSize} color={color} lastShot={lastShot} />
+      </Suspense>
+    </EnemyErrorBoundary>
   );
 }
+
+useGLTF.preload(URLS.rusher);
+useGLTF.preload(URLS.rifleman);
+useGLTF.preload(URLS.sniper);

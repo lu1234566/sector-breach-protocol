@@ -188,41 +188,53 @@ class WeaponErrorBoundary extends Component<any, { err: boolean }> {
 const WEAPON_MODELS: Record<string, {
   url: string;
   targetLength: number;
-  rotation: [number, number, number];
   offset: [number, number, number];
   kickZ: number;
   hideMeshes?: RegExp;
+  extraRotation?: [number, number, number];
 }> = {
-  // pistol: longest axis Z, barrel toward -Z → no rotation needed
-  pistol:  { url: '/assets/weapons/pistol.glb',  targetLength: 1.6, rotation: [0, 0, 0],            offset: [0.05, -0.05, 0.2],  kickZ: 0.18, hideMeshes: /arm/i },
-  // rifle: longest axis Y, barrel toward -Y → rotate -90° around X
-  rifle:   { url: '/assets/weapons/rifle.glb',   targetLength: 2.4, rotation: [-Math.PI / 2, 0, 0], offset: [0, -0.1, 0.1],      kickZ: 0.14 },
-  // shotgun: longest axis X, barrel toward +X → rotate -90° around Y
-  shotgun: { url: '/assets/weapons/shotgun.glb', targetLength: 2.4, rotation: [0, -Math.PI / 2, 0], offset: [0, -0.05, 0.1],     kickZ: 0.28 },
-  // sniper: longest axis X, barrel toward +X → rotate -90° around Y
-  sniper:  { url: '/assets/weapons/sniper.glb',  targetLength: 3.2, rotation: [0, -Math.PI / 2, 0], offset: [0, -0.05, -0.2],    kickZ: 0.22 },
+  pistol:  { url: '/assets/weapons/pistol.glb',  targetLength: 1.6, offset: [0.05, -0.05, 0.2],  kickZ: 0.18, hideMeshes: /arm|hand|glove|finger|forearm|wrist|skin|body/i },
+  rifle:   { url: '/assets/weapons/rifle.glb',   targetLength: 2.4, offset: [0, -0.1, 0.1],      kickZ: 0.14 },
+  shotgun: { url: '/assets/weapons/shotgun.glb', targetLength: 2.4, offset: [0, -0.05, 0.1],     kickZ: 0.28 },
+  sniper:  { url: '/assets/weapons/sniper.glb',  targetLength: 3.2, offset: [0, -0.05, -0.2],    kickZ: 0.22 },
 };
+
+// Auto-orient: detect longest axis of bbox and build a rotation that
+// aligns that axis to -Z (barrel forward). Returns Euler angles.
+function autoBarrelRotation(size: THREE.Vector3): [number, number, number] {
+  const ax = size.x, ay = size.y, az = size.z;
+  // Longest axis becomes -Z
+  if (ax >= ay && ax >= az) {
+    // X longest → rotate -90° around Y so +X maps to -Z
+    return [0, -Math.PI / 2, 0];
+  }
+  if (ay >= ax && ay >= az) {
+    // Y longest → rotate +90° around X so +Y maps to -Z
+    return [Math.PI / 2, 0, 0];
+  }
+  // Z longest → already aligned (assume +Z, flip 180° around Y to point -Z)
+  return [0, Math.PI, 0];
+}
 
 function WeaponModel({ type, fireKick }: { type: string; fireKick: any }) {
   const cfg = WEAPON_MODELS[type] ?? WEAPON_MODELS.pistol;
   const gltf = useGLTF(cfg.url);
   const groupRef = useRef<THREE.Group>(null);
 
-  const { scene, fit } = useMemo(() => {
+  const { scene, fit, rotation } = useMemo(() => {
     const cloned = gltf.scene.clone(true);
 
-    // Hide unwanted meshes (e.g. baked arms on pistol).
     if (cfg.hideMeshes) {
       cloned.traverse((obj: any) => {
         if (obj.isMesh && cfg.hideMeshes!.test(obj.name ?? '')) obj.visible = false;
       });
     }
 
-    // Material polish: lift very dark colors so the model reads in dark scenes.
     cloned.traverse((obj: any) => {
       if (!obj.isMesh) return;
       obj.castShadow = false;
       obj.receiveShadow = false;
+      obj.frustumCulled = false;
       const mat = obj.material;
       const boost = (mm: any) => {
         if (!mm) return;
@@ -242,13 +254,7 @@ function WeaponModel({ type, fireKick }: { type: string; fireKick: any }) {
       Array.isArray(mat) ? mat.forEach(boost) : boost(mat);
     });
 
-    // Compute bbox AFTER applying the configured rotation so the fit is in
-    // the final, barrel-forward space. Visible meshes only.
-    const rotated = new THREE.Group();
-    rotated.rotation.set(cfg.rotation[0], cfg.rotation[1], cfg.rotation[2]);
-    rotated.add(cloned);
-    rotated.updateMatrixWorld(true);
-
+    // BBox of visible meshes in model-local space (no rotation yet).
     const box = new THREE.Box3();
     cloned.traverse((obj: any) => {
       if (obj.isMesh && obj.visible) box.expandByObject(obj);
@@ -257,12 +263,15 @@ function WeaponModel({ type, fireKick }: { type: string; fireKick: any }) {
     const center = new THREE.Vector3();
     box.getSize(size);
     box.getCenter(center);
+
+    const rotation = cfg.extraRotation ?? autoBarrelRotation(size);
+
+    // After rotation, longest dim becomes Z. Scale uses max dim.
     const longest = Math.max(size.x, size.y, size.z) || 1;
     const scale = cfg.targetLength / longest;
 
-    rotated.remove(cloned); // detach so we can mount via <primitive>
-    return { scene: cloned, fit: { scale, center } };
-  }, [gltf.scene, cfg.targetLength, cfg.rotation, cfg.hideMeshes]);
+    return { scene: cloned, fit: { scale, center }, rotation };
+  }, [gltf.scene, cfg.targetLength, cfg.hideMeshes, cfg.extraRotation]);
 
   useFrame(() => {
     if (!groupRef.current) return;
@@ -270,19 +279,16 @@ function WeaponModel({ type, fireKick }: { type: string; fireKick: any }) {
     groupRef.current.position.z = cfg.offset[2] + k * cfg.kickZ;
   });
 
-  // Outer group: scene-space position + per-weapon rotation.
-  // Inner primitive: recenter the model around its (post-rotation) center, then scale.
-  // Recenter is computed in WORLD space (post-rotation), so we have to unrotate
-  // it back into the model's local frame before applying.
+  // Recenter the model around its (post-rotation) center.
   const invRot = useMemo(() => {
-    const e = new THREE.Euler(cfg.rotation[0], cfg.rotation[1], cfg.rotation[2]);
+    const e = new THREE.Euler(rotation[0], rotation[1], rotation[2]);
     const q = new THREE.Quaternion().setFromEuler(e).invert();
     const c = new THREE.Vector3(fit.center.x, fit.center.y, fit.center.z).applyQuaternion(q);
     return [-c.x * fit.scale, -c.y * fit.scale, -c.z * fit.scale] as [number, number, number];
-  }, [cfg.rotation, fit.center, fit.scale]);
+  }, [rotation, fit.center, fit.scale]);
 
   return (
-    <group ref={groupRef} position={cfg.offset} rotation={cfg.rotation as any}>
+    <group ref={groupRef} position={cfg.offset} rotation={rotation as any}>
       <primitive object={scene} scale={fit.scale} position={invRot} />
     </group>
   );
