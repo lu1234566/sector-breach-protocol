@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { Suspense, useMemo, useRef, useEffect } from 'react';
+import React, { Suspense, useMemo, useRef, useEffect, Component } from 'react';
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -9,6 +9,13 @@ const URLS = {
   rifleman: '/assets/enemies/enemy_quadshell.glb',
   sniper: '/assets/enemies/enemy_eyedrone.glb',
 } as const;
+
+class EnemyErrorBoundary extends Component<any, { err: boolean }> {
+  state = { err: false };
+  static getDerivedStateFromError() { return { err: true }; }
+  componentDidCatch(e: any) { console.error('[EnemyMesh] failed', this.props.type, e); }
+  render() { return this.state.err ? <Fallback cellSize={this.props.cellSize} color={this.props.color} /> : this.props.children; }
+}
 
 useGLTF.preload(URLS.rusher);
 useGLTF.preload(URLS.rifleman);
