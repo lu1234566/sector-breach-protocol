@@ -164,7 +164,12 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
       <MuzzleFlash lastShotTime={lastShotTime} type={type} />
       <WeaponErrorBoundary type={type}>
         <Suspense fallback={null}>
-          <WeaponModel type={type} fireKick={fireKickRef} />
+          <WeaponModel
+            type={type}
+            fireKick={fireKickRef}
+            lastShotTime={lastShotTime}
+            isReloading={isReloading}
+          />
         </Suspense>
       </WeaponErrorBoundary>
     </group>
@@ -216,12 +221,22 @@ function autoBarrelRotation(size: THREE.Vector3): [number, number, number] {
   return [0, Math.PI, 0];
 }
 
-function WeaponModel({ type, fireKick }: { type: string; fireKick: any }) {
+function WeaponModel({
+  type,
+  fireKick,
+  lastShotTime,
+  isReloading,
+}: {
+  type: string;
+  fireKick: any;
+  lastShotTime: number;
+  isReloading: boolean;
+}) {
   const cfg = WEAPON_MODELS[type] ?? WEAPON_MODELS.pistol;
   const gltf = useGLTF(cfg.url);
   const groupRef = useRef<THREE.Group>(null);
 
-  const { scene, fit, rotation } = useMemo(() => {
+  const { scene, fit, rotation, mixer, fireAction, reloadAction, fireDuration } = useMemo(() => {
     const cloned = gltf.scene.clone(true);
 
     if (cfg.hideMeshes) {
@@ -254,7 +269,6 @@ function WeaponModel({ type, fireKick }: { type: string; fireKick: any }) {
       Array.isArray(mat) ? mat.forEach(boost) : boost(mat);
     });
 
-    // BBox of visible meshes in model-local space (no rotation yet).
     const box = new THREE.Box3();
     cloned.traverse((obj: any) => {
       if (obj.isMesh && obj.visible) box.expandByObject(obj);
@@ -265,21 +279,86 @@ function WeaponModel({ type, fireKick }: { type: string; fireKick: any }) {
     box.getCenter(center);
 
     const rotation = cfg.extraRotation ?? autoBarrelRotation(size);
-
-    // After rotation, longest dim becomes Z. Scale uses max dim.
     const longest = Math.max(size.x, size.y, size.z) || 1;
     const scale = cfg.targetLength / longest;
 
-    return { scene: cloned, fit: { scale, center }, rotation };
+    // Animation setup — supports clips named fire/shoot/reload, or a single
+    // combined clip (e.g. "firereload"): in that case fire plays only the
+    // first ~25% (slide cycle) and reload plays the full clip.
+    let mixer: THREE.AnimationMixer | null = null;
+    let fireAction: THREE.AnimationAction | null = null;
+    let reloadAction: THREE.AnimationAction | null = null;
+    let fireDuration = 0;
+    const clips = (gltf as any).animations as THREE.AnimationClip[] | undefined;
+    if (clips && clips.length > 0) {
+      mixer = new THREE.AnimationMixer(cloned);
+      const findClip = (re: RegExp) => clips.find((c) => re.test(c.name));
+      const fireClip = findClip(/^fire$|shoot/i) ?? clips[0];
+      const reloadClip = findClip(/reload/i) ?? clips[0];
+      if (fireClip) {
+        fireAction = mixer.clipAction(fireClip.clone());
+        fireAction.setLoop(THREE.LoopOnce, 1);
+        fireAction.clampWhenFinished = false;
+        fireDuration = fireClip === reloadClip
+          ? Math.min(0.28, fireClip.duration * 0.25)
+          : fireClip.duration;
+      }
+      if (reloadClip) {
+        reloadAction = mixer.clipAction(reloadClip.clone());
+        reloadAction.setLoop(THREE.LoopOnce, 1);
+        reloadAction.clampWhenFinished = true;
+      }
+    }
+
+    return { scene: cloned, fit: { scale, center }, rotation, mixer, fireAction, reloadAction, fireDuration };
   }, [gltf.scene, cfg.targetLength, cfg.hideMeshes, cfg.extraRotation]);
 
-  useFrame(() => {
-    if (!groupRef.current) return;
-    const k = fireKick?.current ?? 0;
-    groupRef.current.position.z = cfg.offset[2] + k * cfg.kickZ;
+  const lastShotRef = useRef(0);
+  const lastReloadRef = useRef(false);
+  const fireActiveUntil = useRef(0);
+
+  useFrame((_, delta) => {
+    if (groupRef.current) {
+      const k = fireKick?.current ?? 0;
+      groupRef.current.position.z = cfg.offset[2] + k * cfg.kickZ;
+    }
+
+    if (!mixer) return;
+
+    // Rising edge: new shot -> play fire portion
+    if (fireAction && lastShotTime !== lastShotRef.current && lastShotTime > 0) {
+      lastShotRef.current = lastShotTime;
+      if (!isReloading) {
+        fireAction.reset();
+        fireAction.setEffectiveTimeScale(1);
+        fireAction.play();
+        fireActiveUntil.current = performance.now() + fireDuration * 1000;
+      }
+    }
+
+    // Stop fire after its window so slide returns and we don't bleed into reload pose
+    if (fireAction && fireActiveUntil.current > 0 && performance.now() > fireActiveUntil.current) {
+      fireAction.stop();
+      fireActiveUntil.current = 0;
+    }
+
+    // Rising edge: reload start
+    if (reloadAction && isReloading !== lastReloadRef.current) {
+      lastReloadRef.current = isReloading;
+      if (isReloading) {
+        if (fireAction) fireAction.stop();
+        fireActiveUntil.current = 0;
+        reloadAction.reset();
+        reloadAction.setEffectiveTimeScale(1);
+        reloadAction.play();
+      } else {
+        reloadAction.stop();
+      }
+    }
+
+    mixer.update(delta);
   });
 
-  // Recenter the model around its (post-rotation) center.
   const invRot = useMemo(() => {
     const e = new THREE.Euler(rotation[0], rotation[1], rotation[2]);
     const q = new THREE.Quaternion().setFromEuler(e).invert();
