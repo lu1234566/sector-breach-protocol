@@ -4,6 +4,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { World } from './World';
+import { WorldLite } from './WorldLite';
 import { Enemy3D } from './Enemy3D';
 import { Particles3D } from './Particles3D';
 import { Tracers3D } from './Tracers3D';
@@ -67,7 +68,6 @@ function PlayerController({
     camera.rotation.x = THREE.MathUtils.degToRad(visualPitch) + shakeY;
     camera.rotation.z = shakeX * 0.3;
 
-    // Per-weapon FOV — sniper zooms hard on ADS
     const ads = player.current.adsProgress;
     const baseFov = 75;
     let adsFov = 60;
@@ -103,31 +103,51 @@ export function GameScene({
   const now = Date.now();
   const [settingsState] = useSettings();
   const quality = resolveQuality(settingsState.quality);
+  const isLowQuality = quality.tier === 'low';
+
+  // Chromebook-friendly caps. These reduce React/Three object count during
+  // firefights, which is usually where FPS collapses on low-end integrated GPUs.
+  const visibleParticles = isLowQuality ? particles.slice(0, 18) : particles;
+  const visibleTracers = isLowQuality ? tracers.slice(-8) : tracers;
+  const visibleDecals = isLowQuality ? [] : decals;
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas
         shadows={false}
-        dpr={[0.6, Math.min(quality.pixelRatio, 1)]}
-        gl={{ antialias: false, powerPreference: 'high-performance', stencil: false, depth: true }}
-        performance={{ min: 0.5 }}
+        dpr={isLowQuality ? [0.45, 0.55] : [0.6, Math.min(quality.pixelRatio, 1)]}
+        gl={{
+          antialias: false,
+          alpha: false,
+          powerPreference: 'high-performance',
+          stencil: false,
+          depth: true,
+        }}
+        performance={{ min: isLowQuality ? 0.25 : 0.5 }}
       >
         <PerspectiveCamera makeDefault fov={75} />
-        {/* Neon arena ambience */}
-        <color attach="background" args={['#121a2a']} />
-        <fog attach="fog" args={['#16233a', cellSize * 14, cellSize * 38]} />
+        <color attach="background" args={[isLowQuality ? '#0f1724' : '#121a2a']} />
+        {!isLowQuality && <fog attach="fog" args={['#16233a', cellSize * 14, cellSize * 38]} />}
 
-        <ambientLight intensity={2.4} color="#b8d8ff" />
-        <hemisphereLight intensity={1.6} groundColor="#3a4f74" color="#ffffff" />
-        <directionalLight position={[20, 50, 10]} intensity={1.6} color="#ffffff" />
-
-        <World mapData={mapData} cellSize={cellSize} />
-
-        <Particles3D particles={particles} cellSize={cellSize} mapData={mapData} />
-        <Tracers3D tracers={tracers} cellSize={cellSize} mapData={mapData} />
-        {decals && decals.length > 0 && (
-          <Decals3D decals={decals} cellSize={cellSize} mapData={mapData} now={now} />
+        {isLowQuality ? (
+          <ambientLight intensity={2.0} color="#dbeafe" />
+        ) : (
+          <>
+            <ambientLight intensity={2.4} color="#b8d8ff" />
+            <hemisphereLight intensity={1.6} groundColor="#3a4f74" color="#ffffff" />
+            <directionalLight position={[20, 50, 10]} intensity={1.6} color="#ffffff" />
+          </>
         )}
-        <Pickups3D pickups={pickups} cellSize={cellSize} mapData={mapData} />
+
+        {isLowQuality ? <WorldLite mapData={mapData} cellSize={cellSize} /> : <World mapData={mapData} cellSize={cellSize} />}
+
+        <Particles3D particles={visibleParticles} cellSize={cellSize} mapData={mapData} />
+        <Tracers3D tracers={visibleTracers} cellSize={cellSize} mapData={mapData} />
+        {visibleDecals && visibleDecals.length > 0 && (
+          <Decals3D decals={visibleDecals} cellSize={cellSize} mapData={mapData} now={now} />
+        )}
+        {!isLowQuality && <Pickups3D pickups={pickups} cellSize={cellSize} mapData={mapData} />}
+        {isLowQuality && pickups.length > 0 && <Pickups3D pickups={pickups.slice(0, 6)} cellSize={cellSize} mapData={mapData} />}
 
         {enemies.map((enemy) => (
           <Enemy3D
