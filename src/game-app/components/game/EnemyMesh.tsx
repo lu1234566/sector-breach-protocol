@@ -144,8 +144,14 @@ function Fallback({ cellSize, color }: any) {
 
 export function EnemyMesh({ type, cellSize, color, lastShot }: any) {
   return (
-    <Suspense fallback={<Fallback cellSize={cellSize} color={color} />}>
-      <Model url={URLS[type]} type={type} cellSize={cellSize} color={color} lastShot={lastShot} />
-    </Suspense>
+    <EnemyErrorBoundary type={type} cellSize={cellSize} color={color}>
+      <Suspense fallback={<Fallback cellSize={cellSize} color={color} />}>
+        <Model url={URLS[type]} type={type} cellSize={cellSize} color={color} lastShot={lastShot} />
+      </Suspense>
+    </EnemyErrorBoundary>
   );
 }
+
+useGLTF.preload(URLS.rusher);
+useGLTF.preload(URLS.rifleman);
+useGLTF.preload(URLS.sniper);
