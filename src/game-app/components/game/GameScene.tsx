@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { World } from './World';
 import { WorldLite } from './WorldLite';
 import { Enemy3D } from './Enemy3D';
+import { EnemyLite } from './EnemyLite';
 import { Particles3D } from './Particles3D';
 import { Tracers3D } from './Tracers3D';
 import { Pickups3D } from './Pickups3D';
@@ -110,6 +111,7 @@ export function GameScene({
   const visibleParticles = isLowQuality ? particles.slice(0, 18) : particles;
   const visibleTracers = isLowQuality ? tracers.slice(-8) : tracers;
   const visibleDecals = isLowQuality ? [] : decals;
+  const EnemyRenderer = isLowQuality ? EnemyLite : Enemy3D;
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -150,7 +152,7 @@ export function GameScene({
         {isLowQuality && pickups.length > 0 && <Pickups3D pickups={pickups.slice(0, 6)} cellSize={cellSize} mapData={mapData} />}
 
         {enemies.map((enemy) => (
-          <Enemy3D
+          <EnemyRenderer
             key={enemy.id}
             {...enemy}
             cellSize={cellSize}
