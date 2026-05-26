@@ -2,6 +2,7 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { useTexture } from '@react-three/drei';
+import { PropModel } from './PropModel';
 
 const TEX_BASE = '/assets/textures';
 const TEX_URLS = {
@@ -534,85 +535,69 @@ export function World({ mapData, cellSize }: MapProps) {
             }
           }
 
-          // Wall-mounted terminal (very rare)
-          if (h(x, y, 21) < 0.04) {
+          // Wall-mounted lab terminal (GLB, very rare ~5% of exposed walls)
+          if (h(x, y, 21) < 0.05) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
-              const tx = posX + fx * 1.08;
-              const tz = posZ + fz * 1.08;
+              const tx = posX + fx * 0.6;
+              const tz = posZ + fz * 0.6;
               out.push(
                 <group
                   key={`term-${x}-${y}`}
-                  position={[tx, cellSize * 0.42, tz]}
+                  position={[tx, 0, tz]}
                   rotation={exposed.rot as any}
                 >
-                  <mesh material={mats.terminalBody}>
-                    <boxGeometry args={[cellSize * 0.28, cellSize * 0.22, cellSize * 0.06]} />
-                  </mesh>
-                  <mesh position={[0, 0, cellSize * 0.035]} material={mats.neonCyan}>
-                    <planeGeometry args={[cellSize * 0.2, cellSize * 0.14]} />
-                  </mesh>
-                  <mesh position={[0, -cellSize * 0.13, cellSize * 0.035]} material={mats.neonAmber}>
-                    <planeGeometry args={[cellSize * 0.08, cellSize * 0.012]} />
-                  </mesh>
+                  <PropModel
+                    modelKey="terminal"
+                    cellSize={cellSize}
+                    accentColor={NEON_CYAN}
+                    flicker
+                    emissiveBoost={0.25}
+                  />
+                </group>,
+              );
+            }
+          }
+
+          // Decorative wall panel (GLB, ~18% of exposed walls, deterministic).
+          if (h(x, y, 22) < 0.18) {
+            const exposed = faces.find((f) => f.exposed);
+            if (exposed) {
+              const [fx, , fz] = exposed.pos as number[];
+              const tx = posX + fx * 0.96;
+              const tz = posZ + fz * 0.96;
+              out.push(
+                <group
+                  key={`wp-${x}-${y}`}
+                  position={[tx, cellSize * 0.5, tz]}
+                  rotation={exposed.rot as any}
+                >
+                  <PropModel
+                    modelKey="wallPanel"
+                    cellSize={cellSize}
+                    accentColor={NEON_CYAN}
+                    emissiveBoost={0.18}
+                    noFloorSnap
+                  />
                 </group>,
               );
             }
           }
         } else if (cell === 2) {
-          // Crate
-          const variant = (x + y * 2) % 2;
+          // Sci-fi crate (GLB) — replaces procedural box. Collision is unchanged
+          // because mapData still drives walls/blocking; this is purely visual.
           out.push(
-            <group key={`crate-${x}-${y}`} position={[posX, cellSize * 0.32, posZ]}>
-              <mesh material={mats.crateBody}>
-                <boxGeometry args={[cellSize * 0.78, cellSize * 0.64, cellSize * 0.78]} />
-              </mesh>
-              <mesh position={[0, cellSize * 0.34, 0]} material={mats.crateTrim}>
-                <boxGeometry args={[cellSize * 0.82, 0.05, cellSize * 0.82]} />
-              </mesh>
-              <mesh
-                position={[0, 0, cellSize * 0.395]}
-                material={variant === 0 ? mats.neonCyan : mats.neonAmber}
-              >
-                <boxGeometry args={[cellSize * 0.5, cellSize * 0.04, 0.012]} />
-              </mesh>
-              <mesh
-                position={[0, 0, -cellSize * 0.395]}
-                material={variant === 0 ? mats.neonCyan : mats.neonAmber}
-              >
-                <boxGeometry args={[cellSize * 0.5, cellSize * 0.04, 0.012]} />
-              </mesh>
-              {[-1, 1].flatMap((dx) =>
-                [-1, 1].map((dz) => (
-                  <mesh
-                    key={`${dx}-${dz}`}
-                    position={[dx * cellSize * 0.36, cellSize * 0.31, dz * cellSize * 0.36]}
-                    material={mats.neonCyan}
-                  >
-                    <sphereGeometry args={[0.04, 6, 6]} />
-                  </mesh>
-                )),
-              )}
+            <group key={`crate-${x}-${y}`} position={[posX, 0, posZ]}>
+              <PropModel modelKey="crate" cellSize={cellSize} accentColor="#fbbf24" emissiveBoost={0.1} />
             </group>,
           );
         } else if (cell === 3) {
-          // Energy barrel
+          // Energy barrel (GLB) with subtle cyan pulse + a faint point light.
           out.push(
-            <group key={`bar-${x}-${y}`} position={[posX, cellSize * 0.34, posZ]}>
-              <mesh position={[0, -cellSize * 0.22, 0]} material={mats.barrelBody}>
-                <cylinderGeometry args={[cellSize * 0.26, cellSize * 0.28, cellSize * 0.2, 14]} />
-              </mesh>
-              <mesh material={mats.neonAmber}>
-                <cylinderGeometry args={[cellSize * 0.24, cellSize * 0.24, cellSize * 0.18, 14]} />
-              </mesh>
-              <mesh position={[0, cellSize * 0.22, 0]} material={mats.barrelBody}>
-                <cylinderGeometry args={[cellSize * 0.28, cellSize * 0.26, cellSize * 0.2, 14]} />
-              </mesh>
-              <mesh position={[0, cellSize * 0.34, 0]} material={mats.neonCyan}>
-                <cylinderGeometry args={[cellSize * 0.1, cellSize * 0.1, cellSize * 0.04, 12]} />
-              </mesh>
-              <pointLight color={NEON_AMBER} intensity={0.6} distance={cellSize * 2} />
+            <group key={`bar-${x}-${y}`} position={[posX, 0, posZ]}>
+              <PropModel modelKey="barrel" cellSize={cellSize} accentColor={NEON_CYAN} pulse emissiveBoost={0.2} />
+              <pointLight color={NEON_CYAN} intensity={0.45} distance={cellSize * 2.2} position={[0, cellSize * 0.4, 0]} />
             </group>,
           );
         }
