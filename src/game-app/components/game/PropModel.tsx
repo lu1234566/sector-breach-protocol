@@ -12,6 +12,7 @@ interface PropProps {
   pulse?: boolean;
   flicker?: boolean;
   emissiveBoost?: number;
+  noFloorSnap?: boolean;
   fallback?: React.ReactNode;
 }
 
@@ -24,7 +25,7 @@ class PropBoundary extends Component<any, { err: boolean }> {
   }
 }
 
-function fitProp(root: THREE.Object3D, def: PropModelDef, cellSize: number) {
+function fitProp(root: THREE.Object3D, def: PropModelDef, cellSize: number, noFloorSnap = false) {
   root.updateMatrixWorld(true);
   const box = new THREE.Box3();
   let count = 0;
@@ -33,8 +34,7 @@ function fitProp(root: THREE.Object3D, def: PropModelDef, cellSize: number) {
   });
   if (!count || box.isEmpty()) return false;
   const size = new THREE.Vector3();
-  const center = new THREE.Vector3();
-  box.getSize(size); box.getCenter(center);
+  box.getSize(size);
   const max = Math.max(size.x, size.y, size.z);
   if (!Number.isFinite(max) || max < 0.001) return false;
   const k = (cellSize * def.targetSize) / max;
@@ -45,7 +45,11 @@ function fitProp(root: THREE.Object3D, def: PropModelDef, cellSize: number) {
   box2.getCenter(c2);
   root.position.x -= c2.x;
   root.position.z -= c2.z;
-  root.position.y -= box2.min.y;
+  if (noFloorSnap) {
+    root.position.y -= c2.y;
+  } else {
+    root.position.y -= box2.min.y;
+  }
   root.position.y += cellSize * def.yOffset;
   return true;
 }
@@ -84,7 +88,7 @@ function prepProp(root: THREE.Object3D, accent?: string, boost = 0) {
   return mats;
 }
 
-function PropInner({ modelKey, cellSize, accentColor, pulse, flicker, emissiveBoost = 0 }: PropProps) {
+function PropInner({ modelKey, cellSize, accentColor, pulse, flicker, emissiveBoost = 0, noFloorSnap }: PropProps) {
   const def = PROP_MODELS[modelKey];
   const gltf = useGLTF(def.url) as any;
   const matsRef = useRef<THREE.MeshStandardMaterial[]>([]);
@@ -92,10 +96,10 @@ function PropInner({ modelKey, cellSize, accentColor, pulse, flicker, emissiveBo
   const cloned = useMemo(() => {
     const c = gltf.scene.clone(true);
     matsRef.current = prepProp(c, accentColor, emissiveBoost);
-    if (!fitProp(c, def, cellSize)) return null;
+    if (!fitProp(c, def, cellSize, noFloorSnap)) return null;
     c.rotation.set(def.rotation[0], def.rotation[1], def.rotation[2]);
     return c;
-  }, [gltf.scene, def, cellSize, accentColor, emissiveBoost]);
+  }, [gltf.scene, def, cellSize, accentColor, emissiveBoost, noFloorSnap]);
 
   useFrame((state) => {
     if (!matsRef.current.length || (!pulse && !flicker)) return;
