@@ -31,6 +31,7 @@ export function DragonBoss({ cellSize, color, healthPct, lastShot }: Props) {
         cellSize={cellSize}
         lastShot={lastShot}
         hp={healthPct > 0 ? 1 : 0}
+        centerVertically
         Fallback={(p) => <OldTitanFallback {...p} />}
       />
       {/* Emerald eye glow */}
@@ -60,6 +61,7 @@ function OldTitanFallback({ cellSize, color }: { cellSize: number; color: string
       cellSize={cellSize}
       lastShot={0}
       hp={1}
+      centerVertically
       Fallback={(p) => <BoxFallback {...p} />}
     />
   );
