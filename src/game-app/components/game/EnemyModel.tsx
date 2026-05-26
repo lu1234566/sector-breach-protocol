@@ -11,6 +11,7 @@ interface EnemyModelProps {
   cellSize: number;
   lastShot?: number;
   hp?: number;
+  centerVertically?: boolean;
   Fallback?: React.ComponentType<{ cellSize: number; color: string }>;
 }
 
@@ -88,7 +89,7 @@ function prepareMaterials(root: THREE.Object3D, color: string) {
   return collected;
 }
 
-function fitToCell(root: THREE.Object3D, def: EnemyModelDef, cellSize: number) {
+function fitToCell(root: THREE.Object3D, def: EnemyModelDef, cellSize: number, centerVertically = false) {
   root.updateMatrixWorld(true);
   const box = new THREE.Box3();
   let count = 0;
@@ -100,9 +101,7 @@ function fitToCell(root: THREE.Object3D, def: EnemyModelDef, cellSize: number) {
   });
   if (count === 0 || box.isEmpty()) return false;
   const size = new THREE.Vector3();
-  const center = new THREE.Vector3();
   box.getSize(size);
-  box.getCenter(center);
   const max = Math.max(size.x, size.y, size.z);
   if (!Number.isFinite(max) || max < 0.001) return false;
   const target = cellSize * def.targetSize;
@@ -114,12 +113,17 @@ function fitToCell(root: THREE.Object3D, def: EnemyModelDef, cellSize: number) {
   box2.getCenter(c2);
   root.position.x -= c2.x;
   root.position.z -= c2.z;
-  root.position.y -= box2.min.y;
+  if (centerVertically) {
+    root.position.y -= c2.y;
+  } else {
+    root.position.y -= box2.min.y;
+  }
   root.position.y += cellSize * def.yOffset;
   return true;
 }
 
-function Model({ modelKey, cellSize, lastShot = 0, hp = 1, Fallback }: EnemyModelProps) {
+
+function Model({ modelKey, cellSize, lastShot = 0, hp = 1, Fallback, centerVertically }: EnemyModelProps) {
   const def = ENEMY_MODELS[modelKey];
   const gltf = useGLTF(def.url) as any;
   const groupRef = useRef<THREE.Group>(null);
@@ -132,14 +136,15 @@ function Model({ modelKey, cellSize, lastShot = 0, hp = 1, Fallback }: EnemyMode
     try {
       const c = cloneSkinned(gltf.scene);
       matsRef.current = prepareMaterials(c, def.color);
-      if (!fitToCell(c, def, cellSize)) return null;
+      if (!fitToCell(c, def, cellSize, centerVertically)) return null;
       c.rotation.set(def.rotation[0], def.rotation[1], def.rotation[2]);
       return c;
     } catch (e) {
       console.warn('[EnemyModel] clone failed', modelKey, e);
       return null;
     }
-  }, [gltf.scene, modelKey, cellSize, def]);
+  }, [gltf.scene, modelKey, cellSize, def, centerVertically]);
+
 
   useEffect(() => {
     if (!cloned || !gltf.animations?.length) return;
