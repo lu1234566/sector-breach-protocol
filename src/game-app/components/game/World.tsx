@@ -535,28 +535,51 @@ export function World({ mapData, cellSize }: MapProps) {
             }
           }
 
-          // Wall-mounted terminal (very rare)
-          if (h(x, y, 21) < 0.04) {
+          // Wall-mounted lab terminal (GLB, very rare ~5% of exposed walls)
+          if (h(x, y, 21) < 0.05) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
-              const tx = posX + fx * 1.08;
-              const tz = posZ + fz * 1.08;
+              const tx = posX + fx * 0.6;
+              const tz = posZ + fz * 0.6;
               out.push(
                 <group
                   key={`term-${x}-${y}`}
-                  position={[tx, cellSize * 0.42, tz]}
+                  position={[tx, 0, tz]}
                   rotation={exposed.rot as any}
                 >
-                  <mesh material={mats.terminalBody}>
-                    <boxGeometry args={[cellSize * 0.28, cellSize * 0.22, cellSize * 0.06]} />
-                  </mesh>
-                  <mesh position={[0, 0, cellSize * 0.035]} material={mats.neonCyan}>
-                    <planeGeometry args={[cellSize * 0.2, cellSize * 0.14]} />
-                  </mesh>
-                  <mesh position={[0, -cellSize * 0.13, cellSize * 0.035]} material={mats.neonAmber}>
-                    <planeGeometry args={[cellSize * 0.08, cellSize * 0.012]} />
-                  </mesh>
+                  <PropModel
+                    modelKey="terminal"
+                    cellSize={cellSize}
+                    accentColor={NEON_CYAN}
+                    flicker
+                    emissiveBoost={0.25}
+                  />
+                </group>,
+              );
+            }
+          }
+
+          // Decorative wall panel (GLB, ~18% of exposed walls, deterministic).
+          if (h(x, y, 22) < 0.18) {
+            const exposed = faces.find((f) => f.exposed);
+            if (exposed) {
+              const [fx, , fz] = exposed.pos as number[];
+              const tx = posX + fx * 0.96;
+              const tz = posZ + fz * 0.96;
+              out.push(
+                <group
+                  key={`wp-${x}-${y}`}
+                  position={[tx, cellSize * 0.5, tz]}
+                  rotation={exposed.rot as any}
+                >
+                  <PropModel
+                    modelKey="wallPanel"
+                    cellSize={cellSize}
+                    accentColor={NEON_CYAN}
+                    emissiveBoost={0.18}
+                    noFloorSnap
+                  />
                 </group>,
               );
             }
