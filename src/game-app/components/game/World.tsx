@@ -2,6 +2,7 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { useTexture } from '@react-three/drei';
+import { PropModel } from './PropModel';
 
 const TEX_BASE = '/assets/textures';
 const TEX_URLS = {
@@ -561,58 +562,19 @@ export function World({ mapData, cellSize }: MapProps) {
             }
           }
         } else if (cell === 2) {
-          // Crate
-          const variant = (x + y * 2) % 2;
+          // Sci-fi crate (GLB) — replaces procedural box. Collision is unchanged
+          // because mapData still drives walls/blocking; this is purely visual.
           out.push(
-            <group key={`crate-${x}-${y}`} position={[posX, cellSize * 0.32, posZ]}>
-              <mesh material={mats.crateBody}>
-                <boxGeometry args={[cellSize * 0.78, cellSize * 0.64, cellSize * 0.78]} />
-              </mesh>
-              <mesh position={[0, cellSize * 0.34, 0]} material={mats.crateTrim}>
-                <boxGeometry args={[cellSize * 0.82, 0.05, cellSize * 0.82]} />
-              </mesh>
-              <mesh
-                position={[0, 0, cellSize * 0.395]}
-                material={variant === 0 ? mats.neonCyan : mats.neonAmber}
-              >
-                <boxGeometry args={[cellSize * 0.5, cellSize * 0.04, 0.012]} />
-              </mesh>
-              <mesh
-                position={[0, 0, -cellSize * 0.395]}
-                material={variant === 0 ? mats.neonCyan : mats.neonAmber}
-              >
-                <boxGeometry args={[cellSize * 0.5, cellSize * 0.04, 0.012]} />
-              </mesh>
-              {[-1, 1].flatMap((dx) =>
-                [-1, 1].map((dz) => (
-                  <mesh
-                    key={`${dx}-${dz}`}
-                    position={[dx * cellSize * 0.36, cellSize * 0.31, dz * cellSize * 0.36]}
-                    material={mats.neonCyan}
-                  >
-                    <sphereGeometry args={[0.04, 6, 6]} />
-                  </mesh>
-                )),
-              )}
+            <group key={`crate-${x}-${y}`} position={[posX, 0, posZ]}>
+              <PropModel modelKey="crate" cellSize={cellSize} accentColor="#fbbf24" emissiveBoost={0.1} />
             </group>,
           );
         } else if (cell === 3) {
-          // Energy barrel
+          // Energy barrel (GLB) with subtle cyan pulse + a faint point light.
           out.push(
-            <group key={`bar-${x}-${y}`} position={[posX, cellSize * 0.34, posZ]}>
-              <mesh position={[0, -cellSize * 0.22, 0]} material={mats.barrelBody}>
-                <cylinderGeometry args={[cellSize * 0.26, cellSize * 0.28, cellSize * 0.2, 14]} />
-              </mesh>
-              <mesh material={mats.neonAmber}>
-                <cylinderGeometry args={[cellSize * 0.24, cellSize * 0.24, cellSize * 0.18, 14]} />
-              </mesh>
-              <mesh position={[0, cellSize * 0.22, 0]} material={mats.barrelBody}>
-                <cylinderGeometry args={[cellSize * 0.28, cellSize * 0.26, cellSize * 0.2, 14]} />
-              </mesh>
-              <mesh position={[0, cellSize * 0.34, 0]} material={mats.neonCyan}>
-                <cylinderGeometry args={[cellSize * 0.1, cellSize * 0.1, cellSize * 0.04, 12]} />
-              </mesh>
-              <pointLight color={NEON_AMBER} intensity={0.6} distance={cellSize * 2} />
+            <group key={`bar-${x}-${y}`} position={[posX, 0, posZ]}>
+              <PropModel modelKey="barrel" cellSize={cellSize} accentColor={NEON_CYAN} pulse emissiveBoost={0.2} />
+              <pointLight color={NEON_CYAN} intensity={0.45} distance={cellSize * 2.2} position={[0, cellSize * 0.4, 0]} />
             </group>,
           );
         }
