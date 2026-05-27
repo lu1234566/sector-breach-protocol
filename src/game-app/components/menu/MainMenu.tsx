@@ -290,9 +290,10 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                   </div>
 
                   <div className="mt-5 pt-4 border-t border-cyan-500/20 grid grid-cols-3 gap-3 text-center">
-                    <Telemetry label="WAVES" value={lifetimeStats?.totalWaves ?? 0} />
+                    <Telemetry label="BEST WAVE" value={lifetimeStats?.bestWave ?? 0} />
                     <Telemetry label="KILLS" value={lifetimeStats?.totalKills ?? 0} />
-                    <Telemetry label="RUNS" value={lifetimeStats?.totalRuns ?? 0} />
+                    <Telemetry label="RUNS" value={lifetimeStats?.totalGames ?? 0} />
+
                   </div>
 
                   <motion.div
