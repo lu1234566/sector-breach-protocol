@@ -34,6 +34,49 @@ import { Map as MapIcon } from 'lucide-react';
 
 type MenuView = 'main' | 'armory' | 'difficulty' | 'profile' | 'arena';
 
+const SbpButton: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  sub: string;
+  onClick: () => void;
+}> = ({ icon, label, sub, onClick }) => (
+  <button
+    onClick={onClick}
+    className="group relative overflow-hidden rounded-md border border-cyan-500/20 bg-slate-950/60 hover:bg-slate-900/80 hover:border-cyan-400/60 px-4 py-3 text-left transition-all"
+  >
+    <div className="absolute inset-y-0 left-0 w-px bg-cyan-500/40 group-hover:bg-cyan-300 group-hover:shadow-[0_0_8px_rgba(34,211,238,0.8)] transition-all" />
+    <div className="flex items-center gap-3">
+      <span className="text-cyan-400 group-hover:text-cyan-200 transition-colors">{icon}</span>
+      <div className="leading-tight">
+        <div className="font-black text-sm tracking-[0.2em] text-white uppercase">{label}</div>
+        <div className="text-[9px] font-mono tracking-[0.25em] text-white/40 uppercase">{sub}</div>
+      </div>
+    </div>
+  </button>
+);
+
+const OpRow: React.FC<{ label: string; value: string; tone: 'cyan' | 'amber' | 'white' }> = ({ label, value, tone }) => {
+  const colors: Record<string, string> = {
+    cyan: 'text-cyan-300',
+    amber: 'text-amber-300',
+    white: 'text-white',
+  };
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">{label}</span>
+      <span className={`font-black text-sm md:text-base tracking-wide ${colors[tone]} text-right`}>{value}</span>
+    </div>
+  );
+};
+
+const Telemetry: React.FC<{ label: string; value: number }> = ({ label, value }) => (
+  <div>
+    <div className="text-cyan-200 font-black text-lg tabular-nums">{value.toLocaleString()}</div>
+    <div className="text-[9px] font-mono tracking-[0.3em] text-white/40 uppercase">{label}</div>
+  </div>
+);
+
+
 interface MainMenuProps {
   initGame: () => void;
   setGameState: (state: 'start' | 'playing' | 'dead' | 'win' | 'upgrades') => void;
