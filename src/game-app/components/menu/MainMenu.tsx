@@ -73,7 +73,6 @@ export const MainMenu: React.FC<MainMenuProps> = ({
     magenta: { ring: 'border-fuchsia-500/60', text: 'text-fuchsia-400', glow: 'shadow-[0_0_40px_rgba(232,121,249,0.25)]' },
     amber: { ring: 'border-amber-500/60', text: 'text-amber-400', glow: 'shadow-[0_0_40px_rgba(251,191,36,0.25)]' },
   };
-  return (
   const [settings] = useSettings();
   const reducedMotion = typeof window !== 'undefined'
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -82,6 +81,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
   const handleSettings = () => { sounds.playUiClick(); setMenuView('difficulty'); };
   const handleDatabase = () => { sounds.playUiClick(); setMenuView('profile'); };
+
 
   return (
     <div className="w-full h-full flex flex-col relative overflow-hidden bg-slate-950">
