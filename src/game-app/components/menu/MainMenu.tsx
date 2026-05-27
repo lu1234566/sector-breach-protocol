@@ -74,187 +74,216 @@ export const MainMenu: React.FC<MainMenuProps> = ({
     amber: { ring: 'border-amber-500/60', text: 'text-amber-400', glow: 'shadow-[0_0_40px_rgba(251,191,36,0.25)]' },
   };
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden bg-slate-950 px-4">
-      {/* Dynamic Background */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center brightness-[0.3] scale-110 opacity-60" 
-        style={{ backgroundImage: `url(${ASSETS.menu.bg})` }} 
-      />
-      
-      {/* Tactical Overlay Elements */}
-      <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(#22d3ee_1px,transparent_1px),linear-gradient(90deg,#22d3ee_1px,transparent_1px)] bg-[size:40px_40px]" />
-      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-cyan-500/10 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-red-500/5 to-transparent" />
-      
-      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-         <div className="w-full h-full opacity-[0.02] pointer-events-none bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,#fff_3px,transparent_3px)]" />
+  const [settings] = useSettings();
+  const reducedMotion = typeof window !== 'undefined'
+    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const allowVideo = settings.quality !== 'low' && !reducedMotion;
+  const [videoReady, setVideoReady] = useState(false);
+
+  const handleSettings = () => { sounds.playUiClick(); setMenuView('difficulty'); };
+  const handleDatabase = () => { sounds.playUiClick(); setMenuView('profile'); };
+
+  return (
+    <div className="w-full h-full flex flex-col relative overflow-hidden bg-slate-950">
+      {/* Background: video (med/high) or static poster (low / reduced motion) */}
+      <div className="absolute inset-0 overflow-hidden">
+        <img
+          src="/assets/menu/menu_bg_poster.jpg"
+          alt=""
+          aria-hidden
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: videoReady && allowVideo ? 0 : 1, transition: 'opacity 600ms ease' }}
+        />
+        {allowVideo && (
+          <video
+            src="/assets/menu/menu_bg.mp4"
+            poster="/assets/menu/menu_bg_poster.jpg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            onCanPlay={() => setVideoReady(true)}
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ opacity: videoReady ? 1 : 0, transition: 'opacity 800ms ease' }}
+          />
+        )}
+        {/* Dark readability overlays */}
+        <div className="absolute inset-0 bg-slate-950/65" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/40 to-slate-950/80" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/70" />
       </div>
-      
+
+      {/* HUD grid + scanlines */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.08] bg-[linear-gradient(#22d3ee_1px,transparent_1px),linear-gradient(90deg,#22d3ee_1px,transparent_1px)] bg-[size:48px_48px]" />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.06] bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,#67e8f9_3px,transparent_3px)]" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
+
       <AnimatePresence mode="wait">
         {(menuView === 'main' || !['armory', 'difficulty', 'profile', 'arena'].includes(menuView)) && (
-          <motion.div 
+          <motion.div
             key="main"
-            initial={{ opacity: 0, scale: 0.95 }} 
-            animate={{ opacity: 1, scale: 1 }} 
-            exit={{ opacity: 0, scale: 1.05 }}
-            className="flex flex-col items-center z-10 w-full max-h-full overflow-y-auto custom-scrollbar pt-8 pb-16"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="relative z-10 flex-1 w-full max-w-[1600px] mx-auto px-6 md:px-12 lg:px-16 py-8 flex flex-col"
           >
-            {/* Logo Section */}
-            <motion.div 
-              initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-              className="flex flex-col items-center mb-12"
-            >
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black italic tracking-tighter uppercase text-center leading-none drop-shadow-[0_0_40px_rgba(34,211,238,0.55)]">
-                <span className="text-white">PROTOCOL</span>
-                <span className="ml-3 bg-gradient-to-r from-cyan-300 via-cyan-400 to-fuchsia-400 bg-clip-text text-transparent">DOC</span>
-              </h1>
-              <div className="mt-3 flex items-center gap-4 text-cyan-400 font-black tracking-[0.5em] uppercase text-[9px] md:text-xs">
-                <div className="h-[2px] w-12 bg-gradient-to-r from-transparent to-cyan-500" />
-                Arena Combat Protocol
-                <div className="h-[2px] w-12 bg-gradient-to-l from-transparent to-fuchsia-500" />
+            {/* Top status strip */}
+            <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.4em] text-cyan-300/70">
+              <div className="flex items-center gap-3">
+                <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span>SBP // TERMINAL_v1.2.5</span>
               </div>
-            </motion.div>
-
-            {/* Arena selector pill */}
-            <button
-              onClick={() => { sounds.playUiClick(); setMenuView('arena'); }}
-              className={`mb-8 group flex items-center gap-3 px-5 py-2.5 rounded-full bg-slate-950/70 backdrop-blur-xl border ${accentColors[currentArena.accent].ring} ${accentColors[currentArena.accent].glow} hover:scale-[1.03] transition-all`}
-            >
-              <MapIcon size={16} className={accentColors[currentArena.accent].text} />
-              <div className="flex flex-col items-start leading-none">
-                <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/40">Deploy Sector</span>
-                <span className={`text-sm font-black uppercase italic tracking-tight ${accentColors[currentArena.accent].text}`}>{currentArena.name}</span>
-              </div>
-              <ChevronLeft size={14} className="rotate-180 text-white/40 group-hover:text-white transition-colors" />
-            </button>
-
-            {/* Menu Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl px-4">
-              <button 
-                onClick={() => {
-                  sounds.playUiClick();
-                  initGame();
-                }}
-                className="group relative h-48 md:h-64 rounded-[2rem] overflow-hidden border-2 border-white/5 bg-slate-900/40 backdrop-blur-xl transition-all hover:border-cyan-500/50 hover:shadow-[0_0_50px_rgba(34,211,238,0.2)] hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <div 
-                  className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 group-hover:scale-110 transition-all" 
-                  style={{ backgroundImage: `url(${ASSETS.menu.commandCard})` }} 
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
-                
-                <div className="absolute inset-0 p-8 flex flex-col items-center justify-center gap-3">
-                   <div className="p-4 bg-cyan-500/10 rounded-2xl border border-cyan-500/20 group-hover:bg-cyan-500/20 group-hover:border-cyan-500/40 transition-colors">
-                      <Target size={40} className="text-cyan-400 group-hover:rotate-12 transition-transform" />
-                   </div>
-                   <div className="text-center">
-                     <span className="block font-black text-2xl lg:text-3xl text-white uppercase italic tracking-tighter">Initiate Strike</span>
-                     <span className="text-[10px] font-bold text-cyan-500/60 uppercase tracking-[0.3em]">Sector 01: Hostile Ground</span>
-                   </div>
-                </div>
-              </button>
-
-              <button 
-                onClick={() => {
-                  sounds.playUiClick();
-                  setGameState('upgrades');
-                }}
-                className="group relative h-48 md:h-64 rounded-[2rem] overflow-hidden border-2 border-white/5 bg-slate-900/40 backdrop-blur-xl transition-all hover:border-yellow-500/50 hover:shadow-[0_0_50px_rgba(234,179,8,0.2)] hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <div 
-                  className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 group-hover:scale-110 transition-all" 
-                  style={{ backgroundImage: `url(${ASSETS.menu.armoryCard})` }} 
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
-                
-                <div className="absolute inset-0 p-8 flex flex-col items-center justify-center gap-3">
-                   <div className="p-4 bg-yellow-500/10 rounded-2xl border border-yellow-500/20 group-hover:bg-yellow-500/20 group-hover:border-yellow-500/40 transition-colors">
-                      <Zap size={40} className="text-yellow-500 group-hover:-translate-y-1 transition-transform" />
-                   </div>
-                   <div className="text-center">
-                     <span className="block font-black text-2xl lg:text-3xl text-white uppercase italic tracking-tighter">Command Center</span>
-                     <span className="text-[10px] font-bold text-yellow-500/60 uppercase tracking-[0.3em]">System Augmentation</span>
-                   </div>
-                </div>
-              </button>
-
-              <button 
-                onClick={() => {
-                  sounds.playUiClick();
-                  setMenuView('armory');
-                }}
-                className="group relative h-40 md:h-48 rounded-[1.5rem] overflow-hidden border border-white/10 bg-slate-900/60 backdrop-blur-lg transition-all hover:border-white/30 hover:bg-slate-900/80 hover:scale-[1.02]"
-              >
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6">
-                   <Swords size={32} className="text-blue-400 group-hover:-rotate-12 transition-transform" />
-                   <div className="text-center">
-                      <span className="block font-black text-xl text-white uppercase italic tracking-tighter">Arsenal</span>
-                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none">Review Munitions</span>
-                   </div>
-                </div>
-              </button>
-
-              <div className="grid grid-cols-2 gap-4">
-                <button 
-                  onClick={() => {
-                    sounds.playUiClick();
-                    setMenuView('difficulty');
-                  }}
-                  className="group relative rounded-[1.5rem] overflow-hidden border border-white/10 bg-slate-900/40 backdrop-blur-md transition-all hover:border-red-500/50 hover:bg-red-500/5"
-                >
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center brightness-50 opacity-20 group-hover:opacity-40 transition-all" 
-                    style={{ backgroundImage: `url(${ASSETS.menu.difficultyCard})` }} 
-                  />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-4">
-                     <Shield size={24} style={{ color: DIFFICULTIES[difficulty].color }} />
-                     <span className="font-black text-sm text-white uppercase italic">Protocol</span>
-                     <span className="text-[9px] font-bold uppercase tracking-tighter" style={{ color: DIFFICULTIES[difficulty].color }}>{difficulty}</span>
-                  </div>
-                </button>
-                <button 
-                  onClick={() => {
-                    sounds.playUiClick();
-                    setMenuView('profile');
-                  }}
-                  className="group relative rounded-[1.5rem] overflow-hidden border border-white/10 bg-slate-900/40 backdrop-blur-md transition-all hover:border-green-500/50 hover:bg-green-500/5"
-                >
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center brightness-50 opacity-20 group-hover:opacity-40 transition-all" 
-                    style={{ backgroundImage: `url(${ASSETS.menu.profileCard})` }} 
-                  />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-4">
-                     <Users size={24} className="text-green-500" />
-                     <span className="font-black text-sm text-white uppercase italic">Status</span>
-                     <span className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter truncate max-w-full">Operational</span>
-                  </div>
-                </button>
+              <div className="flex items-center gap-6">
+                <span>UPLINK: SECURE</span>
+                <span className="text-red-400/80 flex items-center gap-2">
+                  <AlertTriangle size={11} /> LOCKDOWN
+                </span>
               </div>
             </div>
 
-            {/* Bottom Info Bar */}
-            <div className="mt-16 flex flex-col items-center gap-6 w-full max-w-xs md:max-w-md">
-              <div className="relative group w-full">
-                <div className="absolute -inset-1 bg-yellow-500/20 blur-[10px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative bg-slate-950/80 backdrop-blur-xl px-6 py-3 rounded-full border border-white/10 flex items-center justify-between shadow-2xl">
-                   <div className="flex items-center gap-3">
-                      <Coins size={20} className="text-yellow-500" />
-                      <span className="text-white/40 text-[10px] font-black uppercase tracking-[0.2em]">Salvage Credits</span>
-                   </div>
-                   <span className="text-yellow-500 font-black text-xl tabular-nums italic tracking-tighter">{tacticalCredits.toLocaleString()}</span>
+            {/* Two-column layout */}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-10 items-center mt-6">
+              {/* LEFT — Title + buttons */}
+              <div className="flex flex-col">
+                <motion.div
+                  initial={{ x: -30, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="flex items-center gap-3 text-cyan-400 font-mono text-[10px] md:text-xs tracking-[0.5em] uppercase mb-4">
+                    <div className="h-px w-10 bg-cyan-400/60" />
+                    Classified Operation
+                  </div>
+                  <h1 className="font-black italic uppercase leading-[0.85] tracking-tighter text-white drop-shadow-[0_0_30px_rgba(34,211,238,0.35)]">
+                    <span className="block text-5xl md:text-7xl lg:text-8xl">SECTOR BREACH</span>
+                    <span className="block text-5xl md:text-7xl lg:text-8xl bg-gradient-to-r from-cyan-200 via-cyan-400 to-sky-500 bg-clip-text text-transparent">
+                      PROTOCOL
+                    </span>
+                  </h1>
+                  <div className="mt-5 flex items-center gap-3 font-mono text-xs md:text-sm uppercase tracking-[0.35em] text-red-400">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                    Containment Failure Detected
+                  </div>
+                </motion.div>
+
+                {/* Buttons */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                  className="mt-12 flex flex-col gap-3 max-w-md"
+                >
+                  {/* DEPLOY — primary */}
+                  <button
+                    onClick={() => { sounds.playUiClick(); initGame(); }}
+                    className="group relative overflow-hidden rounded-md border border-cyan-400/70 bg-cyan-500/10 hover:bg-cyan-500/20 px-6 py-4 text-left transition-all shadow-[0_0_30px_rgba(34,211,238,0.35)] hover:shadow-[0_0_50px_rgba(34,211,238,0.65)] hover:border-cyan-300"
+                  >
+                    <div className="absolute inset-y-0 left-0 w-1 bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.9)]" />
+                    <div className="absolute top-0 right-0 w-16 h-px bg-cyan-400/60" />
+                    <div className="absolute top-0 right-0 w-px h-4 bg-cyan-400/60" />
+                    <div className="flex items-center gap-4 pl-2">
+                      <div className="p-2.5 rounded bg-cyan-400/20 border border-cyan-400/40 group-hover:bg-cyan-400/30">
+                        <Play size={22} className="text-cyan-200 fill-cyan-200" />
+                      </div>
+                      <div>
+                        <div className="font-black text-2xl tracking-widest text-white uppercase italic">DEPLOY</div>
+                        <div className="text-[10px] font-mono tracking-[0.3em] text-cyan-300/80 uppercase">Engage Hostile Sector</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Secondary row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <SbpButton icon={<Swords size={16} />} label="ARMORY" sub="Munitions"
+                      onClick={() => { sounds.playUiClick(); setMenuView('armory'); }} />
+                    <SbpButton icon={<Zap size={16} />} label="UPGRADES" sub="Augments"
+                      onClick={() => { sounds.playUiClick(); setGameState('upgrades'); }} />
+                    <SbpButton icon={<Database size={16} />} label="DATABASE" sub="Intel Logs"
+                      onClick={handleDatabase} />
+                    <SbpButton icon={<SettingsIcon size={16} />} label="SETTINGS" sub="Protocol Config"
+                      onClick={handleSettings} />
+                  </div>
+                </motion.div>
+
+                {/* Credits strip */}
+                <div className="mt-8 inline-flex items-center gap-3 text-xs font-mono uppercase tracking-[0.3em] text-white/50">
+                  <Coins size={14} className="text-amber-400" />
+                  <span>Salvage</span>
+                  <span className="text-amber-300 font-black text-base tabular-nums">
+                    {tacticalCredits.toLocaleString()}
+                  </span>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-4 text-[8px] md:text-[10px] text-slate-600 font-black uppercase tracking-[0.5em] italic">
-                <span>v1.2.5</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-900" />
-                <span>Simulation Active</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-900" />
-                <span>Encrypted Session</span>
-              </div>
+
+              {/* RIGHT — CURRENT OPERATION panel */}
+              <motion.div
+                initial={{ x: 30, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.15, duration: 0.5 }}
+                className="relative"
+              >
+                <div className="relative rounded-md border border-cyan-500/30 bg-slate-950/70 backdrop-blur-md p-6 shadow-[0_0_60px_rgba(8,47,73,0.55)] overflow-hidden">
+                  <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-cyan-400" />
+                  <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-cyan-400" />
+                  <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-cyan-400" />
+                  <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-cyan-400" />
+
+                  <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3 mb-4">
+                    <div className="flex items-center gap-2 text-cyan-300">
+                      <Activity size={14} />
+                      <span className="font-mono text-[11px] uppercase tracking-[0.4em]">
+                        Current Operation
+                      </span>
+                    </div>
+                    <span className="font-mono text-[10px] text-cyan-400/70 tabular-nums">OP-05</span>
+                  </div>
+
+                  <div className="space-y-4 font-mono text-sm">
+                    <OpRow label="Threat Level" value="Adaptive" tone="amber" />
+                    <OpRow label="Final Hostile" value="Sapphire Dragonoid" tone="cyan" />
+                    <OpRow label="Sector" value="Containment-05" tone="white" />
+                  </div>
+
+                  <div className="mt-5 pt-4 border-t border-cyan-500/20 grid grid-cols-3 gap-3 text-center">
+                    <Telemetry label="WAVES" value={lifetimeStats?.totalWaves ?? 0} />
+                    <Telemetry label="KILLS" value={lifetimeStats?.totalKills ?? 0} />
+                    <Telemetry label="RUNS" value={lifetimeStats?.totalRuns ?? 0} />
+                  </div>
+
+                  <motion.div
+                    aria-hidden
+                    animate={{ y: ['0%', '1200%'] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+                    className="pointer-events-none absolute left-0 right-0 top-0 h-2 bg-gradient-to-b from-cyan-400/30 to-transparent"
+                  />
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-mono uppercase tracking-[0.3em]">
+                  <span
+                    className="px-3 py-1.5 rounded border border-white/10 bg-slate-950/60"
+                    style={{ color: DIFFICULTIES[difficulty].color }}
+                  >
+                    Protocol: {difficulty}
+                  </span>
+                  <button
+                    onClick={() => { sounds.playUiClick(); setMenuView('arena'); }}
+                    className="px-3 py-1.5 rounded border border-cyan-500/30 bg-slate-950/60 text-cyan-300 hover:border-cyan-400/60 transition-colors flex items-center gap-2"
+                  >
+                    <MapIcon size={11} /> {currentArena.name}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">
+              <span>// END_OF_TRANSMISSION</span>
+              <span>ENCRYPTED · AES-256 · CHANNEL Δ</span>
             </div>
           </motion.div>
         )}
+
 
         {menuView === 'armory' && (
           <motion.div 
