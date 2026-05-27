@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Target, 
@@ -11,7 +11,12 @@ import {
   ChevronLeft, 
   Swords, 
   Award, 
-  Skull 
+  Skull,
+  Play,
+  Database,
+  Settings as SettingsIcon,
+  AlertTriangle,
+  Activity,
 } from 'lucide-react';
 import { 
   WeaponType, 
@@ -23,6 +28,7 @@ import { LifetimeStats, WeaponUpgradeLevels } from '../../game/types';
 import { saveDifficulty } from '../../game/persistence';
 import { sounds } from '../../game/SoundEngine';
 import { ASSETS } from '../../game/assets';
+import { useSettings } from '../../game/settings';
 import type { ArenaDef } from '../../data/arenas';
 import { Map as MapIcon } from 'lucide-react';
 
