@@ -42,29 +42,32 @@ const SbpButton: React.FC<{
 }> = ({ icon, label, sub, onClick }) => (
   <button
     onClick={onClick}
-    className="group relative overflow-hidden rounded-md border border-cyan-500/20 bg-slate-950/60 hover:bg-slate-900/80 hover:border-cyan-400/60 px-4 py-3 text-left transition-all"
+    className="group relative overflow-hidden rounded-sm border border-cyan-500/15 bg-slate-950/55 hover:bg-slate-900/75 hover:border-cyan-400/50 px-4 py-3 text-left transition-all"
   >
-    <div className="absolute inset-y-0 left-0 w-px bg-cyan-500/40 group-hover:bg-cyan-300 group-hover:shadow-[0_0_8px_rgba(34,211,238,0.8)] transition-all" />
+    <div className="absolute inset-y-0 left-0 w-px bg-cyan-500/30 group-hover:bg-cyan-300 group-hover:shadow-[0_0_8px_rgba(34,211,238,0.8)] transition-all" />
+    <div className="absolute top-1 right-2 font-mono text-[8px] tracking-[0.3em] text-cyan-400/30 group-hover:text-cyan-300/70 transition-colors">›</div>
     <div className="flex items-center gap-3">
-      <span className="text-cyan-400 group-hover:text-cyan-200 transition-colors">{icon}</span>
+      <span className="text-cyan-400/80 group-hover:text-cyan-200 transition-colors">{icon}</span>
       <div className="leading-tight">
-        <div className="font-black text-sm tracking-[0.2em] text-white uppercase">{label}</div>
-        <div className="text-[9px] font-mono tracking-[0.25em] text-white/40 uppercase">{sub}</div>
+        <div className="font-black text-sm tracking-[0.28em] text-white/90 uppercase">{label}</div>
+        <div className="text-[9px] font-mono tracking-[0.3em] text-white/35 uppercase">{sub}</div>
       </div>
     </div>
   </button>
 );
 
-const OpRow: React.FC<{ label: string; value: string; tone: 'cyan' | 'amber' | 'white' }> = ({ label, value, tone }) => {
+const OpRow: React.FC<{ label: string; value: string; tone: 'cyan' | 'amber' | 'white' | 'emerald' | 'red' }> = ({ label, value, tone }) => {
   const colors: Record<string, string> = {
     cyan: 'text-cyan-300',
     amber: 'text-amber-300',
     white: 'text-white',
+    emerald: 'text-emerald-300',
+    red: 'text-red-300',
   };
   return (
-    <div className="flex items-baseline justify-between gap-4">
+    <div className="flex items-baseline justify-between gap-4 border-b border-cyan-500/10 pb-1.5">
       <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">{label}</span>
-      <span className={`font-black text-sm md:text-base tracking-wide ${colors[tone]} text-right`}>{value}</span>
+      <span className={`font-black text-xs md:text-sm tracking-wider ${colors[tone]} text-right`}>{value}</span>
     </div>
   );
 };
@@ -170,26 +173,29 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="relative z-10 flex-1 w-full max-w-[1600px] mx-auto px-6 md:px-12 lg:px-16 py-8 flex flex-col"
+            className="relative z-10 flex-1 w-full max-w-[1600px] mx-auto px-6 md:px-10 lg:px-14 py-6 flex flex-col"
           >
             {/* Top status strip */}
-            <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.4em] text-cyan-300/70">
+            <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.4em] text-cyan-300/70 border-b border-cyan-500/15 pb-3">
               <div className="flex items-center gap-3">
-                <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(248,113,113,0.9)]" />
                 <span>SBP // TERMINAL_v1.2.5</span>
+                <span className="hidden md:inline text-white/30">·</span>
+                <span className="hidden md:inline text-white/50">NODE Δ-05</span>
               </div>
               <div className="flex items-center gap-6">
-                <span>UPLINK: SECURE</span>
-                <span className="text-red-400/80 flex items-center gap-2">
+                <span className="hidden md:inline">UPLINK: SECURE</span>
+                <span className="hidden md:inline text-emerald-400/80">SIGNAL: STABLE</span>
+                <span className="text-red-400/90 flex items-center gap-2">
                   <AlertTriangle size={11} /> LOCKDOWN
                 </span>
               </div>
             </div>
 
             {/* Two-column layout */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-10 items-center mt-6">
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-8 lg:gap-12 items-stretch mt-6">
               {/* LEFT — Title + buttons */}
-              <div className="flex flex-col">
+              <div className="flex flex-col justify-center">
                 <motion.div
                   initial={{ x: -30, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -198,60 +204,72 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                   <div className="flex items-center gap-3 text-cyan-400 font-mono text-[10px] md:text-xs tracking-[0.5em] uppercase mb-4">
                     <div className="h-px w-10 bg-cyan-400/60" />
                     Classified Operation
+                    <span className="text-white/30">//</span>
+                    <span className="text-white/40">FILE 005-Δ</span>
                   </div>
                   <h1 className="font-black italic uppercase leading-[0.85] tracking-tighter text-white drop-shadow-[0_0_30px_rgba(34,211,238,0.35)]">
-                    <span className="block text-5xl md:text-7xl lg:text-8xl">SECTOR BREACH</span>
-                    <span className="block text-5xl md:text-7xl lg:text-8xl bg-gradient-to-r from-cyan-200 via-cyan-400 to-sky-500 bg-clip-text text-transparent">
+                    <span className="block text-5xl md:text-7xl lg:text-[5.5rem]">SECTOR BREACH</span>
+                    <span className="block text-5xl md:text-7xl lg:text-[5.5rem] bg-gradient-to-r from-cyan-200 via-sky-400 to-blue-600 bg-clip-text text-transparent">
                       PROTOCOL
                     </span>
                   </h1>
-                  <div className="mt-5 flex items-center gap-3 font-mono text-xs md:text-sm uppercase tracking-[0.35em] text-red-400">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                    Containment Failure Detected
+
+                  <div className="mt-5 flex flex-col gap-2">
+                    <div className="flex items-center gap-3 font-mono text-xs md:text-sm uppercase tracking-[0.35em] text-red-400">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                      Containment Failure Detected
+                    </div>
+                    <div className="flex flex-wrap gap-x-6 gap-y-1 font-mono text-[10px] uppercase tracking-[0.3em] text-white/45 pl-4 border-l border-cyan-500/20">
+                      <span>Operation Status: <span className="text-amber-300/90">Breach Active</span></span>
+                      <span>Sector: <span className="text-cyan-300/90">Containment-05</span></span>
+                    </div>
                   </div>
                 </motion.div>
 
-                {/* Buttons */}
+                {/* Buttons — vertical column */}
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2, duration: 0.5 }}
-                  className="mt-12 flex flex-col gap-3 max-w-md"
+                  className="mt-10 flex flex-col gap-2.5 max-w-[420px]"
                 >
                   {/* DEPLOY — primary */}
                   <button
                     onClick={() => { sounds.playUiClick(); initGame(); }}
-                    className="group relative overflow-hidden rounded-md border border-cyan-400/70 bg-cyan-500/10 hover:bg-cyan-500/20 px-6 py-4 text-left transition-all shadow-[0_0_30px_rgba(34,211,238,0.35)] hover:shadow-[0_0_50px_rgba(34,211,238,0.65)] hover:border-cyan-300"
+                    className="group relative overflow-hidden rounded-sm border border-cyan-400/70 bg-gradient-to-r from-cyan-500/15 via-sky-500/10 to-transparent hover:from-cyan-400/25 hover:via-sky-400/15 px-6 py-4 text-left transition-all shadow-[0_0_30px_rgba(34,211,238,0.35)] hover:shadow-[0_0_55px_rgba(34,211,238,0.7)] hover:border-cyan-300"
                   >
                     <div className="absolute inset-y-0 left-0 w-1 bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.9)]" />
-                    <div className="absolute top-0 right-0 w-16 h-px bg-cyan-400/60" />
-                    <div className="absolute top-0 right-0 w-px h-4 bg-cyan-400/60" />
+                    <div className="absolute top-0 right-0 w-20 h-px bg-cyan-400/70" />
+                    <div className="absolute top-0 right-0 w-px h-5 bg-cyan-400/70" />
+                    <div className="absolute bottom-0 right-0 w-px h-5 bg-cyan-400/70" />
+                    <div className="absolute bottom-0 right-0 w-20 h-px bg-cyan-400/70" />
                     <div className="flex items-center gap-4 pl-2">
-                      <div className="p-2.5 rounded bg-cyan-400/20 border border-cyan-400/40 group-hover:bg-cyan-400/30">
-                        <Play size={22} className="text-cyan-200 fill-cyan-200" />
+                      <div className="p-2.5 rounded-sm bg-cyan-400/20 border border-cyan-400/40 group-hover:bg-cyan-400/30">
+                        <Play size={22} className="text-cyan-100 fill-cyan-200" />
                       </div>
-                      <div>
-                        <div className="font-black text-2xl tracking-widest text-white uppercase italic">DEPLOY</div>
-                        <div className="text-[10px] font-mono tracking-[0.3em] text-cyan-300/80 uppercase">Engage Hostile Sector</div>
+                      <div className="flex-1">
+                        <div className="font-black text-2xl tracking-[0.2em] text-white uppercase italic">DEPLOY</div>
+                        <div className="text-[10px] font-mono tracking-[0.35em] text-cyan-300/90 uppercase">Engage Hostile Sector</div>
+                      </div>
+                      <div className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70 uppercase hidden sm:block">
+                        ▸ EXEC
                       </div>
                     </div>
                   </button>
 
-                  {/* Secondary row */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <SbpButton icon={<Swords size={16} />} label="ARMORY" sub="Munitions"
-                      onClick={() => { sounds.playUiClick(); setMenuView('armory'); }} />
-                    <SbpButton icon={<Zap size={16} />} label="UPGRADES" sub="Augments"
-                      onClick={() => { sounds.playUiClick(); setGameState('upgrades'); }} />
-                    <SbpButton icon={<Database size={16} />} label="DATABASE" sub="Intel Logs"
-                      onClick={handleDatabase} />
-                    <SbpButton icon={<SettingsIcon size={16} />} label="SETTINGS" sub="Protocol Config"
-                      onClick={handleSettings} />
-                  </div>
+                  {/* Secondary buttons — vertical stack */}
+                  <SbpButton icon={<Swords size={16} />} label="ARMORY" sub="Munitions Loadout"
+                    onClick={() => { sounds.playUiClick(); setMenuView('armory'); }} />
+                  <SbpButton icon={<Zap size={16} />} label="UPGRADES" sub="Augment Protocols"
+                    onClick={() => { sounds.playUiClick(); setGameState('upgrades'); }} />
+                  <SbpButton icon={<Database size={16} />} label="DATABASE" sub="Hostile Intel · Lore"
+                    onClick={handleDatabase} />
+                  <SbpButton icon={<SettingsIcon size={16} />} label="SETTINGS" sub="Protocol Configuration"
+                    onClick={handleSettings} />
                 </motion.div>
 
                 {/* Credits strip */}
-                <div className="mt-8 inline-flex items-center gap-3 text-xs font-mono uppercase tracking-[0.3em] text-white/50">
+                <div className="mt-6 inline-flex items-center gap-3 text-xs font-mono uppercase tracking-[0.3em] text-white/45">
                   <Coins size={14} className="text-amber-400" />
                   <span>Salvage</span>
                   <span className="text-amber-300 font-black text-base tabular-nums">
@@ -260,22 +278,23 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                 </div>
               </div>
 
-              {/* RIGHT — CURRENT OPERATION panel */}
+              {/* RIGHT — CURRENT OPERATION + BOSS panel */}
               <motion.div
                 initial={{ x: 30, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.15, duration: 0.5 }}
-                className="relative"
+                className="relative flex flex-col gap-4"
               >
-                <div className="relative rounded-md border border-cyan-500/30 bg-slate-950/70 backdrop-blur-md p-6 shadow-[0_0_60px_rgba(8,47,73,0.55)] overflow-hidden">
+                {/* CURRENT OPERATION */}
+                <div className="relative rounded-sm border border-cyan-500/30 bg-slate-950/75 backdrop-blur-md p-5 shadow-[0_0_60px_rgba(8,47,73,0.55)] overflow-hidden">
                   <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-cyan-400" />
                   <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-cyan-400" />
                   <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-cyan-400" />
                   <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-cyan-400" />
 
-                  <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3 mb-4">
+                  <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2.5 mb-3">
                     <div className="flex items-center gap-2 text-cyan-300">
-                      <Activity size={14} />
+                      <Activity size={13} />
                       <span className="font-mono text-[11px] uppercase tracking-[0.4em]">
                         Current Operation
                       </span>
@@ -283,37 +302,102 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                     <span className="font-mono text-[10px] text-cyan-400/70 tabular-nums">OP-05</span>
                   </div>
 
-                  <div className="space-y-4 font-mono text-sm">
-                    <OpRow label="Threat Level" value="Adaptive" tone="amber" />
-                    <OpRow label="Final Hostile" value="Sapphire Dragonoid" tone="cyan" />
+                  <div className="space-y-2 font-mono">
                     <OpRow label="Sector" value="Containment-05" tone="white" />
+                    <OpRow label="Threat Level" value="Adaptive" tone="amber" />
+                    <OpRow label="Wave Protocol" value="01 → 05" tone="cyan" />
+                    <OpRow label="Final Hostile" value="Sapphire Dragonoid" tone="emerald" />
+                    <OpRow label="Arena Status" value="Locked Down" tone="red" />
+                    <OpRow label="Mission State" value="Ready" tone="cyan" />
                   </div>
 
-                  <div className="mt-5 pt-4 border-t border-cyan-500/20 grid grid-cols-3 gap-3 text-center">
+                  <div className="mt-4 pt-3 border-t border-cyan-500/20 grid grid-cols-3 gap-3 text-center">
                     <Telemetry label="BEST WAVE" value={lifetimeStats?.bestWave ?? 0} />
                     <Telemetry label="KILLS" value={lifetimeStats?.totalKills ?? 0} />
                     <Telemetry label="RUNS" value={lifetimeStats?.totalGames ?? 0} />
-
                   </div>
 
-                  <motion.div
-                    aria-hidden
-                    animate={{ y: ['0%', '1200%'] }}
-                    transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
-                    className="pointer-events-none absolute left-0 right-0 top-0 h-2 bg-gradient-to-b from-cyan-400/30 to-transparent"
-                  />
+                  {allowVideo && (
+                    <motion.div
+                      aria-hidden
+                      animate={{ y: ['0%', '1400%'] }}
+                      transition={{ duration: 7, repeat: Infinity, ease: 'linear' }}
+                      className="pointer-events-none absolute left-0 right-0 top-0 h-2 bg-gradient-to-b from-cyan-400/25 to-transparent"
+                    />
+                  )}
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-mono uppercase tracking-[0.3em]">
+                {/* BOSS SIGNAL DETECTED */}
+                <div className="relative rounded-sm border border-emerald-500/30 bg-gradient-to-br from-slate-950/85 via-slate-950/75 to-blue-950/60 backdrop-blur-md overflow-hidden shadow-[0_0_50px_rgba(16,185,129,0.18)]">
+                  <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-emerald-400" />
+                  <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-emerald-400" />
+                  <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-emerald-400" />
+                  <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-emerald-400" />
+
+                  <div className="flex items-center justify-between border-b border-emerald-500/25 px-4 py-2.5">
+                    <div className="flex items-center gap-2 text-emerald-300">
+                      <Skull size={13} />
+                      <span className="font-mono text-[11px] uppercase tracking-[0.4em]">Boss Signal Detected</span>
+                    </div>
+                    <span className="font-mono text-[10px] text-red-400/80 flex items-center gap-1.5">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                      LIVE
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-[140px_1fr] gap-3 p-4">
+                    <div className="relative aspect-[3/4] rounded-sm overflow-hidden border border-emerald-500/25 bg-blue-950/40">
+                      <img
+                        src="/assets/menu/boss_dragonoid.jpg"
+                        alt="Sapphire Dragonoid"
+                        loading="lazy"
+                        width={768}
+                        height={1024}
+                        className="absolute inset-0 w-full h-full object-cover object-center"
+                        style={{ filter: 'contrast(1.1) saturate(1.15)' }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-950/30 via-transparent to-emerald-950/20 mix-blend-overlay" />
+                      <div className="absolute inset-0 pointer-events-none opacity-[0.18] bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,#34d399_3px,transparent_3px)]" />
+                      <div className="absolute bottom-1 left-1 font-mono text-[8px] uppercase tracking-[0.3em] text-emerald-300/80">
+                        ID: DRG-Δ-01
+                      </div>
+                    </div>
+                    <div className="flex flex-col justify-between gap-2">
+                      <div>
+                        <div className="font-black italic text-xl leading-none text-white uppercase tracking-tight">
+                          SAPPHIRE
+                        </div>
+                        <div className="font-black italic text-xl leading-none bg-gradient-to-r from-emerald-300 to-cyan-400 bg-clip-text text-transparent uppercase tracking-tight">
+                          DRAGONOID
+                        </div>
+                        <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.3em] text-white/40">
+                          Class: Apex · Tier Ω
+                        </div>
+                      </div>
+                      <div className="space-y-1 font-mono text-[10px]">
+                        <div className="flex justify-between"><span className="text-white/40 uppercase tracking-wider">Armor</span><span className="text-cyan-300">Sapphire Plate</span></div>
+                        <div className="flex justify-between"><span className="text-white/40 uppercase tracking-wider">Core</span><span className="text-emerald-300">Emerald Reactor</span></div>
+                        <div className="flex justify-between"><span className="text-white/40 uppercase tracking-wider">Threat</span><span className="text-red-300">Critical</span></div>
+                      </div>
+                      <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-emerald-300/70 border-t border-emerald-500/20 pt-1.5">
+                        ▸ Engage at Wave 05
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick chips */}
+                <div className="flex flex-wrap gap-2 text-[10px] font-mono uppercase tracking-[0.3em]">
                   <span
-                    className="px-3 py-1.5 rounded border border-white/10 bg-slate-950/60"
+                    className="px-3 py-1.5 rounded-sm border border-white/10 bg-slate-950/60"
                     style={{ color: DIFFICULTIES[difficulty].color }}
                   >
                     Protocol: {difficulty}
                   </span>
                   <button
                     onClick={() => { sounds.playUiClick(); setMenuView('arena'); }}
-                    className="px-3 py-1.5 rounded border border-cyan-500/30 bg-slate-950/60 text-cyan-300 hover:border-cyan-400/60 transition-colors flex items-center gap-2"
+                    className="px-3 py-1.5 rounded-sm border border-cyan-500/30 bg-slate-950/60 text-cyan-300 hover:border-cyan-400/60 transition-colors flex items-center gap-2"
                   >
                     <MapIcon size={11} /> {currentArena.name}
                   </button>
@@ -321,12 +405,17 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               </motion.div>
             </div>
 
-            <div className="mt-6 flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">
-              <span>// END_OF_TRANSMISSION</span>
-              <span>ENCRYPTED · AES-256 · CHANNEL Δ</span>
+            {/* Footer */}
+            <div className="mt-6 pt-3 border-t border-cyan-500/15 flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.4em] text-white/35">
+              <span>// BUILD 1.2.5 · ENCRYPTED Δ</span>
+              <span className="hidden md:inline text-cyan-300/60 animate-pulse">
+                ▸ Press DEPLOY to begin operation
+              </span>
+              <span>SBP © PROTOCOL DOC</span>
             </div>
           </motion.div>
         )}
+
 
 
         {menuView === 'armory' && (
