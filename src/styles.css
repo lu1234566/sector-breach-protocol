@@ -159,60 +159,42 @@
 }
 
 :root {
-  /* Primary brand neons (bright, saturated, oklch for HDR-grade glow) */
-  --neon-cyan: oklch(0.86 0.16 210);     /* primary HUD / "Live" indicators */
-  --neon-magenta: oklch(0.72 0.27 330);  /* secondary accent / DOC mark */
-  --neon-amber: oklch(0.84 0.17 80);     /* credits, highlights, ammo */
-  --neon-danger: oklch(0.66 0.25 25);    /* damage, low HP, warnings */
-
-  /* Arena surfaces */
-  --arena-bg: oklch(0.13 0.03 265);      /* base canvas behind 3D scene */
-  --arena-panel: oklch(0.18 0.03 265 / 0.78); /* HUD panels with backdrop blur */
-  --arena-grid: oklch(0.86 0.16 210 / 0.12);  /* faint cyan tactical grid */
-
-  /* Brand glows — apply with box-shadow / drop-shadow */
+  --neon-cyan: oklch(0.86 0.16 210);
+  --neon-magenta: oklch(0.72 0.27 330);
+  --neon-amber: oklch(0.84 0.17 80);
+  --neon-danger: oklch(0.66 0.25 25);
+  --arena-bg: oklch(0.13 0.03 265);
+  --arena-panel: oklch(0.18 0.03 265 / 0.78);
+  --arena-grid: oklch(0.86 0.16 210 / 0.12);
   --glow-cyan: 0 0 24px color-mix(in oklab, var(--neon-cyan) 55%, transparent);
   --glow-magenta: 0 0 24px color-mix(in oklab, var(--neon-magenta) 55%, transparent);
   --glow-danger: 0 0 18px color-mix(in oklab, var(--neon-danger) 60%, transparent);
-
-  /* Brand gradient — use sparingly, reserved for the DOC mark */
   --gradient-doc: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
 }
 
 /* =====================================================================
- * Sector Breach Protocol — responsive main menu fit fixes
- * Keeps the new cinematic menu visible inside Lovable preview / Chromebook
- * viewports where browser chrome and side panels reduce usable height.
+ * Sector Breach Protocol — compact main menu rules
+ * These selectors intentionally target only the cinematic main menu wrapper.
+ * They avoid the old brittle `div:first-child` rules that could hide the
+ * background layer or wrong cards in nested views.
  * ===================================================================*/
 @layer utilities {
   [class*="max-w-[1600px]"] {
     height: 100dvh !important;
     max-height: 100dvh !important;
     overflow: hidden !important;
-    padding-top: clamp(0.75rem, 1.8vh, 1.5rem) !important;
-    padding-bottom: clamp(0.5rem, 1.4vh, 1.5rem) !important;
-  }
-
-  [class*="max-w-[1600px]"] > div:first-child {
-    padding-bottom: clamp(0.35rem, 1vh, 0.75rem) !important;
-    font-size: clamp(0.42rem, 1.2vh, 0.625rem) !important;
-  }
-
-  [class*="max-w-[1600px]"] > div:nth-of-type(2) {
-    margin-top: clamp(0.5rem, 1.6vh, 1.5rem) !important;
-    gap: clamp(0.75rem, 2vw, 2rem) !important;
-    min-height: 0 !important;
-    align-items: center !important;
+    padding-top: clamp(0.65rem, 1.7vh, 1.5rem) !important;
+    padding-bottom: clamp(0.45rem, 1.2vh, 1.5rem) !important;
   }
 
   [class*="max-w-[1600px]"] h1 span {
-    font-size: clamp(2.55rem, 6.5vw, 5.1rem) !important;
+    font-size: clamp(2.45rem, 6.4vw, 5.05rem) !important;
     line-height: 0.86 !important;
   }
 
   [class*="max-w-[1600px]"] h1 + div {
-    margin-top: clamp(0.55rem, 1.5vh, 1.25rem) !important;
-    gap: clamp(0.2rem, 0.7vh, 0.5rem) !important;
+    margin-top: clamp(0.45rem, 1.3vh, 1.15rem) !important;
+    gap: clamp(0.18rem, 0.65vh, 0.45rem) !important;
   }
 
   [class*="max-w-[1600px]"] button {
@@ -220,123 +202,106 @@
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] {
-    margin-top: clamp(0.85rem, 2.2vh, 2rem) !important;
-    gap: clamp(0.35rem, 0.9vh, 0.625rem) !important;
+    margin-top: clamp(0.75rem, 2vh, 1.8rem) !important;
+    gap: clamp(0.32rem, 0.85vh, 0.625rem) !important;
     max-width: min(420px, 100%) !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] > button:first-child {
-    padding-top: clamp(0.55rem, 1.35vh, 1rem) !important;
-    padding-bottom: clamp(0.55rem, 1.35vh, 1rem) !important;
+    padding-top: clamp(0.52rem, 1.25vh, 1rem) !important;
+    padding-bottom: clamp(0.52rem, 1.25vh, 1rem) !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] > button:first-child .text-2xl {
-    font-size: clamp(1.15rem, 2.9vh, 1.5rem) !important;
+    font-size: clamp(1.08rem, 2.6vh, 1.5rem) !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] > button:not(:first-child) {
-    padding-top: clamp(0.45rem, 1.05vh, 0.75rem) !important;
-    padding-bottom: clamp(0.45rem, 1.05vh, 0.75rem) !important;
+    padding-top: clamp(0.42rem, 1vh, 0.75rem) !important;
+    padding-bottom: clamp(0.42rem, 1vh, 0.75rem) !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] > button:not(:first-child) .text-sm {
-    font-size: clamp(0.68rem, 1.45vh, 0.875rem) !important;
+    font-size: clamp(0.66rem, 1.38vh, 0.875rem) !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] + div {
-    margin-top: clamp(0.55rem, 1.4vh, 1.5rem) !important;
-    font-size: clamp(0.55rem, 1.25vh, 0.75rem) !important;
+    margin-top: clamp(0.48rem, 1.2vh, 1.25rem) !important;
+    font-size: clamp(0.53rem, 1.15vh, 0.75rem) !important;
   }
 
   [class*="max-w-[1600px]"] [class*="rounded-sm"][class*="backdrop-blur-md"] {
-    padding: clamp(0.75rem, 1.8vh, 1.25rem) !important;
+    padding: clamp(0.7rem, 1.65vh, 1.15rem) !important;
   }
 }
 
 @media (max-height: 800px) {
   [class*="max-w-[1600px]"] {
-    padding-left: clamp(1rem, 2.5vw, 2.5rem) !important;
-    padding-right: clamp(1rem, 2.5vw, 2.5rem) !important;
+    padding-left: clamp(0.9rem, 2.2vw, 2.4rem) !important;
+    padding-right: clamp(0.9rem, 2.2vw, 2.4rem) !important;
   }
 
   [class*="max-w-[1600px]"] h1 span {
-    font-size: clamp(2.15rem, 5.9vw, 4.35rem) !important;
+    font-size: clamp(2.05rem, 5.75vw, 4.15rem) !important;
   }
 
-  [class*="max-w-[1600px]"] .tracking-[0.5em] {
-    margin-bottom: 0.55rem !important;
+  [class*="max-w-[1600px]"] [class*="tracking-[0.5em]"] {
+    margin-bottom: 0.45rem !important;
   }
 
   [class*="max-w-[1600px]"] [class*="grid-cols-[140px_1fr]"] {
-    grid-template-columns: 96px 1fr !important;
-    gap: 0.65rem !important;
-    padding: 0.75rem !important;
+    grid-template-columns: 92px 1fr !important;
+    gap: 0.6rem !important;
+    padding: 0.68rem !important;
   }
 
   [class*="max-w-[1600px]"] [class*="grid-cols-[140px_1fr]"] .text-xl {
-    font-size: 1rem !important;
+    font-size: 0.95rem !important;
   }
 
-  [class*="max-w-[1600px]"] [class*="space-y-2"] {
-    gap: 0.35rem !important;
-  }
-
-  [class*="max-w-[1600px]"] footer,
-  [class*="max-w-[1600px]"] > div:last-child {
-    display: none !important;
+  [class*="max-w-[1600px]"] .grid.grid-cols-3 {
+    gap: 0.45rem !important;
   }
 }
 
 @media (max-height: 700px) {
   [class*="max-w-[1600px]"] h1 span {
-    font-size: clamp(1.9rem, 5.3vw, 3.55rem) !important;
-  }
-
-  [class*="max-w-[1600px]"] > div:first-child {
-    display: none !important;
-  }
-
-  [class*="max-w-[1600px]"] > div:nth-of-type(2) {
-    margin-top: 0 !important;
+    font-size: clamp(1.8rem, 5.2vw, 3.35rem) !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] {
-    margin-top: 0.65rem !important;
+    margin-top: 0.58rem !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] > button:first-child {
-    padding-top: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
+    padding-top: 0.45rem !important;
+    padding-bottom: 0.45rem !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] > button:not(:first-child) {
-    padding-top: 0.38rem !important;
-    padding-bottom: 0.38rem !important;
+    padding-top: 0.34rem !important;
+    padding-bottom: 0.34rem !important;
   }
 
-  [class*="max-w-[1600px]"] [class*="Current Operation"],
-  [class*="max-w-[1600px]"] .grid.grid-cols-3 {
-    display: none !important;
-  }
-
-  [class*="max-w-[1600px]"] [class*="rounded-sm"][class*="backdrop-blur-md"]:first-child {
+  [class*="max-w-[1600px]"] .grid.grid-cols-3,
+  [class*="max-w-[1600px]"] > div:last-child {
     display: none !important;
   }
 }
 
 @media (max-height: 620px) {
   [class*="max-w-[1600px]"] h1 span {
-    font-size: clamp(1.65rem, 4.8vw, 3rem) !important;
+    font-size: clamp(1.55rem, 4.8vw, 2.85rem) !important;
   }
 
-  [class*="max-w-[1600px]"] .tracking-[0.35em],
-  [class*="max-w-[1600px]"] .tracking-[0.3em] {
-    letter-spacing: 0.18em !important;
+  [class*="max-w-[1600px]"] [class*="tracking-[0.35em]"],
+  [class*="max-w-[1600px]"] [class*="tracking-[0.3em]"] {
+    letter-spacing: 0.16em !important;
   }
 
   [class*="max-w-[1600px]"] [class*="grid-cols-[140px_1fr]"] {
-    grid-template-columns: 72px 1fr !important;
-    padding: 0.55rem !important;
+    grid-template-columns: 68px 1fr !important;
+    padding: 0.5rem !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] + div {
