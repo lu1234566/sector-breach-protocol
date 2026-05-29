@@ -15,6 +15,7 @@ const TEX_URLS = {
 interface MapProps {
   mapData: number[][];
   cellSize: number;
+  propsDensity?: number;
 }
 
 const NEON_CYAN = '#22d3ee';
@@ -31,7 +32,7 @@ const h = (x: number, y: number, salt = 0) => {
 
 const isWall = (c?: number) => c === 1; // visual occluder
 
-export function World({ mapData, cellSize }: MapProps) {
+export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
   const mapWidth = mapData[0].length * cellSize;
   const mapHeight = mapData.length * cellSize;
 
