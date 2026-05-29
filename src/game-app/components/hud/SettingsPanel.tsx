@@ -129,7 +129,12 @@ function Toggle({
           }`}
         />
       </span>
+    </button>
+  );
+}
+
 function QualityPicker({
+
   value,
   onChange,
 }: {
@@ -203,6 +208,4 @@ function QualityPicker({
 
         Restart match for full effect
       </div>
-    </div>
-  );
-}
+
