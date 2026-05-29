@@ -19,7 +19,6 @@ class EnemyModelBoundary extends Component<any, { err: boolean }> {
   state = { err: false };
   static getDerivedStateFromError() { return { err: true }; }
   componentDidCatch(e: any) {
-    // eslint-disable-next-line no-console
     console.warn('[EnemyModel] render failed', this.props.modelKey, e);
   }
   render() {
@@ -32,6 +31,24 @@ class EnemyModelBoundary extends Component<any, { err: boolean }> {
   }
 }
 
+const ANIM_ALIASES: Record<string, string[]> = {
+  idle: ['idle', 'stand', 'breath', 'loop', 'rest'],
+  walk: ['walk', 'walking', 'move', 'locomotion', 'forward'],
+  run: ['run', 'running', 'sprint', 'rush'],
+  attack: ['attack', 'slash', 'melee', 'strike', 'fire', 'shoot'],
+  shoot: ['shoot', 'fire', 'rifle', 'shot', 'attack'],
+  hit: ['hit', 'hurt', 'damage', 'impact'],
+  death: ['death', 'die', 'dead', 'collapse'],
+};
+
+function findClipByName(clips: THREE.AnimationClip[], state: string) {
+  const aliases = ANIM_ALIASES[state] ?? [state];
+  return clips.find((clip) => {
+    const n = clip.name?.toLowerCase?.() ?? '';
+    return aliases.some((a) => n.includes(a));
+  }) ?? null;
+}
+
 function pickClip(
   clips: THREE.AnimationClip[],
   map: Record<string, number>,
@@ -39,54 +56,100 @@ function pickClip(
   fallbackStates: string[] = [],
 ): THREE.AnimationClip | null {
   if (!clips || clips.length === 0) return null;
-  const tryState = (s: string): THREE.AnimationClip | null => {
-    const idx = map[s];
-    if (typeof idx === 'number' && clips[idx]) return clips[idx];
-    const byName = clips.find((c) => c.name?.toLowerCase().includes(s));
-    return byName ?? null;
-  };
-  return tryState(state) ?? fallbackStates.reduce<THREE.AnimationClip | null>(
-    (acc, s) => acc ?? tryState(s),
-    null,
-  ) ?? clips[0];
+
+  // Prefer semantic names when the exporter provides useful names.
+  const named = findClipByName(clips, state);
+  if (named) return named;
+
+  for (const fs of fallbackStates) {
+    const fallbackNamed = findClipByName(clips, fs);
+    if (fallbackNamed) return fallbackNamed;
+  }
+
+  // Then use the manually mapped NlaTrack indices.
+  const idx = map[state];
+  if (typeof idx === 'number' && clips[idx]) return clips[idx];
+
+  for (const fs of fallbackStates) {
+    const fIdx = map[fs];
+    if (typeof fIdx === 'number' && clips[fIdx]) return clips[fIdx];
+  }
+
+  // Do not blindly reuse clip[0] for every state; it causes incorrect animation switching.
+  if (state === 'idle' || state === 'walk' || state === 'run') return clips[0];
+  return null;
 }
 
-function prepareMaterials(root: THREE.Object3D, color: string) {
-  const collected: THREE.MeshStandardMaterial[] = [];
+function setTextureColorSpace(tex?: THREE.Texture | null) {
+  if (!tex) return;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+}
+
+function shouldPulseMaterial(mat: any) {
+  const name = `${mat?.name ?? ''}`.toLowerCase();
+  const hasEmissiveMap = !!mat?.emissiveMap;
+  const hasStrongEmissive = !!mat?.emissive && mat.emissive instanceof THREE.Color && (mat.emissive.r + mat.emissive.g + mat.emissive.b) > 0.15;
+  return hasEmissiveMap || hasStrongEmissive || /visor|eye|eyes|core|glow|light|led|emissive|screen|reactor|energy|cyan|blue|amber|red/i.test(name);
+}
+
+function prepareMaterials(root: THREE.Object3D, accentColor: string) {
+  const pulseMats: THREE.Material[] = [];
+
   root.traverse((o: any) => {
     if (!o.isMesh) return;
+
     o.visible = true;
     o.frustumCulled = false;
     o.castShadow = false;
     o.receiveShadow = false;
+
     const apply = (mat: any) => {
       if (!mat) return mat;
-      const map = mat.map ?? null;
-      if (map) {
-        map.colorSpace = THREE.SRGBColorSpace;
-        map.needsUpdate = true;
+
+      // Keep the original GLB material instead of replacing it. Replacing the
+      // material was destroying roughness/metalness/normal/AO/color data and
+      // made the enemies look like flat solid-color placeholders.
+      const cloned = mat.clone ? mat.clone() : mat;
+
+      setTextureColorSpace(cloned.map);
+      setTextureColorSpace(cloned.emissiveMap);
+      setTextureColorSpace(cloned.aoMap);
+      setTextureColorSpace(cloned.metalnessMap);
+      setTextureColorSpace(cloned.roughnessMap);
+      setTextureColorSpace(cloned.normalMap);
+
+      cloned.depthWrite = true;
+      cloned.depthTest = true;
+      cloned.side = THREE.FrontSide;
+      cloned.opacity = typeof cloned.opacity === 'number' ? cloned.opacity : 1;
+      cloned.transparent = !!cloned.transparent && cloned.opacity < 1;
+
+      if ('metalness' in cloned && typeof cloned.metalness !== 'number') cloned.metalness = 0.35;
+      if ('roughness' in cloned && typeof cloned.roughness !== 'number') cloned.roughness = 0.65;
+
+      if (shouldPulseMaterial(cloned)) {
+        if (!cloned.emissive) cloned.emissive = new THREE.Color(accentColor);
+        if (cloned.emissive instanceof THREE.Color && cloned.emissive.getHex() === 0) {
+          cloned.emissive.set(accentColor);
+        }
+        cloned.emissiveIntensity = Math.max(cloned.emissiveIntensity ?? 0, 0.35);
+        cloned.toneMapped = false;
+        pulseMats.push(cloned);
+      } else if ('emissiveIntensity' in cloned) {
+        // Keep non-light materials natural. Do not globally tint the whole enemy.
+        cloned.emissiveIntensity = Math.min(cloned.emissiveIntensity ?? 0, 0.08);
       }
-      const nm = new THREE.MeshStandardMaterial({
-        map,
-        color: map ? '#ffffff' : (mat.color ?? new THREE.Color('#cfd8e4')),
-        emissive: new THREE.Color(color),
-        emissiveIntensity: 0.3,
-        metalness: Math.min(0.35, mat.metalness ?? 0.2),
-        roughness: Math.max(0.45, mat.roughness ?? 0.6),
-        transparent: false,
-        opacity: 1,
-        depthWrite: true,
-        depthTest: true,
-        side: THREE.DoubleSide,
-      });
-      nm.toneMapped = false;
-      collected.push(nm);
-      return nm;
+
+      cloned.needsUpdate = true;
+      return cloned;
     };
+
     if (Array.isArray(o.material)) o.material = o.material.map(apply);
     else o.material = apply(o.material);
   });
-  return collected;
+
+  return pulseMats;
 }
 
 function fitToCell(root: THREE.Object3D, def: EnemyModelDef, cellSize: number, centerVertically = false) {
@@ -113,15 +176,11 @@ function fitToCell(root: THREE.Object3D, def: EnemyModelDef, cellSize: number, c
   box2.getCenter(c2);
   root.position.x -= c2.x;
   root.position.z -= c2.z;
-  if (centerVertically) {
-    root.position.y -= c2.y;
-  } else {
-    root.position.y -= box2.min.y;
-  }
+  if (centerVertically) root.position.y -= c2.y;
+  else root.position.y -= box2.min.y;
   root.position.y += cellSize * def.yOffset;
   return true;
 }
-
 
 function Model({ modelKey, cellSize, lastShot = 0, hp = 1, Fallback, centerVertically }: EnemyModelProps) {
   const def = ENEMY_MODELS[modelKey];
@@ -129,13 +188,14 @@ function Model({ modelKey, cellSize, lastShot = 0, hp = 1, Fallback, centerVerti
   const groupRef = useRef<THREE.Group>(null);
   const mixerRef = useRef<THREE.AnimationMixer | null>(null);
   const actionsRef = useRef<Record<string, THREE.AnimationAction>>({});
-  const currentRef = useRef<string>('idle');
-  const matsRef = useRef<THREE.MeshStandardMaterial[]>([]);
+  const currentRef = useRef<string>('');
+  const pulseMatsRef = useRef<any[]>([]);
+  const actionLockUntilRef = useRef(0);
 
   const cloned = useMemo(() => {
     try {
       const c = cloneSkinned(gltf.scene);
-      matsRef.current = prepareMaterials(c, def.color);
+      pulseMatsRef.current = prepareMaterials(c, def.color);
       if (!fitToCell(c, def, cellSize, centerVertically)) return null;
       c.rotation.set(def.rotation[0], def.rotation[1], def.rotation[2]);
       return c;
@@ -145,57 +205,82 @@ function Model({ modelKey, cellSize, lastShot = 0, hp = 1, Fallback, centerVerti
     }
   }, [gltf.scene, modelKey, cellSize, def, centerVertically]);
 
-
   useEffect(() => {
     if (!cloned || !gltf.animations?.length) return;
+
     const mixer = new THREE.AnimationMixer(cloned);
     mixerRef.current = mixer;
+
     const states = ['idle', 'walk', 'run', 'attack', 'shoot', 'hit', 'death'];
     const actions: Record<string, THREE.AnimationAction> = {};
+
     for (const s of states) {
-      const clip = pickClip(gltf.animations, def.animationMap, s);
-      if (clip) actions[s] = mixer.clipAction(clip);
+      const clip = pickClip(gltf.animations, def.animationMap, s, s === 'walk' ? ['run', 'idle'] : s === 'run' ? ['walk', 'idle'] : ['idle']);
+      if (clip) {
+        const action = mixer.clipAction(clip);
+        action.enabled = true;
+        action.clampWhenFinished = s === 'death' || s === 'attack' || s === 'shoot';
+        action.loop = s === 'death' || s === 'attack' || s === 'shoot' ? THREE.LoopOnce : THREE.LoopRepeat;
+        actions[s] = action;
+      }
     }
+
     actionsRef.current = actions;
     const initial = actions.idle ?? actions.walk ?? actions.run;
-    if (initial) initial.reset().fadeIn(0.2).play();
-    return () => { mixer.stopAllAction(); };
+    if (initial) {
+      initial.reset().fadeIn(0.18).play();
+      currentRef.current = Object.keys(actions).find((k) => actions[k] === initial) ?? 'idle';
+    }
+
+    return () => {
+      mixer.stopAllAction();
+      mixerRef.current = null;
+      actionsRef.current = {};
+      currentRef.current = '';
+    };
   }, [cloned, gltf.animations, def]);
 
-  const switchTo = (state: string) => {
-    if (currentRef.current === state) return;
+  const switchTo = (state: string, fade = 0.16) => {
     const acts = actionsRef.current;
     const next = acts[state];
-    if (!next) return;
+    if (!next || currentRef.current === state) return;
+
     const prev = acts[currentRef.current];
-    next.reset().fadeIn(0.15).play();
-    if (prev && prev !== next) prev.fadeOut(0.15);
+    next.reset().fadeIn(fade).play();
+    if (prev && prev !== next) prev.fadeOut(fade);
     currentRef.current = state;
   };
 
   useFrame((_, delta) => {
     if (mixerRef.current) mixerRef.current.update(delta);
-    const since = (Date.now() - (lastShot ?? 0)) / 1000;
-    if (hp <= 0 && actionsRef.current.death) {
-      switchTo('death');
-    } else if (since < 0.25 && (actionsRef.current.attack || actionsRef.current.shoot)) {
-      switchTo(actionsRef.current.attack ? 'attack' : 'shoot');
-    } else if (actionsRef.current.walk || actionsRef.current.run) {
-      switchTo(actionsRef.current.walk ? 'walk' : 'run');
-    } else if (actionsRef.current.idle) {
-      switchTo('idle');
+
+    const now = performance.now();
+    const sinceShot = (Date.now() - (lastShot ?? 0)) / 1000;
+    const acts = actionsRef.current;
+
+    if (hp <= 0 && acts.death) {
+      switchTo('death', 0.08);
+    } else if (sinceShot < 0.18 && (acts.shoot || acts.attack)) {
+      switchTo(acts.shoot ? 'shoot' : 'attack', 0.08);
+      actionLockUntilRef.current = now + 260;
+    } else if (now > actionLockUntilRef.current) {
+      if (modelKey === 'rusher' && (acts.run || acts.walk)) switchTo(acts.run ? 'run' : 'walk');
+      else if (acts.walk || acts.run) switchTo(acts.walk ? 'walk' : 'run');
+      else if (acts.idle) switchTo('idle');
     }
-    // Emissive pulse
+
+    // Pulse only emissive/visor/core materials. This keeps the real texture
+    // colors visible instead of washing the entire model with a solid tint.
     const t = performance.now() / 1000;
-    let glow = 0.25 + Math.sin(t * 3.6) * 0.08;
-    if (since < 0.12) glow = 1.4;
-    else if (since < 0.6) glow = 0.7;
-    for (const m of matsRef.current) m.emissiveIntensity = glow;
+    let glow = 0.35 + Math.sin(t * 3.6) * 0.08;
+    if (sinceShot < 0.12) glow = 1.35;
+    else if (sinceShot < 0.45) glow = 0.75;
+    for (const m of pulseMatsRef.current) {
+      if ('emissiveIntensity' in m) m.emissiveIntensity = glow;
+    }
   });
 
-  if (!cloned) {
-    return Fallback ? <Fallback cellSize={cellSize} color={def.color} /> : null;
-  }
+  if (!cloned) return Fallback ? <Fallback cellSize={cellSize} color={def.color} /> : null;
   return <group ref={groupRef}><primitive object={cloned} /></group>;
 }
 
