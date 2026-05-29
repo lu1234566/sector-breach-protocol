@@ -129,10 +129,6 @@ function Toggle({
           }`}
         />
       </span>
-    </button>
-  );
-}
-
 function QualityPicker({
   value,
   onChange,
@@ -140,37 +136,71 @@ function QualityPicker({
   value: QualityTier;
   onChange: (q: QualityTier) => void;
 }) {
-  const options: { id: QualityTier; label: string; hint: string }[] = [
-    { id: 'auto', label: 'Auto', hint: 'Detect GPU' },
-    { id: 'low', label: 'Low', hint: 'Chromebook' },
-    { id: 'medium', label: 'Med', hint: 'Laptop' },
-    { id: 'high', label: 'High', hint: 'Desktop GPU' },
+  const options: { id: QualityTier; label: string; tag: string; desc: string }[] = [
+    {
+      id: 'auto',
+      label: 'Auto',
+      tag: 'Recommended',
+      desc: 'Automatically chooses the best setting for your device.',
+    },
+    {
+      id: 'low',
+      label: 'Low / Performance',
+      tag: 'Chromebook',
+      desc: 'Best performance. Uses lightweight enemies and simplified world rendering.',
+    },
+    {
+      id: 'medium',
+      label: 'Medium / Balanced',
+      tag: 'Laptop',
+      desc: 'Balanced visuals. Uses some 3D assets with limited effects.',
+    },
+    {
+      id: 'high',
+      label: 'High / Full Visuals',
+      tag: 'Desktop GPU',
+      desc: 'Full visuals. Uses all new 3D assets, props and enhanced effects.',
+    },
   ];
   return (
     <div>
       <div className="text-[10px] text-cyan-300/90 uppercase tracking-widest font-bold mb-2">
         Graphics Quality
       </div>
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="flex flex-col gap-1.5">
         {options.map((o) => {
           const active = value === o.id;
           return (
             <button
               key={o.id}
               onClick={() => onChange(o.id)}
-              className={`flex flex-col items-center py-2 rounded border transition-colors ${
+              className={`flex flex-col items-start text-left px-3 py-2 rounded border transition-colors ${
                 active
-                  ? 'border-cyan-400 bg-cyan-400/15 text-cyan-200'
-                  : 'border-slate-700 bg-slate-900/50 text-slate-400 hover:border-cyan-500/50 hover:text-cyan-300'
+                  ? 'border-cyan-400 bg-cyan-400/15 text-cyan-100'
+                  : 'border-slate-700 bg-slate-900/50 text-slate-300 hover:border-cyan-500/50 hover:text-cyan-200'
               }`}
             >
-              <span className="text-[11px] font-bold uppercase tracking-wider">{o.label}</span>
-              <span className="text-[8px] uppercase tracking-widest opacity-70">{o.hint}</span>
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[11px] font-bold uppercase tracking-wider">{o.label}</span>
+                <span className="text-[8px] uppercase tracking-widest opacity-60">{o.tag}</span>
+              </div>
+              <span className={`text-[9px] mt-1 leading-snug ${active ? 'text-cyan-200/90' : 'text-slate-500'}`}>
+                {o.desc}
+              </span>
             </button>
           );
         })}
       </div>
-      <div className="text-[9px] text-slate-500 uppercase tracking-widest mt-2">
+      <div className="text-[9px] text-amber-400/80 uppercase tracking-widest mt-2">
+        High mode may reduce performance on Chromebooks or low-end devices.
+      </div>
+      <div className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">
+        Changes will apply when restarting the mission.
+      </div>
+    </div>
+  );
+}
+
         Restart match for full effect
       </div>
     </div>
