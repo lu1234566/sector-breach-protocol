@@ -4,20 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -95,6 +81,18 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+
+  --neon-cyan: oklch(0.86 0.16 210);
+  --neon-magenta: oklch(0.72 0.27 330);
+  --neon-amber: oklch(0.84 0.17 80);
+  --neon-danger: oklch(0.66 0.25 25);
+  --arena-bg: oklch(0.13 0.03 265);
+  --arena-panel: oklch(0.18 0.03 265 / 0.78);
+  --arena-grid: oklch(0.86 0.16 210 / 0.12);
+  --glow-cyan: 0 0 24px color-mix(in oklab, var(--neon-cyan) 55%, transparent);
+  --glow-magenta: 0 0 24px color-mix(in oklab, var(--neon-magenta) 55%, transparent);
+  --glow-danger: 0 0 18px color-mix(in oklab, var(--neon-danger) 60%, transparent);
+  --gradient-doc: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
 }
 
 .dark {
@@ -133,21 +131,13 @@
 }
 
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
-
+  * { border-color: var(--color-border); }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
 }
 
-/* =====================================================================
- * Protocol DOC — Neon Arena identity tokens
- * Single source of truth for the game's brand colors. Use semantic
- * tokens (e.g. text-neon-cyan, bg-arena-bg) instead of raw hex/oklch.
- * ===================================================================*/
 @theme inline {
   --color-neon-cyan: var(--neon-cyan);
   --color-neon-magenta: var(--neon-magenta);
@@ -158,153 +148,139 @@
   --color-arena-grid: var(--arena-grid);
 }
 
-:root {
-  --neon-cyan: oklch(0.86 0.16 210);
-  --neon-magenta: oklch(0.72 0.27 330);
-  --neon-amber: oklch(0.84 0.17 80);
-  --neon-danger: oklch(0.66 0.25 25);
-  --arena-bg: oklch(0.13 0.03 265);
-  --arena-panel: oklch(0.18 0.03 265 / 0.78);
-  --arena-grid: oklch(0.86 0.16 210 / 0.12);
-  --glow-cyan: 0 0 24px color-mix(in oklab, var(--neon-cyan) 55%, transparent);
-  --glow-magenta: 0 0 24px color-mix(in oklab, var(--neon-magenta) 55%, transparent);
-  --glow-danger: 0 0 18px color-mix(in oklab, var(--neon-danger) 60%, transparent);
-  --gradient-doc: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
-}
-
 /* =====================================================================
- * Sector Breach Protocol — compact main menu rules
- * These selectors intentionally target only the cinematic main menu wrapper.
- * They avoid the old brittle `div:first-child` rules that could hide the
- * background layer or wrong cards in nested views.
+ * Sector Breach Protocol — polished main menu composition
  * ===================================================================*/
 @layer utilities {
   [class*="max-w-[1600px]"] {
     height: 100dvh !important;
     max-height: 100dvh !important;
     overflow: hidden !important;
-    padding-top: clamp(0.65rem, 1.7vh, 1.5rem) !important;
-    padding-bottom: clamp(0.45rem, 1.2vh, 1.5rem) !important;
+    padding-top: clamp(0.55rem, 1.35vh, 1.25rem) !important;
+    padding-bottom: clamp(0.35rem, 1vh, 1rem) !important;
+  }
+
+  [class*="lg:grid-cols-[1.35fr_1fr]"] {
+    grid-template-columns: minmax(0, 1.12fr) minmax(420px, 0.88fr) !important;
+    gap: clamp(1rem, 2.1vw, 2.5rem) !important;
+    margin-top: clamp(0.45rem, 1.2vh, 1.15rem) !important;
+    align-items: center !important;
+    min-height: 0 !important;
   }
 
   [class*="max-w-[1600px]"] h1 span {
-    font-size: clamp(2.45rem, 6.4vw, 5.05rem) !important;
+    font-size: clamp(2.15rem, 5.45vw, 4.35rem) !important;
     line-height: 0.86 !important;
   }
 
   [class*="max-w-[1600px]"] h1 + div {
-    margin-top: clamp(0.45rem, 1.3vh, 1.15rem) !important;
-    gap: clamp(0.18rem, 0.65vh, 0.45rem) !important;
+    margin-top: clamp(0.35rem, 1vh, 0.85rem) !important;
+    gap: clamp(0.12rem, 0.45vh, 0.35rem) !important;
   }
 
-  [class*="max-w-[1600px]"] button {
-    min-height: 0 !important;
-  }
+  [class*="max-w-[1600px]"] button { min-height: 0 !important; }
 
   [class*="max-w-[1600px]"] .max-w-[420px] {
-    margin-top: clamp(0.75rem, 2vh, 1.8rem) !important;
-    gap: clamp(0.32rem, 0.85vh, 0.625rem) !important;
+    margin-top: clamp(0.6rem, 1.45vh, 1.2rem) !important;
+    gap: clamp(0.26rem, 0.68vh, 0.5rem) !important;
     max-width: min(420px, 100%) !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] > button:first-child {
-    padding-top: clamp(0.52rem, 1.25vh, 1rem) !important;
-    padding-bottom: clamp(0.52rem, 1.25vh, 1rem) !important;
+    padding-top: clamp(0.44rem, 1.05vh, 0.82rem) !important;
+    padding-bottom: clamp(0.44rem, 1.05vh, 0.82rem) !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] > button:first-child .text-2xl {
-    font-size: clamp(1.08rem, 2.6vh, 1.5rem) !important;
+    font-size: clamp(1rem, 2.25vh, 1.32rem) !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] > button:not(:first-child) {
-    padding-top: clamp(0.42rem, 1vh, 0.75rem) !important;
-    padding-bottom: clamp(0.42rem, 1vh, 0.75rem) !important;
+    padding-top: clamp(0.34rem, 0.82vh, 0.58rem) !important;
+    padding-bottom: clamp(0.34rem, 0.82vh, 0.58rem) !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] > button:not(:first-child) .text-sm {
-    font-size: clamp(0.66rem, 1.38vh, 0.875rem) !important;
+    font-size: clamp(0.61rem, 1.25vh, 0.78rem) !important;
+  }
+
+  [class*="max-w-[1600px]"] .max-w-[420px] > button:not(:first-child) [class*="text-[9px]"] {
+    font-size: clamp(0.42rem, 0.82vh, 0.56rem) !important;
   }
 
   [class*="max-w-[1600px]"] .max-w-[420px] + div {
-    margin-top: clamp(0.48rem, 1.2vh, 1.25rem) !important;
-    font-size: clamp(0.53rem, 1.15vh, 0.75rem) !important;
+    margin-top: clamp(0.35rem, 0.9vh, 0.95rem) !important;
+    font-size: clamp(0.5rem, 1vh, 0.7rem) !important;
   }
 
   [class*="max-w-[1600px]"] [class*="rounded-sm"][class*="backdrop-blur-md"] {
-    padding: clamp(0.7rem, 1.65vh, 1.15rem) !important;
-  }
-}
-
-@media (max-height: 800px) {
-  [class*="max-w-[1600px]"] {
-    padding-left: clamp(0.9rem, 2.2vw, 2.4rem) !important;
-    padding-right: clamp(0.9rem, 2.2vw, 2.4rem) !important;
-  }
-
-  [class*="max-w-[1600px]"] h1 span {
-    font-size: clamp(2.05rem, 5.75vw, 4.15rem) !important;
-  }
-
-  [class*="max-w-[1600px]"] [class*="tracking-[0.5em]"] {
-    margin-bottom: 0.45rem !important;
+    padding: clamp(0.58rem, 1.35vh, 1rem) !important;
   }
 
   [class*="max-w-[1600px]"] [class*="grid-cols-[140px_1fr]"] {
-    grid-template-columns: 92px 1fr !important;
-    gap: 0.6rem !important;
+    grid-template-columns: 165px minmax(0, 1fr) !important;
+    gap: 0.9rem !important;
+  }
+
+  [class*="max-w-[1600px]"] [class*="grid-cols-[140px_1fr]"] img {
+    object-position: center 35% !important;
+    filter: contrast(1.16) saturate(1.25) brightness(1.08) !important;
+  }
+}
+
+@media (max-height: 820px) {
+  [class*="max-w-[1600px]"] {
+    padding-left: clamp(0.85rem, 2vw, 2rem) !important;
+    padding-right: clamp(0.85rem, 2vw, 2rem) !important;
+  }
+  [class*="max-w-[1600px]"] h1 span {
+    font-size: clamp(1.85rem, 4.85vw, 3.42rem) !important;
+  }
+  [class*="max-w-[1600px]"] [class*="tracking-[0.5em]"] {
+    margin-bottom: 0.28rem !important;
+    letter-spacing: 0.36em !important;
+  }
+  [class*="max-w-[1600px]"] [class*="grid-cols-[140px_1fr]"] {
+    grid-template-columns: 128px minmax(0, 1fr) !important;
+    gap: 0.68rem !important;
     padding: 0.68rem !important;
   }
-
   [class*="max-w-[1600px]"] [class*="grid-cols-[140px_1fr]"] .text-xl {
-    font-size: 0.95rem !important;
+    font-size: 0.92rem !important;
   }
-
-  [class*="max-w-[1600px]"] .grid.grid-cols-3 {
-    gap: 0.45rem !important;
-  }
+  [class*="max-w-[1600px]"] .grid.grid-cols-3 { display: none !important; }
 }
 
-@media (max-height: 700px) {
+@media (max-height: 740px) {
   [class*="max-w-[1600px]"] h1 span {
-    font-size: clamp(1.8rem, 5.2vw, 3.35rem) !important;
+    font-size: clamp(1.58rem, 4.45vw, 2.95rem) !important;
   }
-
-  [class*="max-w-[1600px]"] .max-w-[420px] {
-    margin-top: 0.58rem !important;
+  [class*="max-w-[1600px]"] h1 + div [class*="tracking-[0.35em]"] {
+    letter-spacing: 0.22em !important;
   }
-
+  [class*="max-w-[1600px]"] .max-w-[420px] { margin-top: 0.45rem !important; }
   [class*="max-w-[1600px]"] .max-w-[420px] > button:first-child {
-    padding-top: 0.45rem !important;
-    padding-bottom: 0.45rem !important;
+    padding-top: 0.36rem !important;
+    padding-bottom: 0.36rem !important;
   }
-
   [class*="max-w-[1600px]"] .max-w-[420px] > button:not(:first-child) {
-    padding-top: 0.34rem !important;
-    padding-bottom: 0.34rem !important;
+    padding-top: 0.27rem !important;
+    padding-bottom: 0.27rem !important;
   }
-
-  [class*="max-w-[1600px]"] .grid.grid-cols-3,
-  [class*="max-w-[1600px]"] > div:last-child {
-    display: none !important;
-  }
+  [class*="max-w-[1600px]"] .max-w-[420px] + div,
+  [class*="max-w-[1600px]"] > div:last-child { display: none !important; }
 }
 
-@media (max-height: 620px) {
+@media (max-height: 660px) {
   [class*="max-w-[1600px]"] h1 span {
-    font-size: clamp(1.55rem, 4.8vw, 2.85rem) !important;
+    font-size: clamp(1.38rem, 4vw, 2.5rem) !important;
   }
-
   [class*="max-w-[1600px]"] [class*="tracking-[0.35em]"],
   [class*="max-w-[1600px]"] [class*="tracking-[0.3em]"] {
-    letter-spacing: 0.16em !important;
+    letter-spacing: 0.14em !important;
   }
-
   [class*="max-w-[1600px]"] [class*="grid-cols-[140px_1fr]"] {
-    grid-template-columns: 68px 1fr !important;
-    padding: 0.5rem !important;
-  }
-
-  [class*="max-w-[1600px]"] .max-w-[420px] + div {
-    display: none !important;
+    grid-template-columns: 84px minmax(0, 1fr) !important;
+    padding: 0.48rem !important;
   }
 }
