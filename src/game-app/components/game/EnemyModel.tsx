@@ -6,11 +6,14 @@ import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ENEMY_MODELS, type EnemyModelDef } from '../../game/modelAssets';
 
+type AnimState = 'idle' | 'move' | 'attack' | 'death';
+
 interface EnemyModelProps {
   modelKey: keyof typeof ENEMY_MODELS;
   cellSize: number;
   lastShot?: number;
   hp?: number;
+  animState?: AnimState;
   centerVertically?: boolean;
   Fallback?: React.ComponentType<{ cellSize: number; color: string }>;
 }
@@ -30,6 +33,8 @@ class EnemyModelBoundary extends Component<any, { err: boolean }> {
     return this.props.children;
   }
 }
+
+const loggedClips = new Set<string>();
 
 const ANIM_ALIASES: Record<string, string[]> = {
   idle: ['idle', 'stand', 'breath', 'loop', 'rest'],
@@ -57,7 +62,6 @@ function pickClip(
 ): THREE.AnimationClip | null {
   if (!clips || clips.length === 0) return null;
 
-  // Prefer semantic names when the exporter provides useful names.
   const named = findClipByName(clips, state);
   if (named) return named;
 
@@ -66,7 +70,6 @@ function pickClip(
     if (fallbackNamed) return fallbackNamed;
   }
 
-  // Then use the manually mapped NlaTrack indices.
   const idx = map[state];
   if (typeof idx === 'number' && clips[idx]) return clips[idx];
 
@@ -75,7 +78,6 @@ function pickClip(
     if (typeof fIdx === 'number' && clips[fIdx]) return clips[fIdx];
   }
 
-  // Do not blindly reuse clip[0] for every state; it causes incorrect animation switching.
   if (state === 'idle' || state === 'walk' || state === 'run') return clips[0];
   return null;
 }
@@ -106,10 +108,6 @@ function prepareMaterials(root: THREE.Object3D, accentColor: string) {
 
     const apply = (mat: any) => {
       if (!mat) return mat;
-
-      // Keep the original GLB material instead of replacing it. Replacing the
-      // material was destroying roughness/metalness/normal/AO/color data and
-      // made the enemies look like flat solid-color placeholders.
       const cloned = mat.clone ? mat.clone() : mat;
 
       setTextureColorSpace(cloned.map);
@@ -130,15 +128,12 @@ function prepareMaterials(root: THREE.Object3D, accentColor: string) {
 
       if (shouldPulseMaterial(cloned)) {
         if (!cloned.emissive) cloned.emissive = new THREE.Color(accentColor);
-        if (cloned.emissive instanceof THREE.Color && cloned.emissive.getHex() === 0) {
-          cloned.emissive.set(accentColor);
-        }
-        cloned.emissiveIntensity = Math.max(cloned.emissiveIntensity ?? 0, 0.35);
+        if (cloned.emissive instanceof THREE.Color && cloned.emissive.getHex() === 0) cloned.emissive.set(accentColor);
+        cloned.emissiveIntensity = Math.max(cloned.emissiveIntensity ?? 0, 0.22);
         cloned.toneMapped = false;
         pulseMats.push(cloned);
       } else if ('emissiveIntensity' in cloned) {
-        // Keep non-light materials natural. Do not globally tint the whole enemy.
-        cloned.emissiveIntensity = Math.min(cloned.emissiveIntensity ?? 0, 0.08);
+        cloned.emissiveIntensity = Math.min(cloned.emissiveIntensity ?? 0, 0.04);
       }
 
       cloned.needsUpdate = true;
@@ -182,7 +177,18 @@ function fitToCell(root: THREE.Object3D, def: EnemyModelDef, cellSize: number, c
   return true;
 }
 
-function Model({ modelKey, cellSize, lastShot = 0, hp = 1, Fallback, centerVertically }: EnemyModelProps) {
+function logClipsOnce(modelKey: string, animations: THREE.AnimationClip[], actions: Record<string, THREE.AnimationAction>) {
+  if (loggedClips.has(modelKey)) return;
+  loggedClips.add(modelKey);
+  try {
+    console.groupCollapsed(`[EnemyModel] animation clips: ${modelKey}`);
+    console.table(animations.map((clip, index) => ({ index, name: clip.name, duration: Number(clip.duration.toFixed(3)) })));
+    console.table(Object.entries(actions).map(([state, action]) => ({ state, clip: action.getClip().name, duration: Number(action.getClip().duration.toFixed(3)) })));
+    console.groupEnd();
+  } catch {}
+}
+
+function Model({ modelKey, cellSize, lastShot = 0, hp = 1, animState, Fallback, centerVertically }: EnemyModelProps) {
   const def = ENEMY_MODELS[modelKey];
   const gltf = useGLTF(def.url) as any;
   const groupRef = useRef<THREE.Group>(null);
@@ -226,6 +232,8 @@ function Model({ modelKey, cellSize, lastShot = 0, hp = 1, Fallback, centerVerti
     }
 
     actionsRef.current = actions;
+    logClipsOnce(String(modelKey), gltf.animations, actions);
+
     const initial = actions.idle ?? actions.walk ?? actions.run;
     if (initial) {
       initial.reset().fadeIn(0.18).play();
@@ -238,7 +246,7 @@ function Model({ modelKey, cellSize, lastShot = 0, hp = 1, Fallback, centerVerti
       actionsRef.current = {};
       currentRef.current = '';
     };
-  }, [cloned, gltf.animations, def]);
+  }, [cloned, gltf.animations, def, modelKey]);
 
   const switchTo = (state: string, fade = 0.16) => {
     const acts = actionsRef.current;
@@ -257,24 +265,24 @@ function Model({ modelKey, cellSize, lastShot = 0, hp = 1, Fallback, centerVerti
     const now = performance.now();
     const sinceShot = (Date.now() - (lastShot ?? 0)) / 1000;
     const acts = actionsRef.current;
+    const desired = hp <= 0 ? 'death' : animState ?? (sinceShot < 0.18 ? 'attack' : 'move');
 
-    if (hp <= 0 && acts.death) {
+    if (desired === 'death' && acts.death) {
       switchTo('death', 0.08);
-    } else if (sinceShot < 0.18 && (acts.shoot || acts.attack)) {
+    } else if ((desired === 'attack' || sinceShot < 0.18) && (acts.shoot || acts.attack)) {
       switchTo(acts.shoot ? 'shoot' : 'attack', 0.08);
       actionLockUntilRef.current = now + 260;
     } else if (now > actionLockUntilRef.current) {
-      if (modelKey === 'rusher' && (acts.run || acts.walk)) switchTo(acts.run ? 'run' : 'walk');
+      if (desired === 'idle' && acts.idle) switchTo('idle');
+      else if (modelKey === 'rusher' && (acts.run || acts.walk)) switchTo(acts.run ? 'run' : 'walk');
       else if (acts.walk || acts.run) switchTo(acts.walk ? 'walk' : 'run');
       else if (acts.idle) switchTo('idle');
     }
 
-    // Pulse only emissive/visor/core materials. This keeps the real texture
-    // colors visible instead of washing the entire model with a solid tint.
     const t = performance.now() / 1000;
-    let glow = 0.35 + Math.sin(t * 3.6) * 0.08;
-    if (sinceShot < 0.12) glow = 1.35;
-    else if (sinceShot < 0.45) glow = 0.75;
+    let glow = 0.22 + Math.sin(t * 3.6) * 0.06;
+    if (sinceShot < 0.12) glow = 0.95;
+    else if (sinceShot < 0.45) glow = 0.5;
     for (const m of pulseMatsRef.current) {
       if ('emissiveIntensity' in m) m.emissiveIntensity = glow;
     }
