@@ -514,7 +514,7 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
           );
 
           // Small wall-base light bollard against random exposed face (rare)
-          if (h(x, y, 20) < 0.08) {
+          if (h(x, y, 20) < 0.08 * propsDensity) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
@@ -537,7 +537,7 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
           }
 
           // Wall-mounted lab terminal (GLB, very rare ~5% of exposed walls)
-          if (h(x, y, 21) < 0.05) {
+          if (h(x, y, 21) < 0.05 * propsDensity) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
@@ -562,7 +562,7 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
           }
 
           // Decorative wall panel (GLB, ~18% of exposed walls, deterministic).
-          if (h(x, y, 22) < 0.18) {
+          if (h(x, y, 22) < 0.18 * propsDensity) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
@@ -653,7 +653,7 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
     });
 
     return out;
-  }, [mapData, cellSize, mats]);
+  }, [mapData, cellSize, mats, propsDensity]);
 
   /* ----------------------------- Final scene ----------------------------- */
   return (
