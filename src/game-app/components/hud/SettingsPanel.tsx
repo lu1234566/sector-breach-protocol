@@ -206,6 +206,4 @@ function QualityPicker({
   );
 }
 
-        Restart match for full effect
-      </div>
 
