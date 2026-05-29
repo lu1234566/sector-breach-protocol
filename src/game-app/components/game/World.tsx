@@ -15,6 +15,7 @@ const TEX_URLS = {
 interface MapProps {
   mapData: number[][];
   cellSize: number;
+  propsDensity?: number;
 }
 
 const NEON_CYAN = '#22d3ee';
@@ -31,7 +32,7 @@ const h = (x: number, y: number, salt = 0) => {
 
 const isWall = (c?: number) => c === 1; // visual occluder
 
-export function World({ mapData, cellSize }: MapProps) {
+export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
   const mapWidth = mapData[0].length * cellSize;
   const mapHeight = mapData.length * cellSize;
 
@@ -513,7 +514,7 @@ export function World({ mapData, cellSize }: MapProps) {
           );
 
           // Small wall-base light bollard against random exposed face (rare)
-          if (h(x, y, 20) < 0.08) {
+          if (h(x, y, 20) < 0.08 * propsDensity) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
@@ -536,7 +537,7 @@ export function World({ mapData, cellSize }: MapProps) {
           }
 
           // Wall-mounted lab terminal (GLB, very rare ~5% of exposed walls)
-          if (h(x, y, 21) < 0.05) {
+          if (h(x, y, 21) < 0.05 * propsDensity) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
@@ -561,7 +562,7 @@ export function World({ mapData, cellSize }: MapProps) {
           }
 
           // Decorative wall panel (GLB, ~18% of exposed walls, deterministic).
-          if (h(x, y, 22) < 0.18) {
+          if (h(x, y, 22) < 0.18 * propsDensity) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
@@ -652,7 +653,7 @@ export function World({ mapData, cellSize }: MapProps) {
     });
 
     return out;
-  }, [mapData, cellSize, mats]);
+  }, [mapData, cellSize, mats, propsDensity]);
 
   /* ----------------------------- Final scene ----------------------------- */
   return (

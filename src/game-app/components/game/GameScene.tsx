@@ -141,7 +141,7 @@ export function GameScene({
           </>
         )}
 
-        {isLowQuality ? <WorldLite mapData={mapData} cellSize={cellSize} /> : <World mapData={mapData} cellSize={cellSize} />}
+        {isLowQuality ? <WorldLite mapData={mapData} cellSize={cellSize} /> : <World mapData={mapData} cellSize={cellSize} propsDensity={quality.propsDensity} />}
 
         <Particles3D particles={visibleParticles} cellSize={cellSize} mapData={mapData} />
         <Tracers3D tracers={visibleTracers} cellSize={cellSize} mapData={mapData} />
