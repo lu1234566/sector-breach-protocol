@@ -38,6 +38,8 @@ export function Enemy3D({
   spawnTime = 0,
 }: EnemyProps) {
   const root = useRef<THREE.Group>(null);
+  const prevPos = useRef(new THREE.Vector2(x, y));
+  const speedRef = useRef(0);
   const modelKey = isBoss ? 'titan' : type;
   const tColor = isBoss ? TYPE_COLOR.boss : TYPE_COLOR[type];
   const healthPct = Math.max(0, Math.min(1, hp / maxHp));
@@ -45,6 +47,12 @@ export function Enemy3D({
 
   useFrame((_, delta) => {
     if (!root.current) return;
+
+    const last = prevPos.current;
+    const dist = Math.hypot(x - last.x, y - last.y);
+    const instantSpeed = delta > 0 ? dist / delta : 0;
+    speedRef.current = THREE.MathUtils.lerp(speedRef.current, instantSpeed, 0.25);
+    last.set(x, y);
 
     const sinceSpawn = (Date.now() - spawnTime) / 1000;
     const spawnK = Math.max(0, Math.min(1, sinceSpawn / 0.55));
@@ -57,6 +65,9 @@ export function Enemy3D({
     }
   });
 
+  const sinceShot = (Date.now() - (lastShot ?? 0)) / 1000;
+  const animState = hp <= 0 ? 'death' : sinceShot < 0.22 ? 'attack' : speedRef.current > cellSize * 0.04 ? 'move' : 'idle';
+
   return (
     <group position={[x, 0, y]}>
       <group ref={root}>
@@ -65,6 +76,7 @@ export function Enemy3D({
           cellSize={cellSize}
           hp={hp}
           lastShot={lastShot}
+          animState={animState}
           Fallback={isBoss ? TitanFallback : getFallback(type)}
         />
         <HealthBar cellSize={cellSize} healthPct={healthPct} isBoss={!!isBoss} color={tColor} />
