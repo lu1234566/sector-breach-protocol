@@ -132,12 +132,12 @@ export function GameScene({
         {!isLowQuality && <fog attach="fog" args={['#16233a', cellSize * 14, cellSize * 38]} />}
 
         {isLowQuality ? (
-          <ambientLight intensity={2.0} color="#dbeafe" />
+          <ambientLight intensity={1.8} color="#dbeafe" />
         ) : (
           <>
-            <ambientLight intensity={2.4} color="#b8d8ff" />
-            <hemisphereLight intensity={1.6} groundColor="#3a4f74" color="#ffffff" />
-            <directionalLight position={[20, 50, 10]} intensity={1.6} color="#ffffff" />
+            <ambientLight intensity={1.4} color="#b8d8ff" />
+            <hemisphereLight intensity={1.0} groundColor="#3a4f74" color="#ffffff" />
+            <directionalLight position={[20, 50, 10]} intensity={1.7} color="#ffffff" />
           </>
         )}
 

@@ -597,8 +597,8 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
           // Energy barrel (GLB) with subtle cyan pulse + a faint point light.
           out.push(
             <group key={`bar-${x}-${y}`} position={[posX, 0, posZ]}>
-              <PropModel modelKey="barrel" cellSize={cellSize} accentColor={NEON_CYAN} pulse emissiveBoost={0.2} />
-              <pointLight color={NEON_CYAN} intensity={0.45} distance={cellSize * 2.2} position={[0, cellSize * 0.4, 0]} />
+              <PropModel modelKey="barrel" cellSize={cellSize} accentColor={NEON_CYAN} pulse emissiveBoost={0.05} />
+              <pointLight color={NEON_CYAN} intensity={0.2} distance={cellSize * 1.4} position={[0, cellSize * 0.4, 0]} />
             </group>,
           );
         }

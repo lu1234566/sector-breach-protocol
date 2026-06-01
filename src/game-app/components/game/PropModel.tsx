@@ -54,8 +54,21 @@ function fitProp(root: THREE.Object3D, def: PropModelDef, cellSize: number, noFl
   return true;
 }
 
+function isLightPart(mat: any) {
+  const name = `${mat?.name ?? ''}`.toLowerCase();
+  if (mat?.emissiveMap) return true;
+  if (mat?.emissive instanceof THREE.Color && (mat.emissive.r + mat.emissive.g + mat.emissive.b) > 0.15) return true;
+  return /visor|eye|core|reactor|screen|led|light|emissive|glow|energy|panel_light|strip|stripe|band|lamp/i.test(name);
+}
+
+function setColorSpaceSafe(tex?: THREE.Texture | null) {
+  if (!tex) return;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+}
+
 function prepProp(root: THREE.Object3D, accent?: string, boost = 0) {
-  const mats: THREE.MeshStandardMaterial[] = [];
+  const pulseMats: any[] = [];
   root.traverse((o: any) => {
     if (!o.isMesh) return;
     o.visible = true;
@@ -64,28 +77,34 @@ function prepProp(root: THREE.Object3D, accent?: string, boost = 0) {
     o.receiveShadow = false;
     const apply = (mat: any) => {
       if (!mat) return mat;
-      const map = mat.map ?? null;
-      if (map) { map.colorSpace = THREE.SRGBColorSpace; map.needsUpdate = true; }
-      const nm = new THREE.MeshStandardMaterial({
-        map,
-        color: map ? '#ffffff' : (mat.color ?? new THREE.Color('#9aa6b8')),
-        emissive: accent ? new THREE.Color(accent) : new THREE.Color('#000000'),
-        emissiveIntensity: accent ? 0.25 + boost : 0,
-        metalness: Math.min(0.4, mat.metalness ?? 0.3),
-        roughness: Math.max(0.45, mat.roughness ?? 0.6),
-        transparent: false,
-        opacity: 1,
-        depthWrite: true,
-        side: THREE.DoubleSide,
-      });
-      nm.toneMapped = false;
-      mats.push(nm);
-      return nm;
+      const cloned = mat.clone ? mat.clone() : mat;
+
+      // Only color textures get sRGB; data maps stay linear.
+      setColorSpaceSafe(cloned.map);
+      setColorSpaceSafe(cloned.emissiveMap);
+
+      cloned.depthWrite = true;
+      cloned.depthTest = true;
+      cloned.transparent = !!cloned.transparent && (cloned.opacity ?? 1) < 1;
+
+      if (isLightPart(cloned)) {
+        if (!cloned.emissive) cloned.emissive = new THREE.Color(accent ?? '#22d3ee');
+        if (cloned.emissive instanceof THREE.Color && cloned.emissive.getHex() === 0) cloned.emissive.set(accent ?? '#22d3ee');
+        cloned.emissiveIntensity = Math.max(cloned.emissiveIntensity ?? 0, 0.25 + boost);
+        cloned.toneMapped = false;
+        pulseMats.push(cloned);
+      } else if ('emissiveIntensity' in cloned) {
+        // Keep non-light parts grounded — do NOT tint whole body.
+        cloned.emissiveIntensity = Math.min(cloned.emissiveIntensity ?? 0, 0.04);
+      }
+
+      cloned.needsUpdate = true;
+      return cloned;
     };
     if (Array.isArray(o.material)) o.material = o.material.map(apply);
     else o.material = apply(o.material);
   });
-  return mats;
+  return pulseMats;
 }
 
 function PropInner({ modelKey, cellSize, accentColor, pulse, flicker, emissiveBoost = 0, noFloorSnap }: PropProps) {
@@ -104,12 +123,12 @@ function PropInner({ modelKey, cellSize, accentColor, pulse, flicker, emissiveBo
   useFrame((state) => {
     if (!matsRef.current.length || (!pulse && !flicker)) return;
     const t = state.clock.getElapsedTime();
-    const base = 0.25 + emissiveBoost;
+    const base = 0.22 + emissiveBoost * 0.6;
     let k = base;
-    if (pulse) k += Math.sin(t * 2.2) * 0.18 + 0.18;
+    if (pulse) k += Math.sin(t * 2.0) * 0.08 + 0.08;
     if (flicker) {
       const f = Math.sin(t * 23.1 + Math.sin(t * 7.3) * 2.5);
-      k += f > 0.85 ? 0.6 : 0;
+      k += f > 0.88 ? 0.35 : 0;
     }
     for (const m of matsRef.current) if (m.emissive) m.emissiveIntensity = k;
   });
