@@ -110,12 +110,9 @@ function prepareMaterials(root: THREE.Object3D, accentColor: string) {
       if (!mat) return mat;
       const cloned = mat.clone ? mat.clone() : mat;
 
+      // Only color textures get sRGB. Data maps (normal/rough/metal/ao) stay linear.
       setTextureColorSpace(cloned.map);
       setTextureColorSpace(cloned.emissiveMap);
-      setTextureColorSpace(cloned.aoMap);
-      setTextureColorSpace(cloned.metalnessMap);
-      setTextureColorSpace(cloned.roughnessMap);
-      setTextureColorSpace(cloned.normalMap);
 
       cloned.depthWrite = true;
       cloned.depthTest = true;
