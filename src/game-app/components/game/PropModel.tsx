@@ -123,12 +123,12 @@ function PropInner({ modelKey, cellSize, accentColor, pulse, flicker, emissiveBo
   useFrame((state) => {
     if (!matsRef.current.length || (!pulse && !flicker)) return;
     const t = state.clock.getElapsedTime();
-    const base = 0.25 + emissiveBoost;
+    const base = 0.22 + emissiveBoost * 0.6;
     let k = base;
-    if (pulse) k += Math.sin(t * 2.2) * 0.18 + 0.18;
+    if (pulse) k += Math.sin(t * 2.0) * 0.08 + 0.08;
     if (flicker) {
       const f = Math.sin(t * 23.1 + Math.sin(t * 7.3) * 2.5);
-      k += f > 0.85 ? 0.6 : 0;
+      k += f > 0.88 ? 0.35 : 0;
     }
     for (const m of matsRef.current) if (m.emissive) m.emissiveIntensity = k;
   });
