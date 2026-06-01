@@ -283,6 +283,23 @@ function Model({ modelKey, cellSize, lastShot = 0, hp = 1, animState, Fallback, 
     for (const m of pulseMatsRef.current) {
       if ('emissiveIntensity' in m) m.emissiveIntensity = glow;
     }
+
+    // Procedural bob/sway fallback so enemies don't look like they're sliding
+    // when the GLB has no walk/run clip. Only applies during 'move'.
+    if (groupRef.current) {
+      const moving = desired === 'move' || desired === 'attack';
+      const hasLocomotion = !!(acts.walk || acts.run);
+      const bobAmp = hasLocomotion ? 0 : (modelKey === 'titan' ? 0.012 : modelKey === 'rusher' ? 0.05 : 0.03);
+      const bobFreq = modelKey === 'titan' ? 3.0 : modelKey === 'rusher' ? 9.0 : 6.0;
+      const swayAmp = hasLocomotion ? 0 : 0.04;
+      if (moving && bobAmp > 0) {
+        groupRef.current.position.y = Math.abs(Math.sin(t * bobFreq)) * cellSize * bobAmp;
+        groupRef.current.rotation.z = Math.sin(t * bobFreq * 0.5) * swayAmp;
+      } else {
+        groupRef.current.position.y *= 0.85;
+        groupRef.current.rotation.z *= 0.85;
+      }
+    }
   });
 
   if (!cloned) return Fallback ? <Fallback cellSize={cellSize} color={def.color} /> : null;
