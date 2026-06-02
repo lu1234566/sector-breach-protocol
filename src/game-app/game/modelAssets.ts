@@ -10,6 +10,9 @@ export interface EnemyModelDef {
   targetSize: number; // multiplied by cellSize for the longest bbox axis
   yOffset: number;
   rotation: [number, number, number];
+  // Additional yaw (radians) added to the dynamic facing rotation, used when
+  // the GLB's "forward" axis is not -Z. Try Math.PI, Math.PI/2, -Math.PI/2.
+  facingOffset?: number;
   animationMap: Record<string, number>;
 }
 
