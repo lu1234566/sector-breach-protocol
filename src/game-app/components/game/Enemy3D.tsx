@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import { Billboard, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { EnemyModel } from './EnemyModel';
+import { ENEMY_MODELS } from '../../game/modelAssets';
 
 interface EnemyProps {
   x: number;
