@@ -301,9 +301,20 @@ function Model({ modelKey, cellSize, lastShot = 0, hp = 1, animState, Fallback, 
         groupRef.current.rotation.z *= 0.85;
       }
     }
+
+    if (debugRef) {
+      debugRef.current = {
+        clip: currentRef.current || '-',
+        usingFallback: !cloned,
+        hasAnimations: !!(gltf.animations && gltf.animations.length > 0),
+      };
+    }
   });
 
-  if (!cloned) return Fallback ? <Fallback cellSize={cellSize} color={def.color} /> : null;
+  if (!cloned) {
+    if (debugRef) debugRef.current = { clip: '-', usingFallback: true, hasAnimations: false };
+    return Fallback ? <Fallback cellSize={cellSize} color={def.color} /> : null;
+  }
   return <group ref={groupRef}><primitive object={cloned} /></group>;
 }
 
