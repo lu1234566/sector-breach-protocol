@@ -186,7 +186,7 @@ function logClipsOnce(modelKey: string, animations: THREE.AnimationClip[], actio
   } catch {}
 }
 
-function Model({ modelKey, cellSize, lastShot = 0, hp = 1, animState, Fallback, centerVertically }: EnemyModelProps) {
+function Model({ modelKey, cellSize, lastShot = 0, hp = 1, animState, Fallback, centerVertically, debugRef }: EnemyModelProps) {
   const def = ENEMY_MODELS[modelKey];
   const gltf = useGLTF(def.url) as any;
   const groupRef = useRef<THREE.Group>(null);
