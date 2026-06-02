@@ -24,6 +24,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     targetSize: 0.62,
     yOffset: 0,
     rotation: [0, 0, 0],
+    facingOffset: 0, // tune to Math.PI / Math.PI/2 / -Math.PI/2 if model faces wrong way
     animationMap: { idle: 0, walk: 0, run: 0, attack: 0, hit: 0, death: 0 },
   },
   rifleman: {
@@ -33,6 +34,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     targetSize: 0.82,
     yOffset: 0,
     rotation: [0, 0, 0],
+    facingOffset: 0,
     animationMap: { idle: 0, walk: 1, attack: 3, shoot: 3, death: 4 },
   },
   sniper: {
@@ -42,6 +44,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     targetSize: 0.9,
     yOffset: 0,
     rotation: [0, 0, 0],
+    facingOffset: 0,
     animationMap: { idle: 3, walk: 0, attack: 1, shoot: 1, death: 2 },
   },
   titan: {
@@ -52,6 +55,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     targetSize: 1.85,
     yOffset: 0,
     rotation: [0, 0, 0],
+    facingOffset: 0,
     animationMap: { idle: 1, walk: 0, attack: 2, death: 3 },
   },
   oldTitan: {
@@ -61,6 +65,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     targetSize: 1.65,
     yOffset: 0,
     rotation: [0, 0, 0],
+    facingOffset: 0,
     animationMap: { idle: 0, walk: 1, attack: 3, heavyAttack: 4, death: 5 },
   },
 };
