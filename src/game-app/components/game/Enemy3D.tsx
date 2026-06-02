@@ -1,7 +1,7 @@
 // @ts-nocheck
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Billboard } from '@react-three/drei';
+import { Billboard, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { EnemyModel } from './EnemyModel';
 
@@ -34,6 +34,7 @@ export function Enemy3D({
   isBoss,
   hp,
   maxHp,
+  debug,
   lastShot = 0,
   spawnTime = 0,
 }: EnemyProps) {
@@ -44,6 +45,9 @@ export function Enemy3D({
   const tColor = isBoss ? TYPE_COLOR.boss : TYPE_COLOR[type];
   const healthPct = Math.max(0, Math.min(1, hp / maxHp));
   const dyingProgress = useRef(0);
+  const debugRef = useRef({ clip: '-', usingFallback: false, hasAnimations: false });
+  const debugAccum = useRef(0);
+  const [debugInfo, setDebugInfo] = useState({ clip: '-', usingFallback: false, hasAnimations: false });
 
   useFrame((_, delta) => {
     if (!root.current) return;
@@ -63,6 +67,21 @@ export function Enemy3D({
       root.current.position.y = -dyingProgress.current * cellSize * 0.5;
       root.current.scale.setScalar(spawnK * (1 - dyingProgress.current * 0.35));
     }
+
+    if (debug) {
+      debugAccum.current += delta;
+      if (debugAccum.current > 0.2) {
+        debugAccum.current = 0;
+        const d = debugRef.current;
+        if (
+          d.clip !== debugInfo.clip ||
+          d.usingFallback !== debugInfo.usingFallback ||
+          d.hasAnimations !== debugInfo.hasAnimations
+        ) {
+          setDebugInfo({ ...d });
+        }
+      }
+    }
   });
 
   const sinceShot = (Date.now() - (lastShot ?? 0)) / 1000;
@@ -78,12 +97,52 @@ export function Enemy3D({
           lastShot={lastShot}
           animState={animState}
           Fallback={isBoss ? TitanFallback : getFallback(type)}
+          debugRef={debug ? debugRef : undefined}
         />
         <HealthBar cellSize={cellSize} healthPct={healthPct} isBoss={!!isBoss} color={tColor} />
+        {debug && (
+          <DebugLabel
+            cellSize={cellSize}
+            isBoss={!!isBoss}
+            modelKey={modelKey}
+            animState={animState}
+            clip={debugInfo.clip}
+            usingFallback={debugInfo.usingFallback}
+            hasAnimations={debugInfo.hasAnimations}
+          />
+        )}
       </group>
     </group>
   );
 }
+
+function DebugLabel({ cellSize, isBoss, modelKey, animState, clip, usingFallback, hasAnimations }: any) {
+  const y = isBoss ? cellSize * 2.55 : cellSize * 1.55;
+  const text = [
+    `${modelKey}${usingFallback ? ' [FALLBACK]' : ' [GLB]'}`,
+    `state: ${animState}`,
+    `clip: ${clip}${hasAnimations ? '' : ' (no anim)'}`,
+  ].join('\n');
+  return (
+    <Billboard position={[0, y, 0]}>
+      <mesh position={[0, 0, -0.005]}>
+        <planeGeometry args={[cellSize * 1.2, cellSize * 0.5]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.65} depthWrite={false} />
+      </mesh>
+      <Text
+        fontSize={cellSize * 0.11}
+        color={usingFallback ? '#fbbf24' : '#22d3ee'}
+        anchorX="center"
+        anchorY="middle"
+        outlineWidth={0.004}
+        outlineColor="#000000"
+      >
+        {text}
+      </Text>
+    </Billboard>
+  );
+}
+
 
 function getFallback(type: string) {
   if (type === 'rusher') return RusherFallback;

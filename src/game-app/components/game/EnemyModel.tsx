@@ -16,6 +16,7 @@ interface EnemyModelProps {
   animState?: AnimState;
   centerVertically?: boolean;
   Fallback?: React.ComponentType<{ cellSize: number; color: string }>;
+  debugRef?: { current: { clip: string; usingFallback: boolean; hasAnimations: boolean } };
 }
 
 class EnemyModelBoundary extends Component<any, { err: boolean }> {
@@ -185,7 +186,7 @@ function logClipsOnce(modelKey: string, animations: THREE.AnimationClip[], actio
   } catch {}
 }
 
-function Model({ modelKey, cellSize, lastShot = 0, hp = 1, animState, Fallback, centerVertically }: EnemyModelProps) {
+function Model({ modelKey, cellSize, lastShot = 0, hp = 1, animState, Fallback, centerVertically, debugRef }: EnemyModelProps) {
   const def = ENEMY_MODELS[modelKey];
   const gltf = useGLTF(def.url) as any;
   const groupRef = useRef<THREE.Group>(null);
@@ -300,9 +301,20 @@ function Model({ modelKey, cellSize, lastShot = 0, hp = 1, animState, Fallback, 
         groupRef.current.rotation.z *= 0.85;
       }
     }
+
+    if (debugRef) {
+      debugRef.current = {
+        clip: currentRef.current || '-',
+        usingFallback: !cloned,
+        hasAnimations: !!(gltf.animations && gltf.animations.length > 0),
+      };
+    }
   });
 
-  if (!cloned) return Fallback ? <Fallback cellSize={cellSize} color={def.color} /> : null;
+  if (!cloned) {
+    if (debugRef) debugRef.current = { clip: '-', usingFallback: true, hasAnimations: false };
+    return Fallback ? <Fallback cellSize={cellSize} color={def.color} /> : null;
+  }
   return <group ref={groupRef}><primitive object={cloned} /></group>;
 }
 
