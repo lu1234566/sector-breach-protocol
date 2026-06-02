@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import { Billboard, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { EnemyModel } from './EnemyModel';
+import { ENEMY_MODELS } from '../../game/modelAssets';
 
 interface EnemyProps {
   x: number;
@@ -45,6 +46,9 @@ export function Enemy3D({
   const tColor = isBoss ? TYPE_COLOR.boss : TYPE_COLOR[type];
   const healthPct = Math.max(0, Math.min(1, hp / maxHp));
   const dyingProgress = useRef(0);
+  const yawRef = useRef(0);
+  const yawInitRef = useRef(false);
+  const facingOffset = (ENEMY_MODELS[modelKey]?.facingOffset ?? 0) as number;
   const debugRef = useRef({ clip: '-', usingFallback: false, hasAnimations: false });
   const debugAccum = useRef(0);
   const [debugInfo, setDebugInfo] = useState({ clip: '-', usingFallback: false, hasAnimations: false });
@@ -53,10 +57,29 @@ export function Enemy3D({
     if (!root.current) return;
 
     const last = prevPos.current;
-    const dist = Math.hypot(x - last.x, y - last.y);
+    const dx = x - last.x;
+    const dz = y - last.y;
+    const dist = Math.hypot(dx, dz);
     const instantSpeed = delta > 0 ? dist / delta : 0;
     speedRef.current = THREE.MathUtils.lerp(speedRef.current, instantSpeed, 0.25);
     last.set(x, y);
+
+    // Face movement direction (yaw around Y). Threshold prevents jitter when
+    // standing still; lerp via shortest-angle path keeps rotation smooth.
+    if (hp > 0 && dist > cellSize * 0.0015) {
+      const targetYaw = Math.atan2(dx, dz) + facingOffset;
+      if (!yawInitRef.current) {
+        yawRef.current = targetYaw;
+        yawInitRef.current = true;
+      } else {
+        let diff = targetYaw - yawRef.current;
+        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+        const k = Math.min(1, delta * 10);
+        yawRef.current += diff * k;
+      }
+      root.current.rotation.y = yawRef.current;
+    }
+
 
     const sinceSpawn = (Date.now() - spawnTime) / 1000;
     const spawnK = Math.max(0, Math.min(1, sinceSpawn / 0.55));
