@@ -16,6 +16,7 @@ interface EnemyModelProps {
   animState?: AnimState;
   centerVertically?: boolean;
   Fallback?: React.ComponentType<{ cellSize: number; color: string }>;
+  debugRef?: { current: { clip: string; usingFallback: boolean; hasAnimations: boolean } };
 }
 
 class EnemyModelBoundary extends Component<any, { err: boolean }> {
