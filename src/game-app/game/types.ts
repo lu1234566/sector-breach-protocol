@@ -34,7 +34,7 @@ export interface Enemy {
   id: number;
   x: number;
   y: number;
-  type: 'rusher' | 'rifleman' | 'sniper';
+  type: 'rusher' | 'rifleman' | 'sniper' | 'titan';
   isBoss: boolean;
   hp: number;
   maxHp: number;

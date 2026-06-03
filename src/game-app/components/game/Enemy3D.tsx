@@ -9,7 +9,7 @@ import { ENEMY_MODELS } from '../../game/modelAssets';
 interface EnemyProps {
   x: number;
   y: number;
-  type: 'rusher' | 'rifleman' | 'sniper';
+  type: 'rusher' | 'rifleman' | 'sniper' | 'titan';
   hp: number;
   maxHp: number;
   color: string;
@@ -24,6 +24,7 @@ const TYPE_COLOR: Record<string, string> = {
   rusher: '#e879f9',
   rifleman: '#22d3ee',
   sniper: '#fbbf24',
+  titan: '#38bdf8',
   boss: '#38bdf8',
 };
 
