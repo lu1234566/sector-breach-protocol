@@ -594,11 +594,11 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
             </group>,
           );
         } else if (cell === 3) {
-          // Energy barrel (GLB) with subtle cyan pulse + a faint point light.
+          // Energy barrel (GLB) — metallic body with subtle cyan energy strips.
           out.push(
             <group key={`bar-${x}-${y}`} position={[posX, 0, posZ]}>
-              <PropModel modelKey="barrel" cellSize={cellSize} accentColor={NEON_CYAN} pulse emissiveBoost={0.05} />
-              <pointLight color={NEON_CYAN} intensity={0.2} distance={cellSize * 1.4} position={[0, cellSize * 0.4, 0]} />
+              <PropModel modelKey="barrel" cellSize={cellSize} accentColor={NEON_CYAN} pulse emissiveBoost={0} emissiveBase={0.08} />
+              <pointLight color={NEON_CYAN} intensity={0.06} distance={cellSize * 1.0} position={[0, cellSize * 0.4, 0]} />
             </group>,
           );
         }
