@@ -489,7 +489,60 @@ export default function App() {
     setEnemiesRemaining(enemies.current.length);
   };
 
+  // Debug-only: spawn one of each enemy type next to the player so each model
+  // (rusher / rifleman / sniper / titan) can be inspected individually without
+  // depending on wave randomness. Activated via ?debug=1 or localStorage.
+  const spawnDebugEnemy = (type: 'rusher' | 'rifleman' | 'sniper' | 'titan') => {
+    const baseHp = type === 'rusher' ? 60 : type === 'rifleman' ? 100 : type === 'sniper' ? 80 : 400;
+    const speed = type === 'rusher' ? 3.5 : type === 'rifleman' ? 2 : type === 'sniper' ? 1.5 : 1.2;
+    const color =
+      type === 'rusher' ? '#f87171' : type === 'rifleman' ? '#fbbf24' : type === 'sniper' ? '#38bdf8' : '#0ea5e9';
+    const offX = Math.cos(player.current.angle) * CELL_SIZE * 3;
+    const offY = Math.sin(player.current.angle) * CELL_SIZE * 3;
+    enemies.current.push({
+      id: Math.random(),
+      x: player.current.x + offX,
+      y: player.current.y + offY,
+      type,
+      isBoss: false,
+      hp: baseHp,
+      maxHp: baseHp,
+      lastShot: Date.now(),
+      speed,
+      color,
+      stuckFrames: 0,
+      lastX: player.current.x + offX,
+      lastY: player.current.y + offY,
+      targetAngle: 0,
+      spawnTime: Date.now(),
+    } as any);
+    setEnemiesState([...enemies.current]);
+    setEnemiesRemaining(enemies.current.length);
+    console.log('[DEBUG] spawned', type);
+  };
+
+  useEffect(() => {
+    if (!DEBUG_MODE) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (gameStateRef.current !== 'playing') return;
+      if (e.key === '1') spawnDebugEnemy('rusher');
+      else if (e.key === '2') spawnDebugEnemy('rifleman');
+      else if (e.key === '3') spawnDebugEnemy('sniper');
+      else if (e.key === '4') spawnDebugEnemy('titan');
+      else if (e.key === '5') {
+        enemies.current = [];
+        setEnemiesState([]);
+        setEnemiesRemaining(0);
+        console.log('[DEBUG] cleared enemies');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const graveyard = useRef<{ x: number; y: number; color: string; type: string }[]>([]);
+
+
 
   const combatDeps: any = {
     gameStateRef,
