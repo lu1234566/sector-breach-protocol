@@ -66,7 +66,10 @@ import splashMissionComplete from '@/assets/splash_mission_complete.jpg';
 import splashMissionFailed from '@/assets/splash_mission_failed.jpg';
 
 const PLAYER_RADIUS = 30;
-const DEBUG_MODE = false;
+const DEBUG_MODE =
+  typeof window !== 'undefined' &&
+  (new URLSearchParams(window.location.search).get('debug') === '1' ||
+    (typeof localStorage !== 'undefined' && localStorage.getItem('sbp_debug') === '1'));
 const DEBUG_SAFE_MODE = false;
 
 const isBulletBlocking = (cell: number) => cell === 1 || cell === 2 || cell === 3;
