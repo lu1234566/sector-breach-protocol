@@ -24,6 +24,7 @@ const TYPE_COLOR: Record<string, string> = {
   rusher: '#e879f9',
   rifleman: '#22d3ee',
   sniper: '#fbbf24',
+  titan: '#38bdf8',
   boss: '#38bdf8',
 };
 
