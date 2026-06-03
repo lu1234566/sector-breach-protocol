@@ -9,7 +9,7 @@ import { ENEMY_MODELS } from '../../game/modelAssets';
 interface EnemyProps {
   x: number;
   y: number;
-  type: 'rusher' | 'rifleman' | 'sniper';
+  type: 'rusher' | 'rifleman' | 'sniper' | 'titan';
   hp: number;
   maxHp: number;
   color: string;
