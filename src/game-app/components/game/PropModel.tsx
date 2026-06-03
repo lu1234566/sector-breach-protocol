@@ -12,6 +12,7 @@ interface PropProps {
   pulse?: boolean;
   flicker?: boolean;
   emissiveBoost?: number;
+  emissiveBase?: number;
   noFloorSnap?: boolean;
   fallback?: React.ReactNode;
 }
@@ -58,7 +59,7 @@ function isLightPart(mat: any) {
   const name = `${mat?.name ?? ''}`.toLowerCase();
   if (mat?.emissiveMap) return true;
   if (mat?.emissive instanceof THREE.Color && (mat.emissive.r + mat.emissive.g + mat.emissive.b) > 0.15) return true;
-  return /visor|eye|core|reactor|screen|led|light|emissive|glow|energy|panel_light|strip|stripe|band|lamp/i.test(name);
+  return /visor|eye|core|reactor|screen|led|light|emissive|glow|panel_light|strip|stripe|band|lamp/i.test(name);
 }
 
 function setColorSpaceSafe(tex?: THREE.Texture | null) {
@@ -107,7 +108,7 @@ function prepProp(root: THREE.Object3D, accent?: string, boost = 0) {
   return pulseMats;
 }
 
-function PropInner({ modelKey, cellSize, accentColor, pulse, flicker, emissiveBoost = 0, noFloorSnap }: PropProps) {
+function PropInner({ modelKey, cellSize, accentColor, pulse, flicker, emissiveBoost = 0, emissiveBase = 0.22, noFloorSnap }: PropProps) {
   const def = PROP_MODELS[modelKey];
   const gltf = useGLTF(def.url) as any;
   const matsRef = useRef<THREE.MeshStandardMaterial[]>([]);
@@ -123,7 +124,7 @@ function PropInner({ modelKey, cellSize, accentColor, pulse, flicker, emissiveBo
   useFrame((state) => {
     if (!matsRef.current.length || (!pulse && !flicker)) return;
     const t = state.clock.getElapsedTime();
-    const base = 0.22 + emissiveBoost * 0.6;
+    const base = emissiveBase + emissiveBoost * 0.6;
     let k = base;
     if (pulse) k += Math.sin(t * 2.0) * 0.08 + 0.08;
     if (flicker) {
