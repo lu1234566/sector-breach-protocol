@@ -37,52 +37,6 @@ class EnemyModelBoundary extends Component<any, { err: boolean }> {
 
 const loggedClips = new Set<string>();
 
-const ANIM_ALIASES: Record<string, string[]> = {
-  idle: ['idle', 'stand', 'breath', 'loop', 'rest'],
-  walk: ['walk', 'walking', 'move', 'locomotion', 'forward'],
-  run: ['run', 'running', 'sprint', 'rush'],
-  attack: ['attack', 'slash', 'melee', 'strike', 'fire', 'shoot'],
-  shoot: ['shoot', 'fire', 'rifle', 'shot', 'attack'],
-  hit: ['hit', 'hurt', 'damage', 'impact'],
-  death: ['death', 'die', 'dead', 'collapse'],
-};
-
-function findClipByName(clips: THREE.AnimationClip[], state: string) {
-  const aliases = ANIM_ALIASES[state] ?? [state];
-  return clips.find((clip) => {
-    const n = clip.name?.toLowerCase?.() ?? '';
-    return aliases.some((a) => n.includes(a));
-  }) ?? null;
-}
-
-function pickClip(
-  clips: THREE.AnimationClip[],
-  map: Record<string, number>,
-  state: string,
-  fallbackStates: string[] = [],
-): THREE.AnimationClip | null {
-  if (!clips || clips.length === 0) return null;
-
-  const named = findClipByName(clips, state);
-  if (named) return named;
-
-  for (const fs of fallbackStates) {
-    const fallbackNamed = findClipByName(clips, fs);
-    if (fallbackNamed) return fallbackNamed;
-  }
-
-  const idx = map[state];
-  if (typeof idx === 'number' && clips[idx]) return clips[idx];
-
-  for (const fs of fallbackStates) {
-    const fIdx = map[fs];
-    if (typeof fIdx === 'number' && clips[fIdx]) return clips[fIdx];
-  }
-
-  if (state === 'idle' || state === 'walk' || state === 'run') return clips[0];
-  return null;
-}
-
 function setTextureColorSpace(tex?: THREE.Texture | null) {
   if (!tex) return;
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -111,7 +65,7 @@ function prepareMaterials(root: THREE.Object3D, accentColor: string) {
       if (!mat) return mat;
       const cloned = mat.clone ? mat.clone() : mat;
 
-      // Only color textures get sRGB. Data maps (normal/rough/metal/ao) stay linear.
+      // Color textures only. Keep data textures linear.
       setTextureColorSpace(cloned.map);
       setTextureColorSpace(cloned.emissiveMap);
 
@@ -127,11 +81,11 @@ function prepareMaterials(root: THREE.Object3D, accentColor: string) {
       if (shouldPulseMaterial(cloned)) {
         if (!cloned.emissive) cloned.emissive = new THREE.Color(accentColor);
         if (cloned.emissive instanceof THREE.Color && cloned.emissive.getHex() === 0) cloned.emissive.set(accentColor);
-        cloned.emissiveIntensity = Math.max(cloned.emissiveIntensity ?? 0, 0.22);
+        cloned.emissiveIntensity = Math.max(cloned.emissiveIntensity ?? 0, 0.18);
         cloned.toneMapped = false;
         pulseMats.push(cloned);
       } else if ('emissiveIntensity' in cloned) {
-        cloned.emissiveIntensity = Math.min(cloned.emissiveIntensity ?? 0, 0.04);
+        cloned.emissiveIntensity = 0;
       }
 
       cloned.needsUpdate = true;
@@ -156,14 +110,17 @@ function fitToCell(root: THREE.Object3D, def: EnemyModelDef, cellSize: number, c
     }
   });
   if (count === 0 || box.isEmpty()) return false;
+
   const size = new THREE.Vector3();
   box.getSize(size);
   const max = Math.max(size.x, size.y, size.z);
   if (!Number.isFinite(max) || max < 0.001) return false;
+
   const target = cellSize * def.targetSize;
   const k = target / max;
   root.scale.setScalar(k);
   root.updateMatrixWorld(true);
+
   const box2 = new THREE.Box3().setFromObject(root);
   const c2 = new THREE.Vector3();
   box2.getCenter(c2);
@@ -175,26 +132,39 @@ function fitToCell(root: THREE.Object3D, def: EnemyModelDef, cellSize: number, c
   return true;
 }
 
-function logClipsOnce(modelKey: string, animations: THREE.AnimationClip[], actions: Record<string, THREE.AnimationAction>) {
+function logClipsOnce(modelKey: string, animations: THREE.AnimationClip[]) {
   if (loggedClips.has(modelKey)) return;
   loggedClips.add(modelKey);
   try {
-    console.groupCollapsed(`[EnemyModel] animation clips: ${modelKey}`);
-    console.table(animations.map((clip, index) => ({ index, name: clip.name, duration: Number(clip.duration.toFixed(3)) })));
-    console.table(Object.entries(actions).map(([state, action]) => ({ state, clip: action.getClip().name, duration: Number(action.getClip().duration.toFixed(3)) })));
+    console.groupCollapsed(`[EnemyModel] GLB clips ignored for stability: ${modelKey}`);
+    console.table((animations ?? []).map((clip, index) => ({
+      index,
+      name: clip.name,
+      duration: Number(clip.duration.toFixed(3)),
+    })));
+    console.info('Using procedural motion layer instead of GLB clip playback. This avoids broken Tripo/NlaTrack animations until exact clip maps are verified.');
     console.groupEnd();
   } catch {}
+}
+
+function getMotionProfile(modelKey: string) {
+  if (modelKey === 'titan' || modelKey === 'oldTitan') {
+    return { idleBob: 0.008, moveBob: 0.016, moveFreq: 3.1, sway: 0.018, attack: 0.045 };
+  }
+  if (modelKey === 'rusher') {
+    return { idleBob: 0.012, moveBob: 0.055, moveFreq: 9.2, sway: 0.06, attack: 0.075 };
+  }
+  if (modelKey === 'sniper') {
+    return { idleBob: 0.008, moveBob: 0.025, moveFreq: 4.8, sway: 0.025, attack: 0.035 };
+  }
+  return { idleBob: 0.01, moveBob: 0.032, moveFreq: 5.8, sway: 0.035, attack: 0.045 };
 }
 
 function Model({ modelKey, cellSize, lastShot = 0, hp = 1, animState, Fallback, centerVertically, debugRef }: EnemyModelProps) {
   const def = ENEMY_MODELS[modelKey];
   const gltf = useGLTF(def.url) as any;
   const groupRef = useRef<THREE.Group>(null);
-  const mixerRef = useRef<THREE.AnimationMixer | null>(null);
-  const actionsRef = useRef<Record<string, THREE.AnimationAction>>({});
-  const currentRef = useRef<string>('');
   const pulseMatsRef = useRef<any[]>([]);
-  const actionLockUntilRef = useRef(0);
 
   const cloned = useMemo(() => {
     try {
@@ -210,111 +180,59 @@ function Model({ modelKey, cellSize, lastShot = 0, hp = 1, animState, Fallback, 
   }, [gltf.scene, modelKey, cellSize, def, centerVertically]);
 
   useEffect(() => {
-    if (!cloned || !gltf.animations?.length) return;
+    logClipsOnce(String(modelKey), gltf.animations ?? []);
+    if (debugRef) debugRef.current = { clip: 'procedural', usingFallback: false, hasAnimations: !!gltf.animations?.length };
+  }, [modelKey, gltf.animations, debugRef]);
 
-    const mixer = new THREE.AnimationMixer(cloned);
-    mixerRef.current = mixer;
+  useFrame((state) => {
+    const g = groupRef.current;
+    if (!g) return;
 
-    const states = ['idle', 'walk', 'run', 'attack', 'shoot', 'hit', 'death'];
-    const actions: Record<string, THREE.AnimationAction> = {};
-
-    for (const s of states) {
-      const clip = pickClip(gltf.animations, def.animationMap, s, s === 'walk' ? ['run', 'idle'] : s === 'run' ? ['walk', 'idle'] : ['idle']);
-      if (clip) {
-        const action = mixer.clipAction(clip);
-        action.enabled = true;
-        action.clampWhenFinished = s === 'death' || s === 'attack' || s === 'shoot';
-        action.loop = s === 'death' || s === 'attack' || s === 'shoot' ? THREE.LoopOnce : THREE.LoopRepeat;
-        actions[s] = action;
-      }
-    }
-
-    actionsRef.current = actions;
-    logClipsOnce(String(modelKey), gltf.animations, actions);
-
-    const initial = actions.idle ?? actions.walk ?? actions.run;
-    if (initial) {
-      initial.reset().fadeIn(0.18).play();
-      currentRef.current = Object.keys(actions).find((k) => actions[k] === initial) ?? 'idle';
-    }
-
-    return () => {
-      mixer.stopAllAction();
-      mixerRef.current = null;
-      actionsRef.current = {};
-      currentRef.current = '';
-    };
-  }, [cloned, gltf.animations, def, modelKey]);
-
-  const switchTo = (state: string, fade = 0.16) => {
-    const acts = actionsRef.current;
-    const next = acts[state];
-    if (!next || currentRef.current === state) return;
-
-    const prev = acts[currentRef.current];
-    next.reset().fadeIn(fade).play();
-    if (prev && prev !== next) prev.fadeOut(fade);
-    currentRef.current = state;
-  };
-
-  useFrame((_, delta) => {
-    if (mixerRef.current) mixerRef.current.update(delta);
-
-    const now = performance.now();
+    const t = state.clock.getElapsedTime();
     const sinceShot = (Date.now() - (lastShot ?? 0)) / 1000;
-    const acts = actionsRef.current;
-    const desired = hp <= 0 ? 'death' : animState ?? (sinceShot < 0.18 ? 'attack' : 'move');
+    const desired: AnimState = hp <= 0 ? 'death' : animState ?? (sinceShot < 0.18 ? 'attack' : 'move');
+    const p = getMotionProfile(String(modelKey));
 
-    if (desired === 'death' && acts.death) {
-      switchTo('death', 0.08);
-    } else if ((desired === 'attack' || sinceShot < 0.18) && (acts.shoot || acts.attack)) {
-      switchTo(acts.shoot ? 'shoot' : 'attack', 0.08);
-      actionLockUntilRef.current = now + 260;
-    } else if (now > actionLockUntilRef.current) {
-      if (desired === 'idle' && acts.idle) switchTo('idle');
-      else if (modelKey === 'rusher' && (acts.run || acts.walk)) switchTo(acts.run ? 'run' : 'walk');
-      else if (acts.walk || acts.run) switchTo(acts.walk ? 'walk' : 'run');
-      else if (acts.idle) switchTo('idle');
+    g.position.set(0, 0, 0);
+    g.rotation.set(0, 0, 0);
+    g.scale.set(1, 1, 1);
+
+    if (desired === 'death') {
+      const k = 1;
+      g.position.y = -cellSize * 0.08;
+      g.rotation.x = -0.85 * k;
+      g.rotation.z = Math.sin(t * 5) * 0.08;
+      g.scale.setScalar(0.92);
+    } else if (desired === 'attack') {
+      const pulse = Math.max(0, 1 - Math.min(1, sinceShot / 0.22));
+      const wobble = Math.sin(t * 18) * 0.012;
+      g.position.y = Math.abs(Math.sin(t * p.moveFreq)) * cellSize * p.idleBob;
+      g.rotation.x = -p.attack * pulse;
+      g.rotation.z = wobble;
+      g.scale.set(1 + pulse * 0.035, 1 - pulse * 0.018, 1 + pulse * 0.055);
+    } else if (desired === 'move') {
+      const bob = Math.abs(Math.sin(t * p.moveFreq)) * cellSize * p.moveBob;
+      g.position.y = bob;
+      g.rotation.z = Math.sin(t * p.moveFreq * 0.5) * p.sway;
+      g.rotation.x = Math.cos(t * p.moveFreq) * p.sway * 0.35;
+    } else {
+      g.position.y = Math.sin(t * 2.2) * cellSize * p.idleBob;
+      g.rotation.z = Math.sin(t * 1.6) * p.sway * 0.18;
     }
 
-    const t = performance.now() / 1000;
-    let glow = 0.22 + Math.sin(t * 3.6) * 0.06;
-    if (sinceShot < 0.12) glow = 0.95;
-    else if (sinceShot < 0.45) glow = 0.5;
+    let glow = 0.16 + Math.sin(t * 3.2) * 0.04;
+    if (sinceShot < 0.12) glow = 0.65;
+    else if (sinceShot < 0.45) glow = 0.36;
     for (const m of pulseMatsRef.current) {
       if ('emissiveIntensity' in m) m.emissiveIntensity = glow;
-    }
-
-    // Procedural bob/sway fallback so enemies don't look like they're sliding
-    // when the GLB has no walk/run clip. Only applies during 'move'.
-    if (groupRef.current) {
-      const moving = desired === 'move' || desired === 'attack';
-      const hasLocomotion = !!(acts.walk || acts.run);
-      const bobAmp = hasLocomotion ? 0 : (modelKey === 'titan' ? 0.012 : modelKey === 'rusher' ? 0.05 : 0.03);
-      const bobFreq = modelKey === 'titan' ? 3.0 : modelKey === 'rusher' ? 9.0 : 6.0;
-      const swayAmp = hasLocomotion ? 0 : 0.04;
-      if (moving && bobAmp > 0) {
-        groupRef.current.position.y = Math.abs(Math.sin(t * bobFreq)) * cellSize * bobAmp;
-        groupRef.current.rotation.z = Math.sin(t * bobFreq * 0.5) * swayAmp;
-      } else {
-        groupRef.current.position.y *= 0.85;
-        groupRef.current.rotation.z *= 0.85;
-      }
-    }
-
-    if (debugRef) {
-      debugRef.current = {
-        clip: currentRef.current || '-',
-        usingFallback: !cloned,
-        hasAnimations: !!(gltf.animations && gltf.animations.length > 0),
-      };
     }
   });
 
   if (!cloned) {
-    if (debugRef) debugRef.current = { clip: '-', usingFallback: true, hasAnimations: false };
+    if (debugRef) debugRef.current = { clip: 'fallback', usingFallback: true, hasAnimations: false };
     return Fallback ? <Fallback cellSize={cellSize} color={def.color} /> : null;
   }
+
   return <group ref={groupRef}><primitive object={cloned} /></group>;
 }
 
