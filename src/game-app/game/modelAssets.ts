@@ -25,16 +25,20 @@ export interface EnemyModelDef {
 export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
   rusher: {
     url: '/assets/models/enemies/enemy_rusher.glb',
+    animatedUrl: '/assets/models/enemies/animated/enemy_rusher_animated.glb',
+    preferAnimated: true,
     displayName: 'Rusher',
     color: '#e879f9',
     targetSize: 0.62,
     yOffset: 0,
     rotation: [0, 0, 0],
-    facingOffset: 0, // tune to Math.PI / Math.PI/2 / -Math.PI/2 if model faces wrong way
+    facingOffset: 0,
     animationMap: { idle: 0, walk: 0, run: 0, attack: 0, hit: 0, death: 0 },
   },
   rifleman: {
     url: '/assets/models/enemies/enemy_rifleman.glb',
+    animatedUrl: '/assets/models/enemies/animated/enemy_rifleman_animated.glb',
+    preferAnimated: true,
     displayName: 'Rifleman',
     color: '#22d3ee',
     targetSize: 0.82,
@@ -45,6 +49,8 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
   },
   sniper: {
     url: '/assets/models/enemies/enemy_sniper.glb',
+    animatedUrl: '/assets/models/enemies/animated/enemy_sniper_animated.glb',
+    preferAnimated: true,
     displayName: 'Sniper',
     color: '#fbbf24',
     targetSize: 0.9,
@@ -55,6 +61,8 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
   },
   titan: {
     url: '/assets/models/enemies/enemy_titan.glb',
+    animatedUrl: '/assets/models/enemies/animated/enemy_titan_animated.glb',
+    preferAnimated: true,
     displayName: 'Sapphire Dragonoid',
     color: '#38bdf8',
     eyeColor: '#22c55e',
