@@ -145,7 +145,7 @@ export function Enemy3D({
   );
 }
 
-function DebugLabel({ cellSize, isBoss, modelKey, animState, clip, usingFallback, hasAnimations, animationStatus, glbLoaded }: any) {
+function DebugLabel({ cellSize, isBoss, modelKey, animState, clip, usingFallback, hasAnimations, animationStatus, glbLoaded, rootMotion }: any) {
   const y = isBoss ? cellSize * 2.7 : cellSize * 1.65;
   const status = animationStatus ?? 'procedural';
   const color = status === 'valid' ? '#22d3ee' : status === 'broken' ? '#f43f5e' : status === 'missing' ? '#fbbf24' : '#a78bfa';
@@ -153,6 +153,7 @@ function DebugLabel({ cellSize, isBoss, modelKey, animState, clip, usingFallback
     `model: ${modelKey}`,
     `anim: ${status}`,
     `clip: ${clip}`,
+    `root: ${rootMotion ?? '-'}`,
     `glb: ${glbLoaded ? 'loaded' : 'failed'} | anims: ${hasAnimations ? 'yes' : 'no'}`,
     `state: ${animState}${usingFallback ? ' [FB]' : ''}`,
   ].join('\n');
