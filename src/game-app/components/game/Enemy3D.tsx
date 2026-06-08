@@ -50,9 +50,9 @@ export function Enemy3D({
   const yawRef = useRef(0);
   const yawInitRef = useRef(false);
   const facingOffset = (ENEMY_MODELS[modelKey]?.facingOffset ?? 0) as number;
-  const debugRef = useRef({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '' });
+  const debugRef = useRef({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '', rootMotion: 'lockXZ' });
   const debugAccum = useRef(0);
-  const [debugInfo, setDebugInfo] = useState({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '' });
+  const [debugInfo, setDebugInfo] = useState({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '', rootMotion: 'lockXZ' });
 
   useFrame((_, delta) => {
     if (!root.current) return;
