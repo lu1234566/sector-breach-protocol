@@ -42,6 +42,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     yOffset: 0,
     rotation: [0, 0, 0],
     facingOffset: 0,
+    rootMotion: 'lockXZ',
     animationMap: { idle: 0, walk: 0, run: 0, attack: 0, hit: 0, death: 0 },
   },
   rifleman: {
@@ -54,6 +55,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     yOffset: 0,
     rotation: [0, 0, 0],
     facingOffset: 0,
+    rootMotion: 'lockXZ',
     animationMap: { idle: 0, walk: 1, attack: 3, shoot: 3, death: 4 },
   },
   sniper: {
@@ -66,6 +68,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     yOffset: 0,
     rotation: [0, 0, 0],
     facingOffset: 0,
+    rootMotion: 'lockXZ',
     animationMap: { idle: 3, walk: 0, attack: 1, shoot: 1, death: 2 },
   },
   titan: {
@@ -79,6 +82,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     yOffset: 0,
     rotation: [0, 0, 0],
     facingOffset: 0,
+    rootMotion: 'lockXZ',
     animationMap: { idle: 1, walk: 0, attack: 2, death: 3 },
   },
   oldTitan: {
@@ -89,6 +93,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     yOffset: 0,
     rotation: [0, 0, 0],
     facingOffset: 0,
+    rootMotion: 'lockXZ',
     animationMap: { idle: 0, walk: 1, attack: 3, heavyAttack: 4, death: 5 },
   },
 };
