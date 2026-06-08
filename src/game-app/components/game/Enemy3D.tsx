@@ -100,7 +100,8 @@ export function Enemy3D({
         if (
           d.clip !== debugInfo.clip ||
           d.usingFallback !== debugInfo.usingFallback ||
-          d.hasAnimations !== debugInfo.hasAnimations
+          d.hasAnimations !== debugInfo.hasAnimations ||
+          d.animationStatus !== debugInfo.animationStatus
         ) {
           setDebugInfo({ ...d });
         }
