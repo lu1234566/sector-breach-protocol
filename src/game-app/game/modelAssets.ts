@@ -16,9 +16,18 @@ export interface EnemyModelDef {
   targetSize: number; // multiplied by cellSize for the longest bbox axis
   yOffset: number;
   rotation: [number, number, number];
+  // Optional fine offsets applied after fitToCell centering.
+  positionOffset?: [number, number, number];
+  // Multiplier applied to targetSize for extra per-model scaling.
+  scaleMultiplier?: number;
   // Additional yaw (radians) added to the dynamic facing rotation, used when
   // the GLB's "forward" axis is not -Z. Try Math.PI, Math.PI/2, -Math.PI/2.
   facingOffset?: number;
+  // How to handle root-motion tracks inside the GLB's animations.
+  // - "lockXZ": strip root XZ position so the rig animates in place (default).
+  // - "strip":  remove position/rotation/scale on the root entirely.
+  // - "keep":   leave clips untouched (only safe for animations authored in place).
+  rootMotion?: 'strip' | 'lockXZ' | 'keep';
   animationMap: Record<string, number>;
 }
 
