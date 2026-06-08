@@ -4,6 +4,12 @@
 
 export interface EnemyModelDef {
   url: string;
+  // Optional path to a future rigged/animated GLB. When set and the file
+  // exists, the runtime will prefer it over `url` and try to play its clips.
+  // If the file is missing or its clips are unusable, the system falls back
+  // to `url` + procedural motion. Safe to point at a non-existent path.
+  animatedUrl?: string;
+  preferAnimated?: boolean;
   displayName: string;
   color: string;
   eyeColor?: string;
