@@ -6,8 +6,9 @@ import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ENEMY_MODELS, type EnemyModelDef } from '../../game/modelAssets';
 
-type AnimState = 'idle' | 'move' | 'attack' | 'death';
+type AnimState = 'idle' | 'move' | 'attack' | 'shoot' | 'death';
 type AnimStatus = 'valid' | 'missing' | 'broken' | 'procedural';
+type RootMotionMode = 'strip' | 'lockXZ' | 'keep';
 
 interface DebugRefShape {
   current: {
@@ -17,6 +18,7 @@ interface DebugRefShape {
     animationStatus?: AnimStatus;
     glbLoaded?: boolean;
     sourceUrl?: string;
+    rootMotion?: RootMotionMode;
   };
 }
 
@@ -47,13 +49,11 @@ class EnemyModelBoundary extends Component<any, { err: boolean }> {
   }
 }
 
-// ---------- animatedUrl probe (HEAD fetch, cached) ----------
+// ---------- animatedUrl probe ----------
 const animatedProbeCache = new Map<string, Promise<boolean>>();
 function probeAnimatedUrl(url: string): Promise<boolean> {
   if (animatedProbeCache.has(url)) return animatedProbeCache.get(url)!;
-  const p = fetch(url, { method: 'HEAD' })
-    .then((r) => r.ok)
-    .catch(() => false);
+  const p = fetch(url, { method: 'HEAD' }).then((r) => r.ok).catch(() => false);
   animatedProbeCache.set(url, p);
   return p;
 }
@@ -131,6 +131,52 @@ function prepareMaterials(root: THREE.Object3D, accentColor: string) {
   return pulseMats;
 }
 
+// ---------- root identification ----------
+const ROOT_NAME_RE = /^(scene|root|armature|hips|mixamorig:hips|mixamorig:root)$/i;
+
+function identifyRootNodes(scene: THREE.Object3D): Set<string> {
+  const roots = new Set<string>();
+  if (scene.name) roots.add(scene.name);
+  scene.traverse((o: any) => {
+    if (!o.name) return;
+    if (ROOT_NAME_RE.test(o.name)) roots.add(o.name);
+  });
+  // Also include the topmost named child of the scene (often "Armature" wrapper)
+  if (scene.children && scene.children.length > 0) {
+    const first = scene.children[0];
+    if (first && first.name) roots.add(first.name);
+  }
+  return roots;
+}
+
+// ---------- sanitize clip (strip root motion) ----------
+function sanitizeClip(
+  clip: THREE.AnimationClip,
+  rootNames: Set<string>,
+  mode: RootMotionMode,
+): THREE.AnimationClip {
+  if (mode === 'keep') return clip;
+  const kept = clip.tracks.filter((track) => {
+    const dot = track.name.indexOf('.');
+    if (dot < 0) return true;
+    const nodeName = track.name.slice(0, dot);
+    const prop = track.name.slice(dot + 1);
+    if (!rootNames.has(nodeName)) return true;
+
+    if (mode === 'strip') {
+      // remove position/quaternion/rotation/scale from root nodes
+      if (/^(position|quaternion|rotation|scale)/.test(prop)) return false;
+    } else if (mode === 'lockXZ') {
+      // remove only position tracks from root nodes (lock XZ drift but also Y to avoid sinking)
+      if (/^position/.test(prop)) return false;
+    }
+    return true;
+  });
+  if (kept.length === clip.tracks.length) return clip;
+  const c = new THREE.AnimationClip(clip.name, clip.duration, kept, clip.blendMode);
+  return c;
+}
+
 function fitToCell(root: THREE.Object3D, def: EnemyModelDef, cellSize: number, centerVertically = false) {
   root.updateMatrixWorld(true);
   const box = new THREE.Box3();
@@ -146,7 +192,7 @@ function fitToCell(root: THREE.Object3D, def: EnemyModelDef, cellSize: number, c
   box.getSize(size);
   const max = Math.max(size.x, size.y, size.z);
   if (!Number.isFinite(max) || max < 0.001) return false;
-  const target = cellSize * def.targetSize;
+  const target = cellSize * def.targetSize * (def.scaleMultiplier ?? 1);
   const k = target / max;
   root.scale.setScalar(k);
   root.updateMatrixWorld(true);
@@ -158,6 +204,11 @@ function fitToCell(root: THREE.Object3D, def: EnemyModelDef, cellSize: number, c
   if (centerVertically) root.position.y -= c2.y;
   else root.position.y -= box2.min.y;
   root.position.y += cellSize * def.yOffset;
+  if (def.positionOffset) {
+    root.position.x += def.positionOffset[0];
+    root.position.y += def.positionOffset[1];
+    root.position.z += def.positionOffset[2];
+  }
   return true;
 }
 
@@ -167,24 +218,16 @@ function validateClips(
   clips: THREE.AnimationClip[],
 ): { status: AnimStatus; usable: THREE.AnimationClip[] } {
   if (!clips || clips.length === 0) return { status: 'missing', usable: [] };
-
-  // index nodes by name and uuid
   const nodeNames = new Set<string>();
-  let hasSkinnedMesh = false;
-  scene.traverse((o: any) => {
-    if (o.name) nodeNames.add(o.name);
-    if (o.isSkinnedMesh || o.isBone) hasSkinnedMesh = true;
-  });
+  scene.traverse((o: any) => { if (o.name) nodeNames.add(o.name); });
 
   const usable: THREE.AnimationClip[] = [];
   for (const clip of clips) {
     if (!clip || !clip.tracks || clip.tracks.length === 0) continue;
     if (!Number.isFinite(clip.duration) || clip.duration <= 0.01) continue;
-
     let validTracks = 0;
     let usefulTracks = 0;
     for (const track of clip.tracks) {
-      // track name format: "NodeName.property" or "NodeName.morphTargetInfluences[idx]"
       const dot = track.name.indexOf('.');
       if (dot < 0) continue;
       const nodeName = track.name.slice(0, dot);
@@ -192,7 +235,6 @@ function validateClips(
       if (!nodeNames.has(nodeName)) continue;
       validTracks++;
       if (/position|quaternion|rotation|scale|morphTarget/.test(prop)) {
-        // verify track has any non-zero variation
         const values: any = (track as any).values;
         if (values && values.length >= 2) {
           let v0 = values[0];
@@ -206,7 +248,6 @@ function validateClips(
     }
     if (validTracks > 0 && usefulTracks > 0) usable.push(clip);
   }
-
   if (usable.length === 0) return { status: 'broken', usable: [] };
   return { status: 'valid', usable };
 }
@@ -220,14 +261,12 @@ function pickClip(
   if (usable.length === 0) return null;
   const candidates: string[] = [];
   if (desired === 'death') candidates.push('death', 'die', 'dead');
-  else if (desired === 'attack') {
+  else if (desired === 'attack' || desired === 'shoot') {
     if (modelKey === 'rifleman' || modelKey === 'sniper') candidates.push('shoot', 'fire', 'attack');
     else candidates.push('attack', 'bite', 'punch', 'slam', 'shoot');
-  } else if (desired === 'move') candidates.push('run', 'walk', 'move', 'idle');
+  } else if (desired === 'move') candidates.push('run', 'walk', 'move');
   else candidates.push('idle', 'breathe', 'pose');
 
-  // Try animationMap indices first (against original clips list — but our usable
-  // is filtered, so map by name match if possible).
   for (const name of candidates) {
     const idx = map[name];
     if (typeof idx === 'number' && usable[idx]) return usable[idx];
@@ -243,18 +282,16 @@ function logClipsOnce(modelKey: string, sourceUrl: string, status: AnimStatus, c
   if (loggedClips.has(key)) return;
   loggedClips.add(key);
   try {
-    if (status === 'valid') {
-      console.info(`[EnemyModel] animations OK for ${modelKey} (${sourceUrl})`,
-        clips.map((c) => c.name));
-    } else if (status === 'missing') {
-      console.info(`[EnemyModel] animations unavailable for ${modelKey} (${sourceUrl}) — using procedural fallback`);
+    if (clips.length > 0 && typeof console !== 'undefined' && console.table) {
+      console.info(`[EnemyModel] ${modelKey} clips from ${sourceUrl} (status=${status})`);
+      console.table(clips.map((c, i) => ({ index: i, name: c.name, duration: +c.duration.toFixed(3), tracks: c.tracks.length })));
     } else {
-      console.info(`[EnemyModel] animations unusable for ${modelKey} (${sourceUrl}) — using procedural fallback`);
+      console.info(`[EnemyModel] ${modelKey} animations status=${status}`);
     }
   } catch {}
 }
 
-// ---------- procedural motion profiles ----------
+// ---------- procedural fallback ----------
 function getMotionProfile(modelKey: string) {
   if (modelKey === 'titan' || modelKey === 'oldTitan')
     return { idleBob: 0.008, moveBob: 0.016, moveFreq: 3.1, sway: 0.018, attack: 0.045 };
@@ -271,20 +308,25 @@ function Model({
 }: EnemyModelProps & { sourceUrl: string }) {
   const def = ENEMY_MODELS[modelKey];
   const gltf = useGLTF(sourceUrl) as any;
-  const groupRef = useRef<THREE.Group>(null);
+
+  // Three-tier groups: outer (no anim), normalization (scale/rot/center), modelRoot (anim)
+  const normalizationRef = useRef<THREE.Group>(null);
+  const modelRootRef = useRef<THREE.Group>(null);
+
   const pulseMatsRef = useRef<any[]>([]);
   const mixerRef = useRef<THREE.AnimationMixer | null>(null);
   const currentActionRef = useRef<THREE.AnimationAction | null>(null);
   const currentClipNameRef = useRef<string>('none');
   const animDataRef = useRef<{ status: AnimStatus; usable: THREE.AnimationClip[] }>({ status: 'missing', usable: [] });
   const lastAnimStateRef = useRef<AnimState | null>(null);
+  const attackLockRef = useRef<number>(0);
+  const rootMotionMode: RootMotionMode = (def.rootMotion ?? 'lockXZ') as RootMotionMode;
 
   const cloned = useMemo(() => {
     try {
       const c = cloneSkinned(gltf.scene);
       pulseMatsRef.current = prepareMaterials(c, def.color);
       if (!fitToCell(c, def, cellSize, centerVertically)) return null;
-      c.rotation.set(def.rotation[0], def.rotation[1], def.rotation[2]);
       return c;
     } catch (e) {
       console.warn('[EnemyModel] clone failed', modelKey, e);
@@ -292,25 +334,28 @@ function Model({
     }
   }, [gltf.scene, modelKey, cellSize, def, centerVertically]);
 
-  // Validate clips against the cloned scene (so node names match)
-  useMemo(() => {
+  // Validate + sanitize clips, build mixer attached to the cloned scene
+  const sanitizedUsable = useMemo(() => {
     if (!cloned) {
       animDataRef.current = { status: 'missing', usable: [] };
-      return;
+      return [] as THREE.AnimationClip[];
     }
     const result = validateClips(cloned, gltf.animations ?? []);
-    animDataRef.current = result;
     logClipsOnce(String(modelKey), sourceUrl, result.status, gltf.animations ?? []);
-
-    if (result.status === 'valid') {
-      mixerRef.current = new THREE.AnimationMixer(cloned);
-    } else {
+    if (result.status !== 'valid') {
+      animDataRef.current = result;
       mixerRef.current = null;
+      return [];
     }
+    const rootNames = identifyRootNodes(cloned);
+    const sanitized = result.usable.map((c) => sanitizeClip(c, rootNames, rootMotionMode));
+    animDataRef.current = { status: 'valid', usable: sanitized };
+    mixerRef.current = new THREE.AnimationMixer(cloned);
     currentActionRef.current = null;
-    currentClipNameRef.current = result.status === 'valid' ? 'pending' : 'procedural';
+    currentClipNameRef.current = 'pending';
     lastAnimStateRef.current = null;
-  }, [cloned, gltf.animations, modelKey, sourceUrl]);
+    return sanitized;
+  }, [cloned, gltf.animations, modelKey, sourceUrl, rootMotionMode]);
 
   useEffect(() => {
     if (!debugRef) return;
@@ -319,15 +364,17 @@ function Model({
       clip: currentClipNameRef.current,
       usingFallback: false,
       hasAnimations: (gltf.animations?.length ?? 0) > 0,
-      animationStatus: status === 'valid' ? 'valid' : status,
+      animationStatus: status,
       glbLoaded: true,
       sourceUrl,
+      rootMotion: rootMotionMode,
     };
-  }, [debugRef, gltf.animations, sourceUrl, cloned]);
+  }, [debugRef, gltf.animations, sourceUrl, cloned, rootMotionMode, sanitizedUsable]);
 
   useFrame((state, delta) => {
-    const g = groupRef.current;
-    if (!g) return;
+    const normalization = normalizationRef.current;
+    const modelRoot = modelRootRef.current;
+    if (!normalization || !modelRoot) return;
 
     const t = state.clock.getElapsedTime();
     const sinceShot = (Date.now() - (lastShot ?? 0)) / 1000;
@@ -336,20 +383,26 @@ function Model({
     const useReal = animDataRef.current.status === 'valid' && mixerRef.current;
 
     if (useReal) {
-      // Drive AnimationMixer
-      if (lastAnimStateRef.current !== desired) {
+      // attack/shoot lock: don't restart inside lock window
+      const now = performance.now();
+      const isAttack = desired === 'attack' || desired === 'shoot';
+      const isLocked = isAttack && now < attackLockRef.current;
+
+      if (lastAnimStateRef.current !== desired && !isLocked) {
         const clip = pickClip(animDataRef.current.usable, def.animationMap, desired, String(modelKey));
         if (clip) {
           const next = mixerRef.current!.clipAction(clip);
           next.reset();
-          next.setLoop(desired === 'death' ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
-          next.clampWhenFinished = desired === 'death';
-          next.fadeIn(0.18);
+          const loopOnce = isAttack || desired === 'death';
+          next.setLoop(loopOnce ? THREE.LoopOnce : THREE.LoopRepeat, loopOnce ? 1 : Infinity);
+          next.clampWhenFinished = loopOnce;
+          next.fadeIn(0.15);
           next.play();
           const prev = currentActionRef.current;
-          if (prev && prev !== next) prev.fadeOut(0.18);
+          if (prev && prev !== next) prev.fadeOut(0.15);
           currentActionRef.current = next;
           currentClipNameRef.current = clip.name || '(unnamed)';
+          if (isAttack) attackLockRef.current = now + 320;
           if (debugRef) {
             debugRef.current = {
               ...debugRef.current,
@@ -359,43 +412,46 @@ function Model({
               hasAnimations: true,
               glbLoaded: true,
               sourceUrl,
+              rootMotion: rootMotionMode,
             };
           }
         }
         lastAnimStateRef.current = desired;
       }
       mixerRef.current!.update(delta);
-      // Keep transform neutral — real anim drives the rig
-      g.position.set(0, 0, 0);
-      g.rotation.set(0, 0, 0);
-      g.scale.set(1, 1, 1);
+
+      // Re-lock XZ position of the modelRoot wrapper so animation can't drift
+      // it away from the spawn-fitted center. We do NOT touch scale/rotation
+      // here — those belong to the normalization group / model rig itself.
+      if (rootMotionMode === 'lockXZ' || rootMotionMode === 'strip') {
+        modelRoot.position.x = 0;
+        modelRoot.position.z = 0;
+        if (modelRoot.position.y < -cellSize * 0.05) modelRoot.position.y = 0;
+      }
     } else {
-      // Procedural fallback
+      // Procedural fallback — applied to the modelRoot wrapper only
       const p = getMotionProfile(String(modelKey));
-      g.position.set(0, 0, 0);
-      g.rotation.set(0, 0, 0);
-      g.scale.set(1, 1, 1);
+      modelRoot.position.set(0, 0, 0);
+      modelRoot.rotation.set(0, 0, 0);
+      modelRoot.scale.set(1, 1, 1);
 
       if (desired === 'death') {
-        g.position.y = -cellSize * 0.08;
-        g.rotation.x = -0.85;
-        g.rotation.z = Math.sin(t * 5) * 0.08;
-        g.scale.setScalar(0.92);
-      } else if (desired === 'attack') {
+        modelRoot.position.y = -cellSize * 0.08;
+        modelRoot.rotation.x = -0.85;
+        modelRoot.rotation.z = Math.sin(t * 5) * 0.08;
+        modelRoot.scale.setScalar(0.92);
+      } else if (desired === 'attack' || desired === 'shoot') {
         const pulse = Math.max(0, 1 - Math.min(1, sinceShot / 0.22));
-        const wobble = Math.sin(t * 18) * 0.012;
-        g.position.y = Math.abs(Math.sin(t * p.moveFreq)) * cellSize * p.idleBob;
-        g.rotation.x = -p.attack * pulse;
-        g.rotation.z = wobble;
-        g.scale.set(1 + pulse * 0.035, 1 - pulse * 0.018, 1 + pulse * 0.055);
+        modelRoot.position.y = Math.abs(Math.sin(t * p.moveFreq)) * cellSize * p.idleBob;
+        modelRoot.rotation.x = -p.attack * pulse;
+        modelRoot.rotation.z = Math.sin(t * 18) * 0.012;
       } else if (desired === 'move') {
-        const bob = Math.abs(Math.sin(t * p.moveFreq)) * cellSize * p.moveBob;
-        g.position.y = bob;
-        g.rotation.z = Math.sin(t * p.moveFreq * 0.5) * p.sway;
-        g.rotation.x = Math.cos(t * p.moveFreq) * p.sway * 0.35;
+        modelRoot.position.y = Math.abs(Math.sin(t * p.moveFreq)) * cellSize * p.moveBob;
+        modelRoot.rotation.z = Math.sin(t * p.moveFreq * 0.5) * p.sway;
+        modelRoot.rotation.x = Math.cos(t * p.moveFreq) * p.sway * 0.35;
       } else {
-        g.position.y = Math.sin(t * 2.2) * cellSize * p.idleBob;
-        g.rotation.z = Math.sin(t * 1.6) * p.sway * 0.18;
+        modelRoot.position.y = Math.sin(t * 2.2) * cellSize * p.idleBob;
+        modelRoot.rotation.z = Math.sin(t * 1.6) * p.sway * 0.18;
       }
 
       if (currentClipNameRef.current !== 'procedural') {
@@ -404,11 +460,12 @@ function Model({
           debugRef.current = {
             ...debugRef.current,
             clip: 'procedural',
-            animationStatus: animDataRef.current.status === 'missing' ? 'missing' : (animDataRef.current.status === 'broken' ? 'broken' : 'procedural'),
+            animationStatus: animDataRef.current.status,
             usingFallback: false,
             hasAnimations: (gltf.animations?.length ?? 0) > 0,
             glbLoaded: true,
             sourceUrl,
+            rootMotion: rootMotionMode,
           };
         }
       }
@@ -426,7 +483,7 @@ function Model({
   useEffect(() => () => {
     if (mixerRef.current) {
       mixerRef.current.stopAllAction();
-      mixerRef.current.uncacheRoot(mixerRef.current.getRoot() as any);
+      try { mixerRef.current.uncacheRoot(mixerRef.current.getRoot() as any); } catch {}
       mixerRef.current = null;
     }
   }, []);
@@ -435,11 +492,21 @@ function Model({
     if (debugRef) debugRef.current = {
       clip: 'fallback', usingFallback: true, hasAnimations: false,
       animationStatus: 'procedural', glbLoaded: false, sourceUrl,
+      rootMotion: rootMotionMode,
     };
     return Fallback ? <Fallback cellSize={cellSize} color={def.color} /> : null;
   }
 
-  return <group ref={groupRef}><primitive object={cloned} /></group>;
+  // Normalization group applies base rotation (per modelAssets) ONCE; never
+  // mutated per-frame. The animated modelRoot wraps the GLB scene and is the
+  // only thing the mixer (or procedural fallback) may write to.
+  return (
+    <group ref={normalizationRef} rotation={[def.rotation[0], def.rotation[1], def.rotation[2]]}>
+      <group ref={modelRootRef}>
+        <primitive object={cloned} />
+      </group>
+    </group>
+  );
 }
 
 export function EnemyModel(props: EnemyModelProps) {
