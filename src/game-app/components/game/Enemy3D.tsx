@@ -137,6 +137,7 @@ export function Enemy3D({
             hasAnimations={debugInfo.hasAnimations}
             animationStatus={debugInfo.animationStatus}
             glbLoaded={debugInfo.glbLoaded}
+            rootMotion={debugInfo.rootMotion}
           />
         )}
       </group>
