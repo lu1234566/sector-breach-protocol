@@ -50,9 +50,9 @@ export function Enemy3D({
   const yawRef = useRef(0);
   const yawInitRef = useRef(false);
   const facingOffset = (ENEMY_MODELS[modelKey]?.facingOffset ?? 0) as number;
-  const debugRef = useRef({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '' });
+  const debugRef = useRef({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '', rootMotion: 'lockXZ' });
   const debugAccum = useRef(0);
-  const [debugInfo, setDebugInfo] = useState({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '' });
+  const [debugInfo, setDebugInfo] = useState({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '', rootMotion: 'lockXZ' });
 
   useFrame((_, delta) => {
     if (!root.current) return;
@@ -101,7 +101,8 @@ export function Enemy3D({
           d.clip !== debugInfo.clip ||
           d.usingFallback !== debugInfo.usingFallback ||
           d.hasAnimations !== debugInfo.hasAnimations ||
-          d.animationStatus !== debugInfo.animationStatus
+          d.animationStatus !== debugInfo.animationStatus ||
+          d.rootMotion !== debugInfo.rootMotion
         ) {
           setDebugInfo({ ...d });
         }
@@ -136,6 +137,7 @@ export function Enemy3D({
             hasAnimations={debugInfo.hasAnimations}
             animationStatus={debugInfo.animationStatus}
             glbLoaded={debugInfo.glbLoaded}
+            rootMotion={debugInfo.rootMotion}
           />
         )}
       </group>
@@ -143,7 +145,7 @@ export function Enemy3D({
   );
 }
 
-function DebugLabel({ cellSize, isBoss, modelKey, animState, clip, usingFallback, hasAnimations, animationStatus, glbLoaded }: any) {
+function DebugLabel({ cellSize, isBoss, modelKey, animState, clip, usingFallback, hasAnimations, animationStatus, glbLoaded, rootMotion }: any) {
   const y = isBoss ? cellSize * 2.7 : cellSize * 1.65;
   const status = animationStatus ?? 'procedural';
   const color = status === 'valid' ? '#22d3ee' : status === 'broken' ? '#f43f5e' : status === 'missing' ? '#fbbf24' : '#a78bfa';
@@ -151,6 +153,7 @@ function DebugLabel({ cellSize, isBoss, modelKey, animState, clip, usingFallback
     `model: ${modelKey}`,
     `anim: ${status}`,
     `clip: ${clip}`,
+    `root: ${rootMotion ?? '-'}`,
     `glb: ${glbLoaded ? 'loaded' : 'failed'} | anims: ${hasAnimations ? 'yes' : 'no'}`,
     `state: ${animState}${usingFallback ? ' [FB]' : ''}`,
   ].join('\n');

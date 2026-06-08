@@ -16,9 +16,18 @@ export interface EnemyModelDef {
   targetSize: number; // multiplied by cellSize for the longest bbox axis
   yOffset: number;
   rotation: [number, number, number];
+  // Optional fine offsets applied after fitToCell centering.
+  positionOffset?: [number, number, number];
+  // Multiplier applied to targetSize for extra per-model scaling.
+  scaleMultiplier?: number;
   // Additional yaw (radians) added to the dynamic facing rotation, used when
   // the GLB's "forward" axis is not -Z. Try Math.PI, Math.PI/2, -Math.PI/2.
   facingOffset?: number;
+  // How to handle root-motion tracks inside the GLB's animations.
+  // - "lockXZ": strip root XZ position so the rig animates in place (default).
+  // - "strip":  remove position/rotation/scale on the root entirely.
+  // - "keep":   leave clips untouched (only safe for animations authored in place).
+  rootMotion?: 'strip' | 'lockXZ' | 'keep';
   animationMap: Record<string, number>;
 }
 
@@ -33,6 +42,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     yOffset: 0,
     rotation: [0, 0, 0],
     facingOffset: 0,
+    rootMotion: 'lockXZ',
     animationMap: { idle: 0, walk: 0, run: 0, attack: 0, hit: 0, death: 0 },
   },
   rifleman: {
@@ -45,6 +55,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     yOffset: 0,
     rotation: [0, 0, 0],
     facingOffset: 0,
+    rootMotion: 'lockXZ',
     animationMap: { idle: 0, walk: 1, attack: 3, shoot: 3, death: 4 },
   },
   sniper: {
@@ -57,6 +68,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     yOffset: 0,
     rotation: [0, 0, 0],
     facingOffset: 0,
+    rootMotion: 'lockXZ',
     animationMap: { idle: 3, walk: 0, attack: 1, shoot: 1, death: 2 },
   },
   titan: {
@@ -70,6 +82,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     yOffset: 0,
     rotation: [0, 0, 0],
     facingOffset: 0,
+    rootMotion: 'lockXZ',
     animationMap: { idle: 1, walk: 0, attack: 2, death: 3 },
   },
   oldTitan: {
@@ -80,6 +93,7 @@ export const ENEMY_MODELS: Record<string, EnemyModelDef> = {
     yOffset: 0,
     rotation: [0, 0, 0],
     facingOffset: 0,
+    rootMotion: 'lockXZ',
     animationMap: { idle: 0, walk: 1, attack: 3, heavyAttack: 4, death: 5 },
   },
 };
