@@ -50,9 +50,9 @@ export function Enemy3D({
   const yawRef = useRef(0);
   const yawInitRef = useRef(false);
   const facingOffset = (ENEMY_MODELS[modelKey]?.facingOffset ?? 0) as number;
-  const debugRef = useRef({ clip: '-', usingFallback: false, hasAnimations: false });
+  const debugRef = useRef({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '' });
   const debugAccum = useRef(0);
-  const [debugInfo, setDebugInfo] = useState({ clip: '-', usingFallback: false, hasAnimations: false });
+  const [debugInfo, setDebugInfo] = useState({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '' });
 
   useFrame((_, delta) => {
     if (!root.current) return;
@@ -100,7 +100,8 @@ export function Enemy3D({
         if (
           d.clip !== debugInfo.clip ||
           d.usingFallback !== debugInfo.usingFallback ||
-          d.hasAnimations !== debugInfo.hasAnimations
+          d.hasAnimations !== debugInfo.hasAnimations ||
+          d.animationStatus !== debugInfo.animationStatus
         ) {
           setDebugInfo({ ...d });
         }
@@ -133,6 +134,8 @@ export function Enemy3D({
             clip={debugInfo.clip}
             usingFallback={debugInfo.usingFallback}
             hasAnimations={debugInfo.hasAnimations}
+            animationStatus={debugInfo.animationStatus}
+            glbLoaded={debugInfo.glbLoaded}
           />
         )}
       </group>
@@ -140,22 +143,26 @@ export function Enemy3D({
   );
 }
 
-function DebugLabel({ cellSize, isBoss, modelKey, animState, clip, usingFallback, hasAnimations }: any) {
-  const y = isBoss ? cellSize * 2.55 : cellSize * 1.55;
+function DebugLabel({ cellSize, isBoss, modelKey, animState, clip, usingFallback, hasAnimations, animationStatus, glbLoaded }: any) {
+  const y = isBoss ? cellSize * 2.7 : cellSize * 1.65;
+  const status = animationStatus ?? 'procedural';
+  const color = status === 'valid' ? '#22d3ee' : status === 'broken' ? '#f43f5e' : status === 'missing' ? '#fbbf24' : '#a78bfa';
   const text = [
-    `${modelKey}${usingFallback ? ' [FALLBACK]' : ' [GLB]'}`,
-    `state: ${animState}`,
-    `clip: ${clip}${hasAnimations ? '' : ' (no anim)'}`,
+    `model: ${modelKey}`,
+    `anim: ${status}`,
+    `clip: ${clip}`,
+    `glb: ${glbLoaded ? 'loaded' : 'failed'} | anims: ${hasAnimations ? 'yes' : 'no'}`,
+    `state: ${animState}${usingFallback ? ' [FB]' : ''}`,
   ].join('\n');
   return (
     <Billboard position={[0, y, 0]}>
       <mesh position={[0, 0, -0.005]}>
-        <planeGeometry args={[cellSize * 1.2, cellSize * 0.5]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.65} depthWrite={false} />
+        <planeGeometry args={[cellSize * 1.4, cellSize * 0.7]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.7} depthWrite={false} />
       </mesh>
       <Text
-        fontSize={cellSize * 0.11}
-        color={usingFallback ? '#fbbf24' : '#22d3ee'}
+        fontSize={cellSize * 0.1}
+        color={color}
         anchorX="center"
         anchorY="middle"
         outlineWidth={0.004}
