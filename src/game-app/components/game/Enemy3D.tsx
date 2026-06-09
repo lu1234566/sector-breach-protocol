@@ -120,27 +120,22 @@ export function Enemy3D({
   );
 }
 
-function DebugLabel({ cellSize, isBoss, modelKey, animState, clip, usingFallback, hasAnimations, animationStatus, glbLoaded, rootMotion }: any) {
+function DebugLabel({ cellSize, isBoss, modelKey, animState }: any) {
   const y = isBoss ? cellSize * 2.7 : cellSize * 1.65;
-  const status = animationStatus ?? 'procedural';
-  const color = status === 'valid' ? '#22d3ee' : status === 'broken' ? '#f43f5e' : status === 'missing' ? '#fbbf24' : '#a78bfa';
   const text = [
-    `model: ${modelKey}`,
-    `anim: ${status}`,
-    `clip: ${clip}`,
-    `root: ${rootMotion ?? '-'}`,
-    `glb: ${glbLoaded ? 'loaded' : 'failed'} | anims: ${hasAnimations ? 'yes' : 'no'}`,
-    `state: ${animState}${usingFallback ? ' [FB]' : ''}`,
+    `type: ${modelKey}`,
+    `rig: procedural (parts)`,
+    `state: ${animState}`,
   ].join('\n');
   return (
     <Billboard position={[0, y, 0]}>
       <mesh position={[0, 0, -0.005]}>
-        <planeGeometry args={[cellSize * 1.4, cellSize * 0.7]} />
+        <planeGeometry args={[cellSize * 1.3, cellSize * 0.45]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.7} depthWrite={false} />
       </mesh>
       <Text
         fontSize={cellSize * 0.1}
-        color={color}
+        color="#a78bfa"
         anchorX="center"
         anchorY="middle"
         outlineWidth={0.004}
