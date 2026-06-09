@@ -1,9 +1,9 @@
 // @ts-nocheck
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Billboard, Text } from '@react-three/drei';
 import * as THREE from 'three';
-import { EnemyModel } from './EnemyModel';
+import { EnemyRig } from './EnemyRig';
 import { ENEMY_MODELS } from '../../game/modelAssets';
 
 interface EnemyProps {
@@ -50,9 +50,6 @@ export function Enemy3D({
   const yawRef = useRef(0);
   const yawInitRef = useRef(false);
   const facingOffset = (ENEMY_MODELS[modelKey]?.facingOffset ?? 0) as number;
-  const debugRef = useRef({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '', rootMotion: 'lockXZ' });
-  const debugAccum = useRef(0);
-  const [debugInfo, setDebugInfo] = useState({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '', rootMotion: 'lockXZ' });
 
   useFrame((_, delta) => {
     if (!root.current) return;
@@ -92,22 +89,6 @@ export function Enemy3D({
       root.current.scale.setScalar(spawnK * (1 - dyingProgress.current * 0.35));
     }
 
-    if (debug) {
-      debugAccum.current += delta;
-      if (debugAccum.current > 0.2) {
-        debugAccum.current = 0;
-        const d = debugRef.current;
-        if (
-          d.clip !== debugInfo.clip ||
-          d.usingFallback !== debugInfo.usingFallback ||
-          d.hasAnimations !== debugInfo.hasAnimations ||
-          d.animationStatus !== debugInfo.animationStatus ||
-          d.rootMotion !== debugInfo.rootMotion
-        ) {
-          setDebugInfo({ ...d });
-        }
-      }
-    }
   });
 
   const sinceShot = (Date.now() - (lastShot ?? 0)) / 1000;
@@ -116,14 +97,14 @@ export function Enemy3D({
   return (
     <group position={[x, 0, y]}>
       <group ref={root}>
-        <EnemyModel
-          modelKey={modelKey}
+        <EnemyRig
+          type={type}
+          isBoss={isBoss}
           cellSize={cellSize}
+          color={tColor}
+          animState={animState}
           hp={hp}
           lastShot={lastShot}
-          animState={animState}
-          Fallback={isBoss ? TitanFallback : getFallback(type)}
-          debugRef={debug ? debugRef : undefined}
         />
         <HealthBar cellSize={cellSize} healthPct={healthPct} isBoss={!!isBoss} color={tColor} />
         {debug && (
@@ -132,12 +113,6 @@ export function Enemy3D({
             isBoss={!!isBoss}
             modelKey={modelKey}
             animState={animState}
-            clip={debugInfo.clip}
-            usingFallback={debugInfo.usingFallback}
-            hasAnimations={debugInfo.hasAnimations}
-            animationStatus={debugInfo.animationStatus}
-            glbLoaded={debugInfo.glbLoaded}
-            rootMotion={debugInfo.rootMotion}
           />
         )}
       </group>
@@ -145,27 +120,22 @@ export function Enemy3D({
   );
 }
 
-function DebugLabel({ cellSize, isBoss, modelKey, animState, clip, usingFallback, hasAnimations, animationStatus, glbLoaded, rootMotion }: any) {
+function DebugLabel({ cellSize, isBoss, modelKey, animState }: any) {
   const y = isBoss ? cellSize * 2.7 : cellSize * 1.65;
-  const status = animationStatus ?? 'procedural';
-  const color = status === 'valid' ? '#22d3ee' : status === 'broken' ? '#f43f5e' : status === 'missing' ? '#fbbf24' : '#a78bfa';
   const text = [
-    `model: ${modelKey}`,
-    `anim: ${status}`,
-    `clip: ${clip}`,
-    `root: ${rootMotion ?? '-'}`,
-    `glb: ${glbLoaded ? 'loaded' : 'failed'} | anims: ${hasAnimations ? 'yes' : 'no'}`,
-    `state: ${animState}${usingFallback ? ' [FB]' : ''}`,
+    `type: ${modelKey}`,
+    `rig: procedural (parts)`,
+    `state: ${animState}`,
   ].join('\n');
   return (
     <Billboard position={[0, y, 0]}>
       <mesh position={[0, 0, -0.005]}>
-        <planeGeometry args={[cellSize * 1.4, cellSize * 0.7]} />
+        <planeGeometry args={[cellSize * 1.3, cellSize * 0.45]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.7} depthWrite={false} />
       </mesh>
       <Text
         fontSize={cellSize * 0.1}
-        color={color}
+        color="#a78bfa"
         anchorX="center"
         anchorY="middle"
         outlineWidth={0.004}
