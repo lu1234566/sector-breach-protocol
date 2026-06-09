@@ -116,14 +116,14 @@ export function Enemy3D({
   return (
     <group position={[x, 0, y]}>
       <group ref={root}>
-        <EnemyModel
-          modelKey={modelKey}
+        <EnemyRig
+          type={type}
+          isBoss={isBoss}
           cellSize={cellSize}
+          color={tColor}
+          animState={animState}
           hp={hp}
           lastShot={lastShot}
-          animState={animState}
-          Fallback={isBoss ? TitanFallback : getFallback(type)}
-          debugRef={debug ? debugRef : undefined}
         />
         <HealthBar cellSize={cellSize} healthPct={healthPct} isBoss={!!isBoss} color={tColor} />
         {debug && (
@@ -132,12 +132,6 @@ export function Enemy3D({
             isBoss={!!isBoss}
             modelKey={modelKey}
             animState={animState}
-            clip={debugInfo.clip}
-            usingFallback={debugInfo.usingFallback}
-            hasAnimations={debugInfo.hasAnimations}
-            animationStatus={debugInfo.animationStatus}
-            glbLoaded={debugInfo.glbLoaded}
-            rootMotion={debugInfo.rootMotion}
           />
         )}
       </group>
