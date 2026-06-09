@@ -89,22 +89,6 @@ export function Enemy3D({
       root.current.scale.setScalar(spawnK * (1 - dyingProgress.current * 0.35));
     }
 
-    if (debug) {
-      debugAccum.current += delta;
-      if (debugAccum.current > 0.2) {
-        debugAccum.current = 0;
-        const d = debugRef.current;
-        if (
-          d.clip !== debugInfo.clip ||
-          d.usingFallback !== debugInfo.usingFallback ||
-          d.hasAnimations !== debugInfo.hasAnimations ||
-          d.animationStatus !== debugInfo.animationStatus ||
-          d.rootMotion !== debugInfo.rootMotion
-        ) {
-          setDebugInfo({ ...d });
-        }
-      }
-    }
   });
 
   const sinceShot = (Date.now() - (lastShot ?? 0)) / 1000;
