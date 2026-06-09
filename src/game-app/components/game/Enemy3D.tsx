@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Billboard, Text } from '@react-three/drei';
 import * as THREE from 'three';
