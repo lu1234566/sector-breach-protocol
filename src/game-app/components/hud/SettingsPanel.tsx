@@ -50,6 +50,11 @@ export function SettingsPanel({ onBack }: Props) {
           onChange={(q) => update({ quality: q })}
         />
 
+        <EnemyVisualModePicker
+          value={settings.enemyVisualMode}
+          onChange={(m) => update({ enemyVisualMode: m })}
+        />
+
         <button
           onClick={() => update(DEFAULT_SETTINGS)}
           className="text-[10px] text-slate-400 hover:text-cyan-400 uppercase tracking-widest self-start transition-colors"
