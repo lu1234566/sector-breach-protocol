@@ -1,10 +1,12 @@
 // @ts-nocheck
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Billboard, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { EnemyRig } from './EnemyRig';
+import { EnemyModel } from './EnemyModel';
 import { ENEMY_MODELS } from '../../game/modelAssets';
+import { useSettings } from '../../game/settings';
 
 interface EnemyProps {
   x: number;
@@ -40,6 +42,7 @@ export function Enemy3D({
   lastShot = 0,
   spawnTime = 0,
 }: EnemyProps) {
+  const [settings] = useSettings();
   const root = useRef<THREE.Group>(null);
   const prevPos = useRef(new THREE.Vector2(x, y));
   const speedRef = useRef(0);
@@ -50,6 +53,15 @@ export function Enemy3D({
   const yawRef = useRef(0);
   const yawInitRef = useRef(false);
   const facingOffset = (ENEMY_MODELS[modelKey]?.facingOffset ?? 0) as number;
+
+  const debugRef = useRef({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '', rootMotion: 'lockXZ' });
+  const debugAccum = useRef(0);
+  const [debugInfo, setDebugInfo] = useState({ clip: '-', usingFallback: false, hasAnimations: false, animationStatus: 'procedural', glbLoaded: false, sourceUrl: '', rootMotion: 'lockXZ' });
+
+  const requestedMode = settings.enemyVisualMode ?? 'auto';
+  // Stable default: Auto currently means procedural rig. Force GLB only when
+  // testing animation/positioning with enemyVisualMode='glb'.
+  const visualMode = requestedMode === 'glb' ? 'glb' : 'rig';
 
   useFrame((_, delta) => {
     if (!root.current) return;
@@ -78,7 +90,6 @@ export function Enemy3D({
       root.current.rotation.y = yawRef.current;
     }
 
-
     const sinceSpawn = (Date.now() - spawnTime) / 1000;
     const spawnK = Math.max(0, Math.min(1, sinceSpawn / 0.55));
     root.current.scale.setScalar(spawnK);
@@ -89,6 +100,23 @@ export function Enemy3D({
       root.current.scale.setScalar(spawnK * (1 - dyingProgress.current * 0.35));
     }
 
+    if (debug && visualMode === 'glb') {
+      debugAccum.current += delta;
+      if (debugAccum.current > 0.2) {
+        debugAccum.current = 0;
+        const d = debugRef.current;
+        if (
+          d.clip !== debugInfo.clip ||
+          d.usingFallback !== debugInfo.usingFallback ||
+          d.hasAnimations !== debugInfo.hasAnimations ||
+          d.animationStatus !== debugInfo.animationStatus ||
+          d.rootMotion !== debugInfo.rootMotion ||
+          d.sourceUrl !== debugInfo.sourceUrl
+        ) {
+          setDebugInfo({ ...d });
+        }
+      }
+    }
   });
 
   const sinceShot = (Date.now() - (lastShot ?? 0)) / 1000;
@@ -97,15 +125,27 @@ export function Enemy3D({
   return (
     <group position={[x, 0, y]}>
       <group ref={root}>
-        <EnemyRig
-          type={type}
-          isBoss={isBoss}
-          cellSize={cellSize}
-          color={tColor}
-          animState={animState}
-          hp={hp}
-          lastShot={lastShot}
-        />
+        {visualMode === 'glb' ? (
+          <EnemyModel
+            modelKey={modelKey}
+            cellSize={cellSize}
+            hp={hp}
+            lastShot={lastShot}
+            animState={animState}
+            Fallback={isBoss ? TitanFallback : getFallback(type)}
+            debugRef={debug ? debugRef : undefined}
+          />
+        ) : (
+          <EnemyRig
+            type={type}
+            isBoss={isBoss}
+            cellSize={cellSize}
+            color={tColor}
+            animState={animState}
+            hp={hp}
+            lastShot={lastShot}
+          />
+        )}
         <HealthBar cellSize={cellSize} healthPct={healthPct} isBoss={!!isBoss} color={tColor} />
         {debug && (
           <DebugLabel
@@ -113,6 +153,14 @@ export function Enemy3D({
             isBoss={!!isBoss}
             modelKey={modelKey}
             animState={animState}
+            visualMode={visualMode}
+            requestedMode={requestedMode}
+            clip={visualMode === 'glb' ? debugInfo.clip : 'procedural parts'}
+            usingFallback={visualMode === 'glb' ? debugInfo.usingFallback : false}
+            hasAnimations={visualMode === 'glb' ? debugInfo.hasAnimations : false}
+            animationStatus={visualMode === 'glb' ? debugInfo.animationStatus : 'procedural'}
+            glbLoaded={visualMode === 'glb' ? debugInfo.glbLoaded : false}
+            rootMotion={visualMode === 'glb' ? debugInfo.rootMotion : '-'}
           />
         )}
       </group>
@@ -120,22 +168,36 @@ export function Enemy3D({
   );
 }
 
-function DebugLabel({ cellSize, isBoss, modelKey, animState }: any) {
+function DebugLabel({ cellSize, isBoss, modelKey, animState, visualMode, requestedMode, clip, usingFallback, hasAnimations, animationStatus, glbLoaded, rootMotion }: any) {
   const y = isBoss ? cellSize * 2.7 : cellSize * 1.65;
-  const text = [
-    `type: ${modelKey}`,
-    `rig: procedural (parts)`,
-    `state: ${animState}`,
-  ].join('\n');
+  const status = animationStatus ?? (visualMode === 'rig' ? 'procedural' : '-');
+  const color = visualMode === 'glb'
+    ? status === 'valid' ? '#22d3ee' : status === 'broken' ? '#f43f5e' : status === 'missing' ? '#fbbf24' : '#a78bfa'
+    : '#a78bfa';
+  const text = visualMode === 'glb'
+    ? [
+        `type: ${modelKey}`,
+        `mode: GLB (requested: ${requestedMode})`,
+        `anim: ${status}`,
+        `clip: ${clip}`,
+        `root: ${rootMotion ?? '-'}`,
+        `glb: ${glbLoaded ? 'loaded' : 'failed'} | anims: ${hasAnimations ? 'yes' : 'no'}`,
+        `state: ${animState}${usingFallback ? ' [FB]' : ''}`,
+      ].join('\n')
+    : [
+        `type: ${modelKey}`,
+        `mode: procedural rig (requested: ${requestedMode})`,
+        `state: ${animState}`,
+      ].join('\n');
   return (
     <Billboard position={[0, y, 0]}>
       <mesh position={[0, 0, -0.005]}>
-        <planeGeometry args={[cellSize * 1.3, cellSize * 0.45]} />
+        <planeGeometry args={[cellSize * 1.55, visualMode === 'glb' ? cellSize * 0.78 : cellSize * 0.45]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.7} depthWrite={false} />
       </mesh>
       <Text
-        fontSize={cellSize * 0.1}
-        color="#a78bfa"
+        fontSize={cellSize * 0.095}
+        color={color}
         anchorX="center"
         anchorY="middle"
         outlineWidth={0.004}
@@ -146,7 +208,6 @@ function DebugLabel({ cellSize, isBoss, modelKey, animState }: any) {
     </Billboard>
   );
 }
-
 
 function getFallback(type: string) {
   if (type === 'rusher') return RusherFallback;
