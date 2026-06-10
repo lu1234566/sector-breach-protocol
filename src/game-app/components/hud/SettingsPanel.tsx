@@ -211,4 +211,67 @@ function QualityPicker({
   );
 }
 
+function EnemyVisualModePicker({
+  value,
+  onChange,
+}: {
+  value: EnemyVisualMode;
+  onChange: (m: EnemyVisualMode) => void;
+}) {
+  const options: { id: EnemyVisualMode; label: string; desc: string }[] = [
+    {
+      id: 'auto',
+      label: 'Auto / Stable',
+      desc: 'Uses the safest current enemy renderer.',
+    },
+    {
+      id: 'rig',
+      label: 'Procedural Rig',
+      desc: 'Uses animated part-based enemies.',
+    },
+    {
+      id: 'glb',
+      label: 'GLB Model Test',
+      desc: 'Forces the original GLB enemy models for animation and positioning tests.',
+    },
+  ];
+  return (
+    <div>
+      <div className="text-[10px] text-cyan-300/90 uppercase tracking-widest font-bold mb-2">
+        Enemy Visual Mode
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {options.map((o) => {
+          const active = value === o.id;
+          return (
+            <button
+              key={o.id}
+              onClick={() => onChange(o.id)}
+              className={`flex flex-col items-start text-left px-3 py-2 rounded border transition-colors ${
+                active
+                  ? 'border-cyan-400 bg-cyan-400/15 text-cyan-100'
+                  : 'border-slate-700 bg-slate-900/50 text-slate-300 hover:border-cyan-500/50 hover:text-cyan-200'
+              }`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[11px] font-bold uppercase tracking-wider">{o.label}</span>
+              </div>
+              <span className={`text-[9px] mt-1 leading-snug ${active ? 'text-cyan-200/90' : 'text-slate-500'}`}>
+                {o.desc}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="text-[9px] text-amber-400/80 uppercase tracking-widest mt-2">
+        Affects Medium and High quality only. Low / Performance always uses the lightweight renderer.
+      </div>
+      <div className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">
+        Changes will apply when restarting the mission.
+      </div>
+    </div>
+  );
+}
+
+
 
