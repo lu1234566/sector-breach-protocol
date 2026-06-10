@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { useSettings, DEFAULT_SETTINGS, type QualityTier } from '@/game-app/game/settings';
+import { useSettings, DEFAULT_SETTINGS, type QualityTier, type EnemyVisualMode } from '@/game-app/game/settings';
 
 interface Props {
   onBack: () => void;
