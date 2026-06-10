@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 export type QualityTier = 'auto' | 'low' | 'medium' | 'high';
+export type EnemyVisualMode = 'auto' | 'rig' | 'glb';
 
 export interface GameSettings {
   mouseSensX: number; // multiplier, 1.0 = default
@@ -8,6 +9,11 @@ export interface GameSettings {
   invertX: boolean;
   invertY: boolean;
   quality: QualityTier;
+  // Controls how enemies are rendered in Medium/High. Low still uses EnemyLite.
+  // auto: stable default, currently uses the procedural part-rig.
+  // rig: force procedural part-rig enemies.
+  // glb: force EnemyModel/GLB enemies for testing animation/positioning.
+  enemyVisualMode: EnemyVisualMode;
 }
 
 const KEY = 'protocol_settings';
@@ -18,6 +24,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   invertX: false,
   invertY: false,
   quality: 'auto',
+  enemyVisualMode: 'auto',
 };
 
 export function loadSettings(): GameSettings {
@@ -26,12 +33,14 @@ export function loadSettings(): GameSettings {
     if (!raw) return { ...DEFAULT_SETTINGS };
     const parsed = JSON.parse(raw);
     const q = parsed.quality;
+    const enemyVisualMode = parsed.enemyVisualMode;
     return {
       mouseSensX: clampNum(parsed.mouseSensX, 0.1, 5, DEFAULT_SETTINGS.mouseSensX),
       mouseSensY: clampNum(parsed.mouseSensY, 0.1, 5, DEFAULT_SETTINGS.mouseSensY),
       invertX: Boolean(parsed.invertX),
       invertY: Boolean(parsed.invertY),
       quality: (['auto', 'low', 'medium', 'high'] as const).includes(q) ? q : 'auto',
+      enemyVisualMode: (['auto', 'rig', 'glb'] as const).includes(enemyVisualMode) ? enemyVisualMode : 'auto',
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
