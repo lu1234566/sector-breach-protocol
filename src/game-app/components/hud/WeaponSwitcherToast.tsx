@@ -1,7 +1,7 @@
-import { AnimatePresence, motion } from 'motion/react';
-import { WEAPONS, type WeaponType } from '@/game-app/game/constants';
+import { AnimatePresence, motion } from "motion/react";
+import { WEAPONS, type WeaponType } from "@/game-app/game/constants";
 
-const ORDER: WeaponType[] = ['pistol', 'rifle', 'shotgun', 'sniper'];
+const ORDER: WeaponType[] = ["pistol", "rifle", "shotgun", "sniper"];
 
 export function WeaponSwitcherToast({
   currentWeapon,
@@ -24,9 +24,7 @@ export function WeaponSwitcherToast({
               {i > 0 && <span className="text-slate-600 mx-1">|</span>}
               <span
                 className={`px-1.5 py-0.5 rounded-sm ${
-                  w === currentWeapon
-                    ? 'bg-cyan-400 text-slate-950 font-black'
-                    : 'text-slate-400'
+                  w === currentWeapon ? "bg-cyan-400 text-slate-950 font-black" : "text-slate-400"
                 }`}
               >
                 {i + 1} {WEAPONS[w].name}

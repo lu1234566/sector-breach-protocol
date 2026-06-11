@@ -1,13 +1,13 @@
 // @ts-nocheck
-import React, { useRef, useMemo, useEffect, Suspense, Component } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
-import * as THREE from 'three';
+import React, { useRef, useMemo, useEffect, Suspense, Component } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import * as THREE from "three";
 
-useGLTF.preload('/assets/weapons/pistol.glb');
-useGLTF.preload('/assets/weapons/rifle.glb');
-useGLTF.preload('/assets/weapons/shotgun.glb');
-useGLTF.preload('/assets/weapons/sniper.glb');
+useGLTF.preload("/assets/weapons/pistol.glb");
+useGLTF.preload("/assets/weapons/rifle.glb");
+useGLTF.preload("/assets/weapons/shotgun.glb");
+useGLTF.preload("/assets/weapons/sniper.glb");
 
 /**
  * Weapon3D — first-person viewmodel layer rendered in its own overlay Canvas.
@@ -15,7 +15,7 @@ useGLTF.preload('/assets/weapons/sniper.glb');
  * swap, fire kick and muzzle flash.
  */
 
-const NEON_CYAN = '#22d3ee';
+const NEON_CYAN = "#22d3ee";
 
 export function Weapon3D({
   type,
@@ -33,20 +33,20 @@ export function Weapon3D({
   return (
     <div
       style={{
-        position: 'absolute',
+        position: "absolute",
         bottom: 0,
         right: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
         zIndex: 10,
       }}
     >
       <Canvas
         camera={{ position: [0, 0, 5], fov: 50 }}
-        style={{ pointerEvents: 'none' }}
+        style={{ pointerEvents: "none" }}
         dpr={[0.75, 1]}
-        gl={{ antialias: false, powerPreference: 'low-power' }}
+        gl={{ antialias: false, powerPreference: "low-power" }}
       >
         {/* Minimal lighting for the viewmodel rig */}
         <ambientLight intensity={1.4} color="#cfd8e8" />
@@ -78,20 +78,21 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
   // Per-weapon idle resting pose — pushes weapon toward lower-right corner.
   const restPose = useMemo(() => {
     switch (type) {
-      case 'sniper':
+      case "sniper":
         return { x: 1.15, y: -1.05, z: 2.4, ry: -0.13, rx: 0.04 };
-      case 'shotgun':
+      case "shotgun":
         return { x: 1.1, y: -1.05, z: 2.7, ry: -0.12, rx: 0.05 };
-      case 'rifle':
+      case "rifle":
         return { x: 1.05, y: -1.0, z: 2.8, ry: -0.11, rx: 0.04 };
-      case 'pistol':
+      case "pistol":
       default:
         return { x: 0.95, y: -0.9, z: 3.1, ry: -0.18, rx: 0.06 };
     }
   }, [type]);
 
   // Per-weapon recoil weights
-  const recoilWeight = type === 'sniper' ? 1.6 : type === 'shotgun' ? 1.35 : type === 'rifle' ? 0.9 : 0.8;
+  const recoilWeight =
+    type === "sniper" ? 1.6 : type === "shotgun" ? 1.35 : type === "rifle" ? 0.9 : 0.8;
 
   useFrame((state) => {
     if (!group.current) return;
@@ -172,10 +173,18 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
 /* --------------------------- Error boundary --------------------------- */
 class WeaponErrorBoundary extends Component<any, { err: boolean }> {
   state = { err: false };
-  static getDerivedStateFromError() { return { err: true }; }
-  componentDidCatch(e: any) { console.error('[Weapon3D] failed to render', this.props.type, e); }
-  componentDidUpdate(prev: any) { if (prev.type !== this.props.type && this.state.err) this.setState({ err: false }); }
-  render() { return this.state.err ? null : this.props.children; }
+  static getDerivedStateFromError() {
+    return { err: true };
+  }
+  componentDidCatch(e: any) {
+    console.error("[Weapon3D] failed to render", this.props.type, e);
+  }
+  componentDidUpdate(prev: any) {
+    if (prev.type !== this.props.type && this.state.err) this.setState({ err: false });
+  }
+  render() {
+    return this.state.err ? null : this.props.children;
+  }
 }
 
 /* ----------------------------- GLB Weapon Model ----------------------------- */
@@ -183,24 +192,50 @@ class WeaponErrorBoundary extends Component<any, { err: boolean }> {
 // so we apply a manual rotation that points the barrel toward -Z, then auto-fit
 // the rotated bounding box to targetLength. Meshes matching `hideMeshes`
 // (e.g. baked-in arms) are hidden so the weapon shows without duplicate hands.
-const WEAPON_MODELS: Record<string, {
-  url: string;
-  targetLength: number;
-  offset: [number, number, number];
-  kickZ: number;
-  hideMeshes?: RegExp;
-  extraRotation?: [number, number, number];
-}> = {
-  pistol:  { url: '/assets/weapons/pistol.glb',  targetLength: 1.6, offset: [0.05, -0.05, 0.2],  kickZ: 0.18, hideMeshes: /arm|hand|glove|finger|forearm|wrist|skin|body/i },
-  rifle:   { url: '/assets/weapons/rifle.glb',   targetLength: 2.4, offset: [0, -0.1, 0.1],      kickZ: 0.14 },
-  shotgun: { url: '/assets/weapons/shotgun.glb', targetLength: 2.4, offset: [0, -0.05, 0.1],     kickZ: 0.28 },
-  sniper:  { url: '/assets/weapons/sniper.glb',  targetLength: 3.2, offset: [0, -0.05, -0.2],    kickZ: 0.22 },
+const WEAPON_MODELS: Record<
+  string,
+  {
+    url: string;
+    targetLength: number;
+    offset: [number, number, number];
+    kickZ: number;
+    hideMeshes?: RegExp;
+    extraRotation?: [number, number, number];
+  }
+> = {
+  pistol: {
+    url: "/assets/weapons/pistol.glb",
+    targetLength: 1.6,
+    offset: [0.05, -0.05, 0.2],
+    kickZ: 0.18,
+    hideMeshes: /arm|hand|glove|finger|forearm|wrist|skin|body/i,
+  },
+  rifle: {
+    url: "/assets/weapons/rifle.glb",
+    targetLength: 2.4,
+    offset: [0, -0.1, 0.1],
+    kickZ: 0.14,
+  },
+  shotgun: {
+    url: "/assets/weapons/shotgun.glb",
+    targetLength: 2.4,
+    offset: [0, -0.05, 0.1],
+    kickZ: 0.28,
+  },
+  sniper: {
+    url: "/assets/weapons/sniper.glb",
+    targetLength: 3.2,
+    offset: [0, -0.05, -0.2],
+    kickZ: 0.22,
+  },
 };
 
 // Auto-orient: detect longest axis of bbox and build a rotation that
 // aligns that axis to -Z (barrel forward). Returns Euler angles.
 function autoBarrelRotation(size: THREE.Vector3): [number, number, number] {
-  const ax = size.x, ay = size.y, az = size.z;
+  const ax = size.x,
+    ay = size.y,
+    az = size.z;
   // Longest axis becomes -Z
   if (ax >= ay && ax >= az) {
     // X longest → rotate -90° around Y so +X maps to -Z
@@ -234,7 +269,7 @@ function WeaponModel({
 
     if (cfg.hideMeshes) {
       cloned.traverse((obj: any) => {
-        if (obj.isMesh && cfg.hideMeshes!.test(obj.name ?? '')) obj.visible = false;
+        if (obj.isMesh && cfg.hideMeshes!.test(obj.name ?? "")) obj.visible = false;
       });
     }
 
@@ -252,11 +287,11 @@ function WeaponModel({
           if (hsl.l < 0.25) mm.color.setHSL(hsl.h, hsl.s, 0.35);
         }
         if (mm.emissive) {
-          if (mm.emissive.getHex() === 0x000000) mm.emissive.set('#1a2236');
+          if (mm.emissive.getHex() === 0x000000) mm.emissive.set("#1a2236");
           mm.emissiveIntensity = Math.max(mm.emissiveIntensity ?? 0, 0.35);
         }
-        if ('metalness' in mm) mm.metalness = Math.min(mm.metalness ?? 0.3, 0.6);
-        if ('roughness' in mm) mm.roughness = Math.max(mm.roughness ?? 0.5, 0.4);
+        if ("metalness" in mm) mm.metalness = Math.min(mm.metalness ?? 0.3, 0.6);
+        if ("roughness" in mm) mm.roughness = Math.max(mm.roughness ?? 0.5, 0.4);
         mm.needsUpdate = true;
       };
       // clone(true) shares materials with drei's GLTF cache — clone them
@@ -303,9 +338,8 @@ function WeaponModel({
         fireAction = mixer.clipAction(fireClip.clone());
         fireAction.setLoop(THREE.LoopOnce, 1);
         fireAction.clampWhenFinished = false;
-        fireDuration = fireClip === reloadClip
-          ? Math.min(0.28, fireClip.duration * 0.25)
-          : fireClip.duration;
+        fireDuration =
+          fireClip === reloadClip ? Math.min(0.28, fireClip.duration * 0.25) : fireClip.duration;
       }
       if (reloadClip) {
         reloadAction = mixer.clipAction(reloadClip.clone());
@@ -314,7 +348,15 @@ function WeaponModel({
       }
     }
 
-    return { scene: cloned, fit: { scale, center }, rotation, mixer, fireAction, reloadAction, fireDuration };
+    return {
+      scene: cloned,
+      fit: { scale, center },
+      rotation,
+      mixer,
+      fireAction,
+      reloadAction,
+      fireDuration,
+    };
   }, [gltf.scene, cfg.targetLength, cfg.hideMeshes, cfg.extraRotation]);
 
   const lastShotRef = useRef(0);
@@ -404,20 +446,21 @@ function MuzzleFlash({ lastShotTime, type }: { lastShotTime: number; type: strin
   // Per-weapon flash scale + duration
   const cfg = useMemo(() => {
     switch (type) {
-      case 'shotgun':
+      case "shotgun":
         return { scale: 1.8, life: 110, light: 26 };
-      case 'sniper':
+      case "sniper":
         return { scale: 1.5, life: 130, light: 30 };
-      case 'rifle':
+      case "rifle":
         return { scale: 1.05, life: 75, light: 18 };
-      case 'pistol':
+      case "pistol":
       default:
         return { scale: 0.85, life: 65, light: 14 };
     }
   }, [type]);
 
   // Per-weapon muzzle Z position
-  const muzzleZ = type === 'sniper' ? -3.3 : type === 'shotgun' ? -2.1 : type === 'rifle' ? -2.55 : -1.7;
+  const muzzleZ =
+    type === "sniper" ? -3.3 : type === "shotgun" ? -2.1 : type === "rifle" ? -2.55 : -1.7;
 
   useFrame(() => {
     const dt = Date.now() - lastShotTime;
@@ -455,7 +498,7 @@ function MuzzleFlash({ lastShotTime, type }: { lastShotTime: number; type: strin
 
   return (
     <group position={[0, 0.22, muzzleZ]}>
-      <pointLight ref={lightRef} color={'#fef9c3'} intensity={0} distance={9} decay={2} />
+      <pointLight ref={lightRef} color={"#fef9c3"} intensity={0} distance={9} decay={2} />
       {/* Hot core */}
       <mesh ref={coreRef} visible={false}>
         <sphereGeometry args={[0.22, 10, 10]} />

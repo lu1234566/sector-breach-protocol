@@ -3,9 +3,9 @@
  * Boss wave (5) stays eliminate so the Titan IS the objective.
  */
 
-import { CELL_SIZE } from './constants';
-import type { ArenaDef } from '../data/arenas';
-import type { WaveObjective, ObjectiveRuntime, ObjectiveZone } from './types';
+import { CELL_SIZE } from "./constants";
+import type { ArenaDef } from "../data/arenas";
+import type { WaveObjective, ObjectiveRuntime, ObjectiveZone } from "./types";
 
 const HACK_DURATION = 12_000;
 const DEFEND_DURATION = 30_000;
@@ -47,41 +47,41 @@ function extractCorner(arena: ArenaDef): ObjectiveZone {
 export function getWaveObjective(wave: number, arena: ArenaDef): WaveObjective {
   switch (wave) {
     case 1:
-      return { kind: 'eliminate', label: 'Neutralize Hostiles' };
+      return { kind: "eliminate", label: "Neutralize Hostiles" };
     case 2:
       return {
-        kind: 'hack',
-        label: 'Hack Node',
+        kind: "hack",
+        label: "Hack Node",
         zone: arenaCenter(arena),
         durationMs: HACK_DURATION,
       };
     case 3:
-      return { kind: 'eliminate', label: 'Neutralize Hostiles' };
+      return { kind: "eliminate", label: "Neutralize Hostiles" };
     case 4:
       return {
-        kind: 'defend',
-        label: 'Defend Core',
+        kind: "defend",
+        label: "Defend Core",
         zone: arenaCenter(arena),
         durationMs: DEFEND_DURATION,
         coreMaxHp: CORE_HP,
       };
     case 5:
-      return { kind: 'eliminate', label: 'Titan Protocol' };
+      return { kind: "eliminate", label: "Titan Protocol" };
     case 6:
       return {
-        kind: 'extract',
-        label: 'Extract',
+        kind: "extract",
+        label: "Extract",
         zone: extractCorner(arena),
         killThreshold: EXTRACT_KILLS,
         timeLimitMs: EXTRACT_TIME_LIMIT,
       };
     default:
-      return { kind: 'eliminate', label: 'Neutralize Hostiles' };
+      return { kind: "eliminate", label: "Neutralize Hostiles" };
   }
 }
 
 export function createRuntime(obj: WaveObjective): ObjectiveRuntime {
-  const isExtract = obj.kind === 'extract';
+  const isExtract = obj.kind === "extract";
   return {
     kind: obj.kind,
     label: obj.label,
@@ -95,7 +95,7 @@ export function createRuntime(obj: WaveObjective): ObjectiveRuntime {
     coreHp: obj.coreMaxHp,
     coreMaxHp: obj.coreMaxHp,
     extractActive: !isExtract,
-    status: 'active',
+    status: "active",
     startedAt: Date.now(),
   };
 }

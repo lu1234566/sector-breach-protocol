@@ -24,20 +24,26 @@ const TRACKS: Track[] = [
   {
     name: "menu_theme",
     title: "Protocol DOC - Lobby",
-    style: "dark synthwave, cyberpunk, slow 90 BPM, cyan pads, magenta arpeggio, ambient, futuristic, instrumental, no vocals, loopable",
-    prompt: "cold sci-fi synthwave loop for an arena lobby. Slow 90 BPM. Dark cyan analog pads sustain throughout. A distant magenta arpeggio enters at 0:10. No drums in the first half, then a pulsing kick joins at 0:20. Ends on a sustained pad for clean looping.",
+    style:
+      "dark synthwave, cyberpunk, slow 90 BPM, cyan pads, magenta arpeggio, ambient, futuristic, instrumental, no vocals, loopable",
+    prompt:
+      "cold sci-fi synthwave loop for an arena lobby. Slow 90 BPM. Dark cyan analog pads sustain throughout. A distant magenta arpeggio enters at 0:10. No drums in the first half, then a pulsing kick joins at 0:20. Ends on a sustained pad for clean looping.",
   },
   {
     name: "combat_loop",
     title: "Protocol DOC - Wave Combat",
-    style: "aggressive cyberpunk drum and bass, neurofunk, 140 BPM, distorted neon synths, magenta lead, pumping bass, action shooter combat, instrumental, no vocals, loopable",
-    prompt: "aggressive cyberpunk drum and bass arena combat loop at 140 BPM. Distorted neon synth stabs, a screaming magenta lead, pumping reese bass and tight broken-beat drums. Energy stays high throughout. Clean loop point.",
+    style:
+      "aggressive cyberpunk drum and bass, neurofunk, 140 BPM, distorted neon synths, magenta lead, pumping bass, action shooter combat, instrumental, no vocals, loopable",
+    prompt:
+      "aggressive cyberpunk drum and bass arena combat loop at 140 BPM. Distorted neon synth stabs, a screaming magenta lead, pumping reese bass and tight broken-beat drums. Energy stays high throughout. Clean loop point.",
   },
   {
     name: "boss_theme",
     title: "Protocol DOC - Boss Encounter",
-    style: "industrial sci-fi boss battle, 120 BPM, heavy distorted brass, detuned synths, pounding drums, magenta and amber tonal palette, cinematic, instrumental, no vocals",
-    prompt: "industrial sci-fi boss battle at 120 BPM. Heavy distorted brass hits, detuned synth drones, pounding tribal drums. Magenta and amber tonal palette. Builds tension with a half-time breakdown around 0:25, then returns full force.",
+    style:
+      "industrial sci-fi boss battle, 120 BPM, heavy distorted brass, detuned synths, pounding drums, magenta and amber tonal palette, cinematic, instrumental, no vocals",
+    prompt:
+      "industrial sci-fi boss battle at 120 BPM. Heavy distorted brass hits, detuned synth drones, pounding tribal drums. Magenta and amber tonal palette. Builds tension with a half-time breakdown around 0:25, then returns full force.",
   },
 ];
 
@@ -109,7 +115,8 @@ async function generate(track: Track): Promise<string> {
     if (status === "SUCCESS") {
       const items = info?.data?.response?.sunoData ?? info?.data?.response?.data ?? [];
       const audioUrl: string | undefined = items?.[0]?.audioUrl ?? items?.[0]?.audio_url;
-      if (!audioUrl) throw new Error(`No audioUrl in success: ${JSON.stringify(info).slice(0, 400)}`);
+      if (!audioUrl)
+        throw new Error(`No audioUrl in success: ${JSON.stringify(info).slice(0, 400)}`);
       return audioUrl;
     }
     if (status && /FAIL|ERROR|SENSITIVE/i.test(status)) {
@@ -129,7 +136,9 @@ async function downloadTo(url: string, path: string) {
 
 async function main() {
   await mkdir(OUT_DIR, { recursive: true });
-  let done = 0, skipped = 0, failed = 0;
+  let done = 0,
+    skipped = 0,
+    failed = 0;
 
   for (const t of TRACKS) {
     const path = join(OUT_DIR, `${t.name}.mp3`);

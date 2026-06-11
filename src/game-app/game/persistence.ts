@@ -1,14 +1,14 @@
 // @ts-nocheck
-import { DifficultyKey, DIFFICULTIES } from './constants';
-import { LifetimeStats, UpgradeLevels, WeaponUpgradeLevels } from './types';
+import { DifficultyKey, DIFFICULTIES } from "./constants";
+import { LifetimeStats, UpgradeLevels, WeaponUpgradeLevels } from "./types";
 
 const KEYS = {
-  CREDITS: 'nano_credits',
-  UPGRADES: 'nano_upgrades',
-  DIFFICULTY: 'nano_difficulty',
-  WEAPON_UPGRADES: 'nano_weapon_upgrades',
-  STATS: 'nano_stats',
-  ARENA: 'protocol_arena'
+  CREDITS: "nano_credits",
+  UPGRADES: "nano_upgrades",
+  DIFFICULTY: "nano_difficulty",
+  WEAPON_UPGRADES: "nano_weapon_upgrades",
+  STATS: "nano_stats",
+  ARENA: "protocol_arena",
 };
 
 export const loadArena = (): string | null => {
@@ -22,7 +22,9 @@ export const loadArena = (): string | null => {
 export const saveArena = (arenaId: string) => {
   try {
     localStorage.setItem(KEYS.ARENA, arenaId);
-  } catch {}
+  } catch {
+    // localStorage unavailable (private mode) — persistence is best-effort
+  }
 };
 
 export const loadCredits = (): number | null => {
@@ -43,7 +45,7 @@ export const loadUpgrades = (): Partial<UpgradeLevels> | null => {
     const saved = localStorage.getItem(KEYS.UPGRADES);
     if (saved) {
       const parsed = JSON.parse(saved);
-      return (parsed && typeof parsed === 'object') ? parsed : null;
+      return parsed && typeof parsed === "object" ? parsed : null;
     }
   } catch (e) {
     console.error("Failed to load upgrades", e);
@@ -56,7 +58,7 @@ export const loadWeaponUpgrades = (): Partial<WeaponUpgradeLevels> | null => {
     const saved = localStorage.getItem(KEYS.WEAPON_UPGRADES);
     if (saved) {
       const parsed = JSON.parse(saved);
-      return (parsed && typeof parsed === 'object') ? parsed : null;
+      return parsed && typeof parsed === "object" ? parsed : null;
     }
   } catch (e) {
     console.error("Failed to load weapon upgrades", e);
@@ -81,14 +83,14 @@ export const loadLifetimeStats = (): Partial<LifetimeStats> | null => {
     const saved = localStorage.getItem(KEYS.STATS);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed && typeof parsed === 'object') {
+      if (parsed && typeof parsed === "object") {
         return {
           totalKills: Number(parsed.totalKills) || 0,
           totalDeaths: Number(parsed.totalDeaths) || 0,
           totalCredits: Number(parsed.totalCredits) || 0,
           bestWave: Number(parsed.bestWave) || 0,
           totalWins: Number(parsed.totalWins) || 0,
-          totalGames: Number(parsed.totalGames) || 0
+          totalGames: Number(parsed.totalGames) || 0,
         };
       }
     }

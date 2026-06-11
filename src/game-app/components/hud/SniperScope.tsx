@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React from 'react';
+import React from "react";
 
 /**
  * Full-screen sniper scope overlay.
@@ -21,9 +21,9 @@ export function SniperScope({ progress }: { progress: number }) {
         className="absolute inset-0 bg-black"
         style={{
           WebkitMaskImage:
-            'radial-gradient(circle at 50% 50%, transparent 0, transparent 38%, black 41%)',
+            "radial-gradient(circle at 50% 50%, transparent 0, transparent 38%, black 41%)",
           maskImage:
-            'radial-gradient(circle at 50% 50%, transparent 0, transparent 38%, black 41%)',
+            "radial-gradient(circle at 50% 50%, transparent 0, transparent 38%, black 41%)",
         }}
       />
 
@@ -32,7 +32,7 @@ export function SniperScope({ progress }: { progress: number }) {
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(circle at 50% 50%, rgba(34,211,238,0.04) 0%, rgba(34,211,238,0.08) 30%, transparent 38%)',
+            "radial-gradient(circle at 50% 50%, rgba(34,211,238,0.04) 0%, rgba(34,211,238,0.08) 30%, transparent 38%)",
         }}
       />
 
@@ -40,28 +40,30 @@ export function SniperScope({ progress }: { progress: number }) {
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-cyan-400/70"
         style={{
-          width: '76vmin',
-          height: '76vmin',
-          boxShadow:
-            '0 0 30px rgba(34,211,238,0.45), inset 0 0 60px rgba(34,211,238,0.15)',
+          width: "76vmin",
+          height: "76vmin",
+          boxShadow: "0 0 30px rgba(34,211,238,0.45), inset 0 0 60px rgba(34,211,238,0.15)",
         }}
       />
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-300/30"
-        style={{ width: '78vmin', height: '78vmin' }}
+        style={{ width: "78vmin", height: "78vmin" }}
       />
 
       {/* Crosshair lines (clipped to circle area via overflow) */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" style={{ width: '76vmin', height: '76vmin' }}>
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+        style={{ width: "76vmin", height: "76vmin" }}
+      >
         {/* Horizontal hairline */}
         <div
           className="absolute top-1/2 left-0 right-0 -translate-y-1/2 bg-cyan-300/80"
-          style={{ height: '1px', boxShadow: '0 0 4px rgba(34,211,238,0.8)' }}
+          style={{ height: "1px", boxShadow: "0 0 4px rgba(34,211,238,0.8)" }}
         />
         {/* Vertical hairline */}
         <div
           className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2 bg-cyan-300/80"
-          style={{ width: '1px', boxShadow: '0 0 4px rgba(34,211,238,0.8)' }}
+          style={{ width: "1px", boxShadow: "0 0 4px rgba(34,211,238,0.8)" }}
         />
         {/* Mil-dots vertical */}
         {[-3, -2, -1, 1, 2, 3].map((i) => (
@@ -70,9 +72,9 @@ export function SniperScope({ progress }: { progress: number }) {
             className="absolute left-1/2 -translate-x-1/2 bg-cyan-300/90"
             style={{
               top: `${50 + i * 5}%`,
-              width: '6px',
-              height: '1px',
-              boxShadow: '0 0 4px rgba(34,211,238,0.9)',
+              width: "6px",
+              height: "1px",
+              boxShadow: "0 0 4px rgba(34,211,238,0.9)",
             }}
           />
         ))}
@@ -83,16 +85,16 @@ export function SniperScope({ progress }: { progress: number }) {
             className="absolute top-1/2 -translate-y-1/2 bg-cyan-300/90"
             style={{
               left: `${50 + i * 5}%`,
-              height: '6px',
-              width: '1px',
-              boxShadow: '0 0 4px rgba(34,211,238,0.9)',
+              height: "6px",
+              width: "1px",
+              boxShadow: "0 0 4px rgba(34,211,238,0.9)",
             }}
           />
         ))}
         {/* Center pip */}
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-fuchsia-400 rounded-full"
-          style={{ width: '3px', height: '3px', boxShadow: '0 0 6px rgba(232,121,249,0.95)' }}
+          style={{ width: "3px", height: "3px", boxShadow: "0 0 6px rgba(232,121,249,0.95)" }}
         />
       </div>
 

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { WeaponType } from './constants';
+import { WeaponType } from "./constants";
 
 export interface Player {
   x: number;
@@ -34,7 +34,7 @@ export interface Enemy {
   id: number;
   x: number;
   y: number;
-  type: 'rusher' | 'rifleman' | 'sniper' | 'titan';
+  type: "rusher" | "rifleman" | "sniper" | "titan";
   isBoss: boolean;
   hp: number;
   maxHp: number;
@@ -58,7 +58,7 @@ export interface Pickup {
   id: number;
   x: number;
   y: number;
-  type: 'health' | 'ammo';
+  type: "health" | "ammo";
   rotation: number;
 }
 
@@ -119,7 +119,7 @@ export interface RunStats {
   shotsHit: number;
 }
 
-export type WaveObjectiveKind = 'eliminate' | 'hack' | 'defend' | 'extract';
+export type WaveObjectiveKind = "eliminate" | "hack" | "defend" | "extract";
 
 export interface ObjectiveZone {
   x: number;
@@ -131,24 +131,24 @@ export interface WaveObjective {
   kind: WaveObjectiveKind;
   label: string;
   zone?: ObjectiveZone;
-  durationMs?: number;     // hack / defend
-  killThreshold?: number;  // extract
-  timeLimitMs?: number;    // extract
-  coreMaxHp?: number;      // defend
+  durationMs?: number; // hack / defend
+  killThreshold?: number; // extract
+  timeLimitMs?: number; // extract
+  coreMaxHp?: number; // defend
 }
 
 export interface ObjectiveRuntime {
   kind: WaveObjectiveKind;
   label: string;
   zone?: ObjectiveZone;
-  progress: number;        // 0..1
-  timer: number;           // ms remaining (countdown) or 0
+  progress: number; // 0..1
+  timer: number; // ms remaining (countdown) or 0
   inZone: boolean;
   killCount: number;
   killTarget?: number;
   coreHp?: number;
   coreMaxHp?: number;
-  extractActive: boolean;  // true once extract zone is open
-  status: 'active' | 'complete' | 'failed';
+  extractActive: boolean; // true once extract zone is open
+  status: "active" | "complete" | "failed";
   startedAt: number;
 }

@@ -13,6 +13,7 @@ broken, the game automatically falls back to the static GLB + procedural
 motion. No code changes required to swap models in/out.
 
 Expected clip names (case-insensitive substring match):
+
 - idle / breathe
 - walk / run / move
 - attack / shoot / bite / slam

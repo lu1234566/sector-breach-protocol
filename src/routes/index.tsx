@@ -16,8 +16,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Protocol DOC — Neon Arena Shooter" },
       {
         property: "og:description",
-        content:
-          "Neon arena combat. Survive the waves. Break the protocol.",
+        content: "Neon arena combat. Survive the waves. Break the protocol.",
       },
     ],
   }),
@@ -33,7 +32,9 @@ function Index() {
         <div className="text-center">
           <div className="text-2xl tracking-[0.3em]">
             <span className="text-white">PROTOCOL</span>
-            <span className="ml-2 bg-gradient-to-r from-cyan-300 to-fuchsia-400 bg-clip-text text-transparent">DOC</span>
+            <span className="ml-2 bg-gradient-to-r from-cyan-300 to-fuchsia-400 bg-clip-text text-transparent">
+              DOC
+            </span>
           </div>
           <div className="mt-2 text-xs text-cyan-400/70">BOOTING ARENA UPLINK…</div>
         </div>
@@ -48,7 +49,9 @@ function Index() {
           <div className="text-center">
             <div className="text-2xl tracking-[0.3em] animate-pulse">
               <span className="text-white">PROTOCOL</span>
-              <span className="ml-2 bg-gradient-to-r from-cyan-300 to-fuchsia-400 bg-clip-text text-transparent">DOC</span>
+              <span className="ml-2 bg-gradient-to-r from-cyan-300 to-fuchsia-400 bg-clip-text text-transparent">
+                DOC
+              </span>
             </div>
             <div className="mt-2 text-xs text-cyan-400/70">LOADING ARENA…</div>
           </div>

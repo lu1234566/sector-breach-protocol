@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-export type QualityTier = 'auto' | 'low' | 'medium' | 'high';
-export type EnemyVisualMode = 'auto' | 'rig' | 'glb';
+export type QualityTier = "auto" | "low" | "medium" | "high";
+export type EnemyVisualMode = "auto" | "rig" | "glb";
 
 export interface GameSettings {
   mouseSensX: number; // multiplier, 1.0 = default
@@ -16,15 +16,15 @@ export interface GameSettings {
   enemyVisualMode: EnemyVisualMode;
 }
 
-const KEY = 'protocol_settings';
+const KEY = "protocol_settings";
 
 export const DEFAULT_SETTINGS: GameSettings = {
   mouseSensX: 1.0,
   mouseSensY: 1.0,
   invertX: false,
   invertY: false,
-  quality: 'auto',
-  enemyVisualMode: 'auto',
+  quality: "auto",
+  enemyVisualMode: "auto",
 };
 
 export function loadSettings(): GameSettings {
@@ -39,8 +39,10 @@ export function loadSettings(): GameSettings {
       mouseSensY: clampNum(parsed.mouseSensY, 0.1, 5, DEFAULT_SETTINGS.mouseSensY),
       invertX: Boolean(parsed.invertX),
       invertY: Boolean(parsed.invertY),
-      quality: (['auto', 'low', 'medium', 'high'] as const).includes(q) ? q : 'auto',
-      enemyVisualMode: (['auto', 'rig', 'glb'] as const).includes(enemyVisualMode) ? enemyVisualMode : 'auto',
+      quality: (["auto", "low", "medium", "high"] as const).includes(q) ? q : "auto",
+      enemyVisualMode: (["auto", "rig", "glb"] as const).includes(enemyVisualMode)
+        ? enemyVisualMode
+        : "auto",
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -50,7 +52,9 @@ export function loadSettings(): GameSettings {
 export function saveSettings(s: GameSettings) {
   try {
     localStorage.setItem(KEY, JSON.stringify(s));
-  } catch {}
+  } catch {
+    // localStorage unavailable (private mode) — settings stay in memory
+  }
 }
 
 function clampNum(v: any, min: number, max: number, fallback: number) {

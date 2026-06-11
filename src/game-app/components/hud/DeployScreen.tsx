@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion } from "motion/react";
 
 export function DeployScreen({ onDeploy }: { onDeploy: () => void }) {
   return (
@@ -30,14 +30,14 @@ export function DeployScreen({ onDeploy }: { onDeploy: () => void }) {
 
       <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl px-6 text-[10px] uppercase tracking-widest">
         {[
-          ['WASD', 'Move'],
-          ['Mouse', 'Aim'],
-          ['LMB', 'Fire'],
-          ['RMB / C', 'ADS'],
-          ['R', 'Reload'],
-          ['Shift', 'Sprint'],
-          ['1-4', 'Weapons'],
-          ['ESC', 'Pause'],
+          ["WASD", "Move"],
+          ["Mouse", "Aim"],
+          ["LMB", "Fire"],
+          ["RMB / C", "ADS"],
+          ["R", "Reload"],
+          ["Shift", "Sprint"],
+          ["1-4", "Weapons"],
+          ["ESC", "Pause"],
         ].map(([k, v]) => (
           <div
             key={k}

@@ -1,5 +1,5 @@
-import { motion } from 'motion/react';
-import type { DamageIndicator } from '@/game-app/game/types';
+import { motion } from "motion/react";
+import type { DamageIndicator } from "@/game-app/game/types";
 
 interface Props {
   indicators: DamageIndicator[];
@@ -20,8 +20,8 @@ export function DamageOverlay({ indicators, hp, lastDamageTime, hitMarker }: Pro
             key={ind.id}
             className="absolute top-1/2 left-1/2"
             style={{
-              width: '140vmax',
-              height: '140vmax',
+              width: "140vmax",
+              height: "140vmax",
               transform: `translate(-50%, -50%) rotate(${deg}deg)`,
               opacity: op * 0.85,
             }}
@@ -30,12 +30,12 @@ export function DamageOverlay({ indicators, hp, lastDamageTime, hitMarker }: Pro
               className="absolute inset-0 rounded-full"
               style={{
                 background:
-                  'conic-gradient(from 320deg at 50% 50%, transparent 0deg, rgba(220,38,38,0) 30deg, rgba(220,38,38,0.55) 40deg, rgba(248,113,113,0.85) 50deg, rgba(220,38,38,0.55) 60deg, rgba(220,38,38,0) 70deg, transparent 360deg)',
+                  "conic-gradient(from 320deg at 50% 50%, transparent 0deg, rgba(220,38,38,0) 30deg, rgba(220,38,38,0.55) 40deg, rgba(248,113,113,0.85) 50deg, rgba(220,38,38,0.55) 60deg, rgba(220,38,38,0) 70deg, transparent 360deg)",
                 WebkitMaskImage:
-                  'radial-gradient(circle at 50% 50%, transparent 36%, black 50%, black 60%, transparent 70%)',
+                  "radial-gradient(circle at 50% 50%, transparent 36%, black 50%, black 60%, transparent 70%)",
                 maskImage:
-                  'radial-gradient(circle at 50% 50%, transparent 36%, black 50%, black 60%, transparent 70%)',
-                filter: 'blur(6px)',
+                  "radial-gradient(circle at 50% 50%, transparent 36%, black 50%, black 60%, transparent 70%)",
+                filter: "blur(6px)",
               }}
             />
           </div>
@@ -57,18 +57,20 @@ export function DamageOverlay({ indicators, hp, lastDamageTime, hitMarker }: Pro
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
         >
           <div className="relative w-7 h-7">
-            {([
-              ['top-0 left-0 origin-left rotate-45'],
-              ['top-0 right-0 origin-right -rotate-45'],
-              ['bottom-0 left-0 origin-left -rotate-45'],
-              ['bottom-0 right-0 origin-right rotate-45'],
-            ] as const).map((cls, i) => (
+            {(
+              [
+                ["top-0 left-0 origin-left rotate-45"],
+                ["top-0 right-0 origin-right -rotate-45"],
+                ["bottom-0 left-0 origin-left -rotate-45"],
+                ["bottom-0 right-0 origin-right rotate-45"],
+              ] as const
+            ).map((cls, i) => (
               <div
                 key={i}
                 className={`absolute ${cls[0]} w-2.5 h-[1.5px] ${
                   hitMarker.killed
-                    ? 'bg-red-500 shadow-[0_0_8px_red]'
-                    : 'bg-cyan-300 shadow-[0_0_8px_cyan]'
+                    ? "bg-red-500 shadow-[0_0_8px_red]"
+                    : "bg-cyan-300 shadow-[0_0_8px_cyan]"
                 }`}
               />
             ))}

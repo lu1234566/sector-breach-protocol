@@ -1,9 +1,15 @@
 // @ts-nocheck
-import { CELL_SIZE, WEAPONS } from '../constants';
-import { sounds } from '../SoundEngine';
+import { CELL_SIZE, WEAPONS } from "../constants";
+import { sounds } from "../SoundEngine";
 import type {
-  Enemy, Player, Tracer, Pickup, KillfeedItem, ObjectiveRuntime, WeaponType,
-} from '../types';
+  Enemy,
+  Player,
+  Tracer,
+  Pickup,
+  KillfeedItem,
+  ObjectiveRuntime,
+  WeaponType,
+} from "../types";
 
 interface CombatDeps {
   // State refs
@@ -31,7 +37,9 @@ interface CombatDeps {
   weaponUpgradeLevels: any;
   upgradeLevels: Record<string, number>;
   // Setters
-  setAmmo: (fn: (prev: { mag: number; reserve: number }) => { mag: number; reserve: number }) => void;
+  setAmmo: (
+    fn: (prev: { mag: number; reserve: number }) => { mag: number; reserve: number },
+  ) => void;
   setStats: (fn: (prev: any) => any) => void;
   setMapDataState: (m: number[][]) => void;
   setBossHp: (v: { current: number; max: number } | null) => void;
@@ -41,23 +49,51 @@ interface CombatDeps {
   setIsReloading: (b: boolean) => void;
   setWeaponMags: (fn: (prev: Record<WeaponType, number>) => Record<WeaponType, number>) => void;
   // Helpers
-  checkLineOfSight: (x1: number, y1: number, x2: number, y2: number, mapData: number[][]) => boolean;
-  spawnParticles: (x: number, y: number, type: 'blood' | 'explosion' | 'shell') => void;
+  checkLineOfSight: (
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    mapData: number[][],
+  ) => boolean;
+  spawnParticles: (x: number, y: number, type: "blood" | "explosion" | "shell") => void;
 }
 
 export function createHandleShoot(deps: CombatDeps) {
   return function handleShoot() {
     const {
-      gameStateRef, isReloadingRef, ammoRef, lastShotTime,
-      player, enemies, mapData, pickups, graveyard, tracers, nextTracerId,
-      decals, nextDecalId, recoilOffset, screenShake, objectiveRef,
-      currentWeapon, weaponUpgradeLevels, upgradeLevels,
-      setAmmo, setStats, setMapDataState, setBossHp, setHitMarker, setScore, setKillfeed,
+      gameStateRef,
+      isReloadingRef,
+      ammoRef,
+      lastShotTime,
+      player,
+      enemies,
+      mapData,
+      pickups,
+      graveyard,
+      tracers,
+      nextTracerId,
+      decals,
+      nextDecalId,
+      recoilOffset,
+      screenShake,
+      objectiveRef,
+      currentWeapon,
+      weaponUpgradeLevels,
+      upgradeLevels,
+      setAmmo,
+      setStats,
+      setMapDataState,
+      setBossHp,
+      setHitMarker,
+      setScore,
+      setKillfeed,
       nextKillfeedId,
-      checkLineOfSight, spawnParticles,
+      checkLineOfSight,
+      spawnParticles,
     } = deps;
 
-    if (gameStateRef.current !== 'playing' || isReloadingRef.current) return;
+    if (gameStateRef.current !== "playing" || isReloadingRef.current) return;
     const now = Date.now();
     const weapon = WEAPONS[currentWeapon];
     if (now - lastShotTime.current < weapon.fireRate) return;
@@ -68,21 +104,21 @@ export function createHandleShoot(deps: CombatDeps) {
     }
 
     lastShotTime.current = now;
-    setAmmo(prev => ({ ...prev, mag: Math.max(0, prev.mag - 1) }));
-    setStats(prev => ({ ...prev, shotsFired: prev.shotsFired + 1 }));
+    setAmmo((prev) => ({ ...prev, mag: Math.max(0, prev.mag - 1) }));
+    setStats((prev) => ({ ...prev, shotsFired: prev.shotsFired + 1 }));
     sounds.playShot(currentWeapon);
 
     const weaponLevels = weaponUpgradeLevels[currentWeapon];
-    const stabilityMult = 1 - (weaponLevels.stability * 0.05);
+    const stabilityMult = 1 - weaponLevels.stability * 0.05;
     const recoilForce = weapon.recoil * (1 - player.current.adsProgress * 0.6) * stabilityMult;
     recoilOffset.current += recoilForce / 40;
     screenShake.current = Math.min(15, screenShake.current + recoilForce / 4);
 
-    const spreadMult = 1 - (weaponLevels.stability * 0.05);
-    const damageMult = 1 + (weaponLevels.damage * 0.05);
+    const spreadMult = 1 - weaponLevels.stability * 0.05;
+    const damageMult = 1 + weaponLevels.damage * 0.05;
 
     // Shotgun fires multiple pellets; other weapons single ray.
-    const isShotgun = weapon.type === 'shotgun';
+    const isShotgun = weapon.type === "shotgun";
     const pelletCount = isShotgun ? 8 : 1;
     const perPelletDamage = (weapon.damage * damageMult) / pelletCount;
     // Per-pellet spread is wider for shotgun (the cone), narrow for others
@@ -108,9 +144,9 @@ export function createHandleShoot(deps: CombatDeps) {
           const cell = mapData.current[ty][tx];
           if (cell === 3) {
             if (mapData.current[ty]) mapData.current[ty][tx] = 0;
-            setMapDataState([...mapData.current.map(row => [...row])]);
-            spawnParticles(player.current.x + cos * d, player.current.y + sin * d, 'explosion');
-            sounds.playShot('sniper');
+            setMapDataState([...mapData.current.map((row) => [...row])]);
+            spawnParticles(player.current.x + cos * d, player.current.y + sin * d, "explosion");
+            sounds.playShot("sniper");
             hitDist = d;
             pelletHit = true;
             break;
@@ -120,20 +156,25 @@ export function createHandleShoot(deps: CombatDeps) {
             const hy = player.current.y + sin * d;
             const localX = hx - (tx + 0.5) * CELL_SIZE;
             const localY = hy - (ty + 0.5) * CELL_SIZE;
-            let nx = 0, ny = 0;
+            let nx = 0,
+              ny = 0;
             if (Math.abs(localX) > Math.abs(localY)) nx = Math.sign(localX) || 1;
             else ny = Math.sign(localY) || 1;
             // The raymarch steps 8 units at a time, so (hx, hy) can be well
             // inside the wall cell. Snap the decal onto the cell face along
             // the normal so it stays visible.
-            let dxFace = hx, dyFace = hy;
+            let dxFace = hx,
+              dyFace = hy;
             if (nx !== 0) dxFace = (tx + (nx > 0 ? 1 : 0)) * CELL_SIZE;
             else dyFace = (ty + (ny > 0 ? 1 : 0)) * CELL_SIZE;
             decals.current.push({
               id: nextDecalId.current++,
-              x: dxFace, y: dyFace, nx, ny,
+              x: dxFace,
+              y: dyFace,
+              nx,
+              ny,
               born: Date.now(),
-              size: weapon.type === 'shotgun' ? 5 : weapon.type === 'sniper' ? 10 : 5,
+              size: weapon.type === "shotgun" ? 5 : weapon.type === "sniper" ? 10 : 5,
             });
             if (decals.current.length > 40) {
               decals.current.splice(0, decals.current.length - 40);
@@ -148,7 +189,7 @@ export function createHandleShoot(deps: CombatDeps) {
       // forgiving and far targets need real aim.
       let target: Enemy | null = null;
       let targetDist = Infinity;
-      enemies.current.forEach(enemy => {
+      enemies.current.forEach((enemy) => {
         if (enemy.dead) return;
         const dx = enemy.x - player.current.x;
         const dy = enemy.y - player.current.y;
@@ -156,12 +197,18 @@ export function createHandleShoot(deps: CombatDeps) {
         if (dist > hitDist || dist >= targetDist) return;
 
         const angleToEnemy = Math.atan2(dy, dx);
-        const angleDiff = Math.atan2(Math.sin(angleToEnemy - shotAngle), Math.cos(angleToEnemy - shotAngle));
+        const angleDiff = Math.atan2(
+          Math.sin(angleToEnemy - shotAngle),
+          Math.cos(angleToEnemy - shotAngle),
+        );
 
         const hitRadius = enemy.isBoss ? 48 : 26;
         const hitCone = Math.min(0.35, Math.atan2(hitRadius, Math.max(dist, 1)));
         if (Math.abs(angleDiff) < hitCone) {
-          if (!checkLineOfSight(player.current.x, player.current.y, enemy.x, enemy.y, mapData.current)) return;
+          if (
+            !checkLineOfSight(player.current.x, player.current.y, enemy.x, enemy.y, mapData.current)
+          )
+            return;
           target = enemy;
           targetDist = dist;
         }
@@ -178,29 +225,51 @@ export function createHandleShoot(deps: CombatDeps) {
           }
 
           sounds.playHit();
-          spawnParticles(enemy.x, enemy.y, 'blood');
+          spawnParticles(enemy.x, enemy.y, "blood");
           if (enemy.hp <= 0) {
             enemy.dead = true;
             enemy.diedAt = Date.now();
             setHitMarker({ time: Date.now(), killed: true });
             sounds.playKill();
-            setStats(prev => ({ ...prev, kills: prev.kills + 1 }));
-            if (objectiveRef.current && objectiveRef.current.status === 'active') {
+            setStats((prev) => ({ ...prev, kills: prev.kills + 1 }));
+            if (objectiveRef.current && objectiveRef.current.status === "active") {
               objectiveRef.current.killCount += 1;
             }
-            const killScore = enemy.isBoss ? 5000 : (enemy.type === 'sniper' ? 500 : enemy.type === 'rifleman' ? 200 : 100);
-            setScore(prev => prev + killScore);
-            setKillfeed(prev => [{ id: nextKillfeedId.current++, text: `${enemy.isBoss ? 'TITAN' : enemy.type.toUpperCase()} NEUTRALIZED (+${killScore})` }, ...prev].slice(0, 5));
-            graveyard.current.push({ x: enemy.x, y: enemy.y, color: enemy.color, type: enemy.type });
-            spawnParticles(enemy.x, enemy.y, 'explosion');
+            const killScore = enemy.isBoss
+              ? 5000
+              : enemy.type === "sniper"
+                ? 500
+                : enemy.type === "rifleman"
+                  ? 200
+                  : 100;
+            setScore((prev) => prev + killScore);
+            setKillfeed((prev) =>
+              [
+                {
+                  id: nextKillfeedId.current++,
+                  text: `${enemy.isBoss ? "TITAN" : enemy.type.toUpperCase()} NEUTRALIZED (+${killScore})`,
+                },
+                ...prev,
+              ].slice(0, 5),
+            );
+            graveyard.current.push({
+              x: enemy.x,
+              y: enemy.y,
+              color: enemy.color,
+              type: enemy.type,
+            });
+            spawnParticles(enemy.x, enemy.y, "explosion");
 
             const baseDropChance = 0.35;
-            const dropChance = baseDropChance + (upgradeLevels.scavenger * 0.05);
+            const dropChance = baseDropChance + upgradeLevels.scavenger * 0.05;
             if (Math.random() < dropChance || enemy.isBoss) {
-              const type = Math.random() > 0.5 ? 'health' : 'ammo';
+              const type = Math.random() > 0.5 ? "health" : "ammo";
               pickups.current.push({
                 id: Math.random(),
-                x: enemy.x, y: enemy.y, type, rotation: 0,
+                x: enemy.x,
+                y: enemy.y,
+                type,
+                rotation: 0,
               });
             }
 
@@ -214,7 +283,8 @@ export function createHandleShoot(deps: CombatDeps) {
       const tracerDist = Math.min(hitDist, targetDist);
       tracers.current.push({
         id: nextTracerId.current++,
-        x1: player.current.x, y1: player.current.y,
+        x1: player.current.x,
+        y1: player.current.y,
         x2: player.current.x + cos * tracerDist,
         y2: player.current.y + sin * tracerDist,
         alpha: 1,
@@ -224,10 +294,10 @@ export function createHandleShoot(deps: CombatDeps) {
     }
 
     if (anyHit) {
-      setStats(prev => ({ ...prev, shotsHit: prev.shotsHit + 1 }));
+      setStats((prev) => ({ ...prev, shotsHit: prev.shotsHit + 1 }));
     }
 
-    spawnParticles(player.current.x, player.current.y, 'shell');
+    spawnParticles(player.current.x, player.current.y, "shell");
   };
 }
 
@@ -240,19 +310,34 @@ interface ReloadDeps {
   upgradeLevels: Record<string, number>;
   weaponUpgradeLevels: any;
   setIsReloading: (b: boolean) => void;
-  setAmmo: (fn: (prev: { mag: number; reserve: number }) => { mag: number; reserve: number }) => void;
+  setAmmo: (
+    fn: (prev: { mag: number; reserve: number }) => { mag: number; reserve: number },
+  ) => void;
   setWeaponMags: (fn: (prev: Record<WeaponType, number>) => Record<WeaponType, number>) => void;
 }
 
 export function createReload(deps: ReloadDeps) {
   return function reload() {
     const {
-      isReloadingRef, ammoRef, gameStateRef, reloadTimeoutRef,
-      currentWeapon, upgradeLevels, weaponUpgradeLevels,
-      setIsReloading, setAmmo, setWeaponMags,
+      isReloadingRef,
+      ammoRef,
+      gameStateRef,
+      reloadTimeoutRef,
+      currentWeapon,
+      upgradeLevels,
+      weaponUpgradeLevels,
+      setIsReloading,
+      setAmmo,
+      setWeaponMags,
     } = deps;
 
-    if (isReloadingRef.current || ammoRef.current.mag >= WEAPONS[currentWeapon].magSize || ammoRef.current.reserve <= 0 || gameStateRef.current !== 'playing') return;
+    if (
+      isReloadingRef.current ||
+      ammoRef.current.mag >= WEAPONS[currentWeapon].magSize ||
+      ammoRef.current.reserve <= 0 ||
+      gameStateRef.current !== "playing"
+    )
+      return;
 
     setIsReloading(true);
     isReloadingRef.current = true;
@@ -262,15 +347,16 @@ export function createReload(deps: ReloadDeps) {
     if (reloadTimeoutRef.current) clearTimeout(reloadTimeoutRef.current);
     const reloadReduction = upgradeLevels.quickReload * 0.05;
     const weaponReloadReduction = weaponUpgradeLevels[currentWeapon].reload * 0.04;
-    const finalReloadTime = WEAPONS[currentWeapon].reloadTime * (1 - reloadReduction) * (1 - weaponReloadReduction);
+    const finalReloadTime =
+      WEAPONS[currentWeapon].reloadTime * (1 - reloadReduction) * (1 - weaponReloadReduction);
 
     reloadTimeoutRef.current = setTimeout(() => {
-      setAmmo(prev => {
+      setAmmo((prev) => {
         const weaponStats = WEAPONS[reloadingWeapon];
         const needed = weaponStats.magSize - prev.mag;
         const taken = Math.min(needed, prev.reserve);
         const newMag = prev.mag + taken;
-        setWeaponMags(mags => ({ ...mags, [reloadingWeapon]: newMag }));
+        setWeaponMags((mags) => ({ ...mags, [reloadingWeapon]: newMag }));
         const newAmmo = { mag: newMag, reserve: prev.reserve - taken };
         ammoRef.current = newAmmo;
         return newAmmo;

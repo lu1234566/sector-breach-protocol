@@ -73,15 +73,32 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Protocol DOC — Arena Combat Protocol" },
-      { name: "description", content: "Neon arena arcade shooter. Survive the wave protocol. No extraction." },
+      {
+        name: "description",
+        content: "Neon arena arcade shooter. Survive the wave protocol. No extraction.",
+      },
       { property: "og:title", content: "Protocol DOC — Arena Combat Protocol" },
-      { property: "og:description", content: "Neon arena arcade shooter. Survive the wave protocol. No extraction." },
+      {
+        property: "og:description",
+        content: "Neon arena arcade shooter. Survive the wave protocol. No extraction.",
+      },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f40d21a8-888d-4ad1-895a-488409a46f3b" },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f40d21a8-888d-4ad1-895a-488409a46f3b",
+      },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f40d21a8-888d-4ad1-895a-488409a46f3b" },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/f40d21a8-888d-4ad1-895a-488409a46f3b",
+      },
       { name: "twitter:title", content: "Protocol DOC — Arena Combat Protocol" },
-      { name: "twitter:description", content: "Neon arena arcade shooter. Survive the wave protocol. No extraction." },
+      {
+        name: "twitter:description",
+        content: "Neon arena arcade shooter. Survive the wave protocol. No extraction.",
+      },
     ],
     links: [
       {

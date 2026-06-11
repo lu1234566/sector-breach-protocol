@@ -12,24 +12,25 @@
 - Never reverse the colors. Never put `PROTOCOL` in the gradient.
 - The mark is typographic, never an illustration. No logo image required.
 - Tagline: **Arena Combat Protocol** (always uppercase, letter-spacing 0.5em).
-- Names that are now forbidden in UI/copy: *Nano Banana*, *Tactical Wave Shooter*, *DOC: Sector Breach*. They were exploration drafts and have been retired.
+- Names that are now forbidden in UI/copy: _Nano Banana_, _Tactical Wave Shooter_, _DOC: Sector Breach_. They were exploration drafts and have been retired.
 
 ## 2. Color tokens (single source of truth)
 
 Defined in `src/styles.css`. Always use these via Tailwind / CSS vars — never hardcode hex.
 
-| Token              | Role                                  |
-| ------------------ | ------------------------------------- |
-| `--neon-cyan`      | Primary HUD, "live" state, friendly readouts |
-| `--neon-magenta`   | Secondary accent, DOC mark, augments  |
-| `--neon-amber`     | Credits, ammo, pickups                |
-| `--neon-danger`    | Damage, low HP, hostile alerts        |
-| `--arena-bg`       | Base canvas behind the 3D scene       |
-| `--arena-panel`    | HUD panels (with backdrop blur)       |
-| `--arena-grid`     | Faint cyan tactical grid background   |
-| `--gradient-doc`   | Reserved for the DOC mark only        |
+| Token            | Role                                         |
+| ---------------- | -------------------------------------------- |
+| `--neon-cyan`    | Primary HUD, "live" state, friendly readouts |
+| `--neon-magenta` | Secondary accent, DOC mark, augments         |
+| `--neon-amber`   | Credits, ammo, pickups                       |
+| `--neon-danger`  | Damage, low HP, hostile alerts               |
+| `--arena-bg`     | Base canvas behind the 3D scene              |
+| `--arena-panel`  | HUD panels (with backdrop blur)              |
+| `--arena-grid`   | Faint cyan tactical grid background          |
+| `--gradient-doc` | Reserved for the DOC mark only               |
 
 Rules:
+
 - Cyan is the dominant color (~60% of HUD weight).
 - Magenta is an accent (~20%) — never used for body text or large fills.
 - Amber is functional (~15%) — only on numeric/economy elements.
@@ -49,12 +50,12 @@ This is the only canon. Do not invent biological / banana / lab fiction.
 
 ## 5. Enemies — silhouette + color rules
 
-| Class    | Silhouette intent             | Accent color    | Telegraph                   |
-| -------- | ------------------------------ | --------------- | --------------------------- |
-| Rusher   | Low, leaning forward, blade limbs | Magenta         | Erratic zig-zag, bright trail |
-| Rifleman | Boxy soldier shoulders, mid-height | Cyan          | Muzzle pre-flash             |
-| Sniper   | Tall, thin, antenna/visor       | Amber           | Visible aim laser before shot |
-| Titan    | Wide, hunched, glowing core     | Magenta + danger | Core flares before each phase |
+| Class    | Silhouette intent                  | Accent color     | Telegraph                     |
+| -------- | ---------------------------------- | ---------------- | ----------------------------- |
+| Rusher   | Low, leaning forward, blade limbs  | Magenta          | Erratic zig-zag, bright trail |
+| Rifleman | Boxy soldier shoulders, mid-height | Cyan             | Muzzle pre-flash              |
+| Sniper   | Tall, thin, antenna/visor          | Amber            | Visible aim laser before shot |
+| Titan    | Wide, hunched, glowing core        | Magenta + danger | Core flares before each phase |
 
 Enemies must be readable as silhouettes against the arena bg before any color or detail is processed. If the silhouette test fails, the model fails.
 
@@ -76,6 +77,7 @@ All three arenas share: cyan grid floor accents, magenta hazard stripes, amber e
 ## 8. What this rebrand explicitly did NOT change yet
 
 This pass only fixed identity. Still on the backlog (in priority order):
+
 1. Replace primitive 3D geometry with stylized neon-arena models.
 2. Trim HUD density (remove duplicate top-bar info).
 3. Real audio files replacing oscillator SFX.

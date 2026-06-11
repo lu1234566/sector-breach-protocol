@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from 'motion/react';
-import type { KillfeedItem } from '@/game-app/game/types';
+import { AnimatePresence, motion } from "motion/react";
+import type { KillfeedItem } from "@/game-app/game/types";
 
 export function Killfeed({ items }: { items: KillfeedItem[] }) {
   return (

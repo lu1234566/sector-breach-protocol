@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { useEffect } from 'react';
-import { clamp } from '../helpers';
-import type { WeaponType } from '../types';
-import { getSettings } from '../settings';
+import { useEffect } from "react";
+import { clamp } from "../helpers";
+import type { WeaponType } from "../types";
+import { getSettings } from "../settings";
 
 interface UseInputSystemArgs {
   gameState: string;
@@ -17,7 +17,9 @@ interface UseInputSystemArgs {
   reloadTimeoutRef: React.MutableRefObject<number | null>;
   setWeaponMags: (fn: (prev: Record<WeaponType, number>) => Record<WeaponType, number>) => void;
   setCurrentWeapon: (w: WeaponType) => void;
-  setAmmo: (fn: (prev: { mag: number; reserve: number }) => { mag: number; reserve: number }) => void;
+  setAmmo: (
+    fn: (prev: { mag: number; reserve: number }) => { mag: number; reserve: number },
+  ) => void;
   setIsReloading: (b: boolean) => void;
   reload: () => void;
   handleShoot: () => void;
@@ -31,28 +33,50 @@ interface UseInputSystemArgs {
  */
 export function useInputSystem(args: UseInputSystemArgs) {
   const {
-    gameState, gameContainerRef, pointerLockCooldownRef,
-    keys, player, ammoRef, isReloadingRef, currentWeapon, weaponMags, reloadTimeoutRef,
-    setWeaponMags, setCurrentWeapon, setAmmo, setIsReloading,
-    reload, handleShoot, togglePointerLock, onPauseToggle,
+    gameState,
+    gameContainerRef,
+    pointerLockCooldownRef,
+    keys,
+    player,
+    ammoRef,
+    isReloadingRef,
+    currentWeapon,
+    weaponMags,
+    reloadTimeoutRef,
+    setWeaponMags,
+    setCurrentWeapon,
+    setAmmo,
+    setIsReloading,
+    reload,
+    handleShoot,
+    togglePointerLock,
+    onPauseToggle,
   } = args;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { onPauseToggle(); return; }
+      if (e.key === "Escape") {
+        onPauseToggle();
+        return;
+      }
       keys.current[e.key.toLowerCase()] = true;
-      if (gameState !== 'playing') return;
-      if (e.key.toLowerCase() === 'r') reload();
-      if (['1', '2', '3', '4'].includes(e.key)) {
-        const weaponMap: Record<string, WeaponType> = { '1': 'pistol', '2': 'rifle', '3': 'shotgun', '4': 'sniper' };
+      if (gameState !== "playing") return;
+      if (e.key.toLowerCase() === "r") reload();
+      if (["1", "2", "3", "4"].includes(e.key)) {
+        const weaponMap: Record<string, WeaponType> = {
+          "1": "pistol",
+          "2": "rifle",
+          "3": "shotgun",
+          "4": "sniper",
+        };
         const next = weaponMap[e.key];
         if (next === currentWeapon) return;
 
         const currentMag = ammoRef.current.mag;
-        setWeaponMags(prev => ({ ...prev, [currentWeapon]: currentMag }));
+        setWeaponMags((prev) => ({ ...prev, [currentWeapon]: currentMag }));
 
         setCurrentWeapon(next);
-        setAmmo(prev => ({ ...prev, mag: weaponMags[next] }));
+        setAmmo((prev) => ({ ...prev, mag: weaponMags[next] }));
 
         // Cancel any in-flight reload; the ref must be cleared too or
         // shooting/reloading stays blocked for the rest of the run.
@@ -64,25 +88,28 @@ export function useInputSystem(args: UseInputSystemArgs) {
         }
       }
     };
-    const handleKeyUp = (e: KeyboardEvent) => { keys.current[e.key.toLowerCase()] = false; };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      keys.current[e.key.toLowerCase()] = false;
+    };
     const handleMouseDown = (e: MouseEvent) => {
-      if (gameState !== 'playing') return;
+      if (gameState !== "playing") return;
       if (document.pointerLockElement !== gameContainerRef.current) {
         togglePointerLock();
         return;
       }
-      if (e.button === 2) keys.current['m_right'] = true;
+      if (e.button === 2) keys.current["m_right"] = true;
       if (e.button === 0) {
-        keys.current['m_left'] = true;
+        keys.current["m_left"] = true;
         handleShoot();
       }
     };
     const handleMouseUp = (e: MouseEvent) => {
-      if (e.button === 2) keys.current['m_right'] = false;
-      if (e.button === 0) keys.current['m_left'] = false;
+      if (e.button === 2) keys.current["m_right"] = false;
+      if (e.button === 0) keys.current["m_left"] = false;
     };
     const handleMouseMove = (e: MouseEvent) => {
-      if (gameState !== 'playing' || document.pointerLockElement !== gameContainerRef.current) return;
+      if (gameState !== "playing" || document.pointerLockElement !== gameContainerRef.current)
+        return;
       const s = getSettings();
       const baseX = player.current.isAds ? 0.001 : 0.002;
       const xSign = s.invertX ? -1 : 1;
@@ -102,25 +129,25 @@ export function useInputSystem(args: UseInputSystemArgs) {
       }
     };
     const handlePointerLockError = () => {
-      console.warn('Pointer lock error event caught');
+      console.warn("Pointer lock error event caught");
       pointerLockCooldownRef.current = 0;
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('pointerlockchange', handlePointerLockChange);
-    document.addEventListener('pointerlockerror', handlePointerLockError);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("pointerlockchange", handlePointerLockChange);
+    document.addEventListener("pointerlockerror", handlePointerLockError);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('pointerlockchange', handlePointerLockChange);
-      document.removeEventListener('pointerlockerror', handlePointerLockError);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("pointerlockchange", handlePointerLockChange);
+      document.removeEventListener("pointerlockerror", handlePointerLockError);
     };
   }, [gameState, currentWeapon, weaponMags]);
 }

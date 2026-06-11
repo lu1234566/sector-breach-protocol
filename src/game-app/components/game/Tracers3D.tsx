@@ -1,6 +1,6 @@
 // @ts-nocheck
-import React from 'react';
-import * as THREE from 'three';
+import React from "react";
+import * as THREE from "three";
 
 interface Tracer {
   id: number;
@@ -35,10 +35,7 @@ export function Tracers3D({
         // direction. (lookAt would overwrite the rotation and leave the beam
         // perpendicular to the trajectory.)
         const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
-        const beamQuat = new THREE.Quaternion().setFromUnitVectors(
-          new THREE.Vector3(0, 1, 0),
-          dir,
-        );
+        const beamQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
 
         return (
           <group key={t.id} position={mid}>

@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { motion } from 'motion/react';
-import { SettingsPanel } from './SettingsPanel';
+import { useState } from "react";
+import { motion } from "motion/react";
+import { SettingsPanel } from "./SettingsPanel";
 
 interface Props {
   onResume: () => void;

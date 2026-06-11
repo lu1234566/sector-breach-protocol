@@ -1,9 +1,9 @@
 // @ts-nocheck
-import React, { Component, Suspense, useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
-import * as THREE from 'three';
-import { PROP_MODELS, type PropModelDef } from '../../game/modelAssets';
+import React, { Component, Suspense, useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import * as THREE from "three";
+import { PROP_MODELS, type PropModelDef } from "../../game/modelAssets";
 
 interface PropProps {
   modelKey: keyof typeof PROP_MODELS;
@@ -19,7 +19,9 @@ interface PropProps {
 
 class PropBoundary extends Component<any, { err: boolean }> {
   state = { err: false };
-  static getDerivedStateFromError() { return { err: true }; }
+  static getDerivedStateFromError() {
+    return { err: true };
+  }
   render() {
     if (this.state.err) return this.props.fallback ?? null;
     return this.props.children;
@@ -31,7 +33,10 @@ function fitProp(root: THREE.Object3D, def: PropModelDef, cellSize: number, noFl
   const box = new THREE.Box3();
   let count = 0;
   root.traverse((o: any) => {
-    if (o.isMesh && o.geometry && o.visible) { count++; box.expandByObject(o); }
+    if (o.isMesh && o.geometry && o.visible) {
+      count++;
+      box.expandByObject(o);
+    }
   });
   if (!count || box.isEmpty()) return false;
   const size = new THREE.Vector3();
@@ -56,10 +61,16 @@ function fitProp(root: THREE.Object3D, def: PropModelDef, cellSize: number, noFl
 }
 
 function isLightPart(mat: any) {
-  const name = `${mat?.name ?? ''}`.toLowerCase();
+  const name = `${mat?.name ?? ""}`.toLowerCase();
   if (mat?.emissiveMap) return true;
-  if (mat?.emissive instanceof THREE.Color && (mat.emissive.r + mat.emissive.g + mat.emissive.b) > 0.15) return true;
-  return /visor|eye|core|reactor|screen|led|light|emissive|glow|panel_light|strip|stripe|band|lamp/i.test(name);
+  if (
+    mat?.emissive instanceof THREE.Color &&
+    mat.emissive.r + mat.emissive.g + mat.emissive.b > 0.15
+  )
+    return true;
+  return /visor|eye|core|reactor|screen|led|light|emissive|glow|panel_light|strip|stripe|band|lamp/i.test(
+    name,
+  );
 }
 
 function setColorSpaceSafe(tex?: THREE.Texture | null) {
@@ -89,12 +100,13 @@ function prepProp(root: THREE.Object3D, accent?: string, boost = 0) {
       cloned.transparent = !!cloned.transparent && (cloned.opacity ?? 1) < 1;
 
       if (isLightPart(cloned)) {
-        if (!cloned.emissive) cloned.emissive = new THREE.Color(accent ?? '#22d3ee');
-        if (cloned.emissive instanceof THREE.Color && cloned.emissive.getHex() === 0) cloned.emissive.set(accent ?? '#22d3ee');
+        if (!cloned.emissive) cloned.emissive = new THREE.Color(accent ?? "#22d3ee");
+        if (cloned.emissive instanceof THREE.Color && cloned.emissive.getHex() === 0)
+          cloned.emissive.set(accent ?? "#22d3ee");
         cloned.emissiveIntensity = Math.max(cloned.emissiveIntensity ?? 0, 0.25 + boost);
         cloned.toneMapped = false;
         pulseMats.push(cloned);
-      } else if ('emissiveIntensity' in cloned) {
+      } else if ("emissiveIntensity" in cloned) {
         // Keep non-light parts grounded — do NOT tint whole body.
         cloned.emissiveIntensity = Math.min(cloned.emissiveIntensity ?? 0, 0.04);
       }
@@ -108,7 +120,16 @@ function prepProp(root: THREE.Object3D, accent?: string, boost = 0) {
   return pulseMats;
 }
 
-function PropInner({ modelKey, cellSize, accentColor, pulse, flicker, emissiveBoost = 0, emissiveBase = 0.22, noFloorSnap }: PropProps) {
+function PropInner({
+  modelKey,
+  cellSize,
+  accentColor,
+  pulse,
+  flicker,
+  emissiveBoost = 0,
+  emissiveBase = 0.22,
+  noFloorSnap,
+}: PropProps) {
   const def = PROP_MODELS[modelKey];
   const gltf = useGLTF(def.url) as any;
   const matsRef = useRef<THREE.MeshStandardMaterial[]>([]);

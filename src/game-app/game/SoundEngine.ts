@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { WeaponType } from './constants';
+import { WeaponType } from "./constants";
 
 /**
  * SoundEngine — drop-in audio pipeline.
@@ -20,23 +20,23 @@ import { WeaponType } from './constants';
  */
 
 type FileKey =
-  | 'pistol_shot'
-  | 'rifle_shot'
-  | 'shotgun_shot'
-  | 'sniper_shot'
-  | 'reload_short'
-  | 'reload_long'
-  | 'enemy_hit'
-  | 'enemy_death'
-  | 'pickup_health'
-  | 'pickup_ammo'
-  | 'ui_click'
-  | 'ui_error'
-  | 'wave_start'
-  | 'boss_roar'
-  | 'menu_theme'
-  | 'combat_loop'
-  | 'boss_theme';
+  | "pistol_shot"
+  | "rifle_shot"
+  | "shotgun_shot"
+  | "sniper_shot"
+  | "reload_short"
+  | "reload_long"
+  | "enemy_hit"
+  | "enemy_death"
+  | "pickup_health"
+  | "pickup_ammo"
+  | "ui_click"
+  | "ui_error"
+  | "wave_start"
+  | "boss_roar"
+  | "menu_theme"
+  | "combat_loop"
+  | "boss_theme";
 
 const POOL_SIZE = 4;
 
@@ -56,20 +56,28 @@ class FilePool {
     if (this.probed) return this.probed;
     this.probed = new Promise((resolve) => {
       const a = new Audio();
-      a.addEventListener('canplaythrough', () => {
-        this.loaded = true;
-        // Fill pool now that we know it works
-        for (let i = 0; i < POOL_SIZE; i++) {
-          const el = new Audio(this.url);
-          el.preload = 'auto';
-          this.pool.push(el);
-        }
-        resolve(true);
-      }, { once: true });
-      a.addEventListener('error', () => {
-        this.loaded = false;
-        resolve(false);
-      }, { once: true });
+      a.addEventListener(
+        "canplaythrough",
+        () => {
+          this.loaded = true;
+          // Fill pool now that we know it works
+          for (let i = 0; i < POOL_SIZE; i++) {
+            const el = new Audio(this.url);
+            el.preload = "auto";
+            this.pool.push(el);
+          }
+          resolve(true);
+        },
+        { once: true },
+      );
+      a.addEventListener(
+        "error",
+        () => {
+          this.loaded = false;
+          resolve(false);
+        },
+        { once: true },
+      );
       a.src = this.url;
       a.load();
     });
@@ -102,11 +110,13 @@ export class SoundEngine {
     if (!this.ctx) {
       try {
         this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      } catch {}
+      } catch {
+        // no WebAudio support — file/synth playback silently disabled
+      }
     }
     // Browsers create the context suspended until a user gesture; init() is
     // called from one, so resume here or the synth fallbacks stay silent.
-    if (this.ctx && this.ctx.state === 'suspended') {
+    if (this.ctx && this.ctx.state === "suspended") {
       this.ctx.resume().catch(() => {});
     }
     // Probe SFX files in background — non-blocking
@@ -123,10 +133,20 @@ export class SoundEngine {
 
   preload() {
     const all: FileKey[] = [
-      'pistol_shot', 'rifle_shot', 'shotgun_shot', 'sniper_shot',
-      'reload_short', 'reload_long', 'enemy_hit', 'enemy_death',
-      'pickup_health', 'pickup_ammo', 'ui_click', 'ui_error',
-      'wave_start', 'boss_roar',
+      "pistol_shot",
+      "rifle_shot",
+      "shotgun_shot",
+      "sniper_shot",
+      "reload_short",
+      "reload_long",
+      "enemy_hit",
+      "enemy_death",
+      "pickup_health",
+      "pickup_ammo",
+      "ui_click",
+      "ui_error",
+      "wave_start",
+      "boss_roar",
     ];
     all.forEach((k) => this.getFile(k));
   }
@@ -134,85 +154,93 @@ export class SoundEngine {
   /* ----------------------------- Public API ----------------------------- */
   playShot(weapon: WeaponType) {
     const key: FileKey =
-      weapon === 'sniper'
-        ? 'sniper_shot'
-        : weapon === 'shotgun'
-          ? 'shotgun_shot'
-          : weapon === 'rifle'
-            ? 'rifle_shot'
-            : 'pistol_shot';
+      weapon === "sniper"
+        ? "sniper_shot"
+        : weapon === "shotgun"
+          ? "shotgun_shot"
+          : weapon === "rifle"
+            ? "rifle_shot"
+            : "pistol_shot";
     if (this.getFile(key).play(this.sfxVolume)) return;
     this.synthShot(weapon);
   }
 
   playKill() {
-    if (this.getFile('enemy_death').play(this.sfxVolume * 0.9)) return;
+    if (this.getFile("enemy_death").play(this.sfxVolume * 0.9)) return;
     this.synthKill();
   }
 
   playReload() {
-    if (this.getFile('reload_short').play(this.sfxVolume * 0.8)) return;
+    if (this.getFile("reload_short").play(this.sfxVolume * 0.8)) return;
     this.synthReload();
   }
 
   playHit() {
-    if (this.getFile('enemy_hit').play(this.sfxVolume * 0.6)) return;
+    if (this.getFile("enemy_hit").play(this.sfxVolume * 0.6)) return;
     this.synthHit();
   }
 
   playUiClick() {
-    if (this.getFile('ui_click').play(this.sfxVolume * 0.4)) return;
+    if (this.getFile("ui_click").play(this.sfxVolume * 0.4)) return;
     this.synthUiClick();
   }
 
-  playPickup(type?: 'health' | 'ammo') {
-    const key: FileKey = type === 'health' ? 'pickup_health' : 'pickup_ammo';
+  playPickup(type?: "health" | "ammo") {
+    const key: FileKey = type === "health" ? "pickup_health" : "pickup_ammo";
     if (this.getFile(key).play(this.sfxVolume * 0.7)) return;
     this.synthPickup(type);
   }
 
   playError() {
-    if (this.getFile('ui_error').play(this.sfxVolume * 0.5)) return;
+    if (this.getFile("ui_error").play(this.sfxVolume * 0.5)) return;
     this.synthError();
   }
 
   playWaveStart() {
-    if (this.getFile('wave_start').play(this.sfxVolume)) return;
-    this.synthShot('rifle');
+    if (this.getFile("wave_start").play(this.sfxVolume)) return;
+    this.synthShot("rifle");
   }
 
   playBossRoar() {
-    if (this.getFile('boss_roar').play(this.sfxVolume)) return;
-    this.synthShot('shotgun');
+    if (this.getFile("boss_roar").play(this.sfxVolume)) return;
+    this.synthShot("shotgun");
   }
 
   /* ----------------------------- Music ----------------------------- */
-  playMusic(key: 'menu_theme' | 'combat_loop' | 'boss_theme') {
+  playMusic(key: "menu_theme" | "combat_loop" | "boss_theme") {
     if (this.music?.key === key) return;
     this.stopMusic();
     const el = new Audio(`/audio/${key}.mp3`);
     el.loop = true;
     el.volume = this.musicVolume;
-    el.preload = 'auto';
-    el.addEventListener('error', () => {
-      // No file available — forget the track so a later call can retry
-      // instead of being swallowed by the key guard above.
-      if (this.music?.el === el) this.music = null;
-    }, { once: true });
+    el.preload = "auto";
+    el.addEventListener(
+      "error",
+      () => {
+        // No file available — forget the track so a later call can retry
+        // instead of being swallowed by the key guard above.
+        if (this.music?.el === el) this.music = null;
+      },
+      { once: true },
+    );
     el.play().catch(() => {
       // Autoplay blocked before any user gesture — retry on the first one.
       const retry = () => {
         if (this.music?.el === el) el.play().catch(() => {});
       };
-      window.addEventListener('pointerdown', retry, { once: true });
-      window.addEventListener('keydown', retry, { once: true });
+      window.addEventListener("pointerdown", retry, { once: true });
+      window.addEventListener("keydown", retry, { once: true });
     });
     this.music = { key, el };
   }
 
   stopMusic() {
     if (this.music) {
-      try { this.music.el.pause(); } catch {}
+      try {
+        this.music.el.pause();
+      } catch {
+        // element may already be detached
+      }
       this.music = null;
     }
   }
@@ -223,74 +251,89 @@ export class SoundEngine {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     const filter = this.ctx.createBiquadFilter();
-    osc.type = weapon === 'sniper' || weapon === 'shotgun' ? 'sawtooth' : 'square';
-    const freq = weapon === 'sniper' ? 80 : weapon === 'shotgun' ? 120 : weapon === 'rifle' ? 180 : 220;
+    osc.type = weapon === "sniper" || weapon === "shotgun" ? "sawtooth" : "square";
+    const freq =
+      weapon === "sniper" ? 80 : weapon === "shotgun" ? 120 : weapon === "rifle" ? 180 : 220;
     osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.1);
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(weapon === 'sniper' ? 400 : 800, this.ctx.currentTime);
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(weapon === "sniper" ? 400 : 800, this.ctx.currentTime);
     gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + (weapon === 'sniper' ? 0.4 : weapon === 'shotgun' ? 0.3 : 0.1));
-    osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(); osc.stop(this.ctx.currentTime + 0.5);
+    gain.gain.exponentialRampToValueAtTime(
+      0.01,
+      this.ctx.currentTime + (weapon === "sniper" ? 0.4 : weapon === "shotgun" ? 0.3 : 0.1),
+    );
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.5);
   }
 
   private synthKill() {
     if (!this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'sine';
+    osc.type = "sine";
     osc.frequency.setValueAtTime(400, this.ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.2);
     gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-    osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.2);
   }
 
   private synthReload() {
     if (!this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'triangle';
+    osc.type = "triangle";
     osc.frequency.setValueAtTime(440, this.ctx.currentTime);
     osc.frequency.linearRampToValueAtTime(880, this.ctx.currentTime + 0.1);
     gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-    osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.2);
   }
 
   private synthHit() {
     if (!this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'sine';
+    osc.type = "sine";
     osc.frequency.setValueAtTime(200, this.ctx.currentTime);
     gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
-    osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(); osc.stop(this.ctx.currentTime + 0.05);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.05);
   }
 
   private synthUiClick() {
     if (!this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'sine';
+    osc.type = "sine";
     osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
     gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.02);
-    osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(); osc.stop(this.ctx.currentTime + 0.02);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.02);
   }
 
-  private synthPickup(type?: 'health' | 'ammo') {
+  private synthPickup(type?: "health" | "ammo") {
     if (!this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    if (type === 'health') {
+    osc.type = "triangle";
+    if (type === "health") {
       osc.frequency.setValueAtTime(400, this.ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.2);
     } else {
@@ -299,20 +342,24 @@ export class SoundEngine {
     }
     gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-    osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.2);
   }
 
   private synthError() {
     if (!this.ctx) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
+    osc.type = "sawtooth";
     osc.frequency.setValueAtTime(100, this.ctx.currentTime);
     gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
     gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.2);
-    osc.connect(gain); gain.connect(this.ctx.destination);
-    osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.2);
   }
 }
 

@@ -1,7 +1,7 @@
 // @ts-nocheck
-import React, { useLayoutEffect, useMemo, useRef } from 'react';
-import * as THREE from 'three';
-import { useTexture } from '@react-three/drei';
+import React, { useLayoutEffect, useMemo, useRef } from "react";
+import * as THREE from "three";
+import { useTexture } from "@react-three/drei";
 
 interface MapProps {
   mapData: number[][];
@@ -17,7 +17,7 @@ type InstanceItem = {
   sz: number;
 };
 
-const TEX_BASE = '/assets/textures';
+const TEX_BASE = "/assets/textures";
 const TEX_URLS = {
   wall: `${TEX_BASE}/wall_blue.webp`,
   wallAlt: `${TEX_BASE}/wall_concrete.webp`,
@@ -92,7 +92,13 @@ function InstancedStrips({ items, color, opacity = 0.85 }: any) {
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, items.length]} frustumCulled={false}>
       <boxGeometry args={[1, 1, 1]} />
-      <meshBasicMaterial color={color} transparent opacity={opacity} toneMapped={false} depthWrite={false} />
+      <meshBasicMaterial
+        color={color}
+        transparent
+        opacity={opacity}
+        toneMapped={false}
+        depthWrite={false}
+      />
     </instancedMesh>
   );
 }
@@ -117,46 +123,110 @@ export function WorldLite({ mapData, cellSize }: MapProps) {
     };
   }, [rawTex, mapWidth, mapHeight]);
 
-  const { walls, wallCaps, crates, barrels, cyanStrips, amberStrips, magentaFloorMarks } = useMemo(() => {
-    const walls: InstanceItem[] = [];
-    const wallCaps: InstanceItem[] = [];
-    const crates: InstanceItem[] = [];
-    const barrels: InstanceItem[] = [];
-    const cyanStrips: InstanceItem[] = [];
-    const amberStrips: InstanceItem[] = [];
-    const magentaFloorMarks: InstanceItem[] = [];
+  const { walls, wallCaps, crates, barrels, cyanStrips, amberStrips, magentaFloorMarks } =
+    useMemo(() => {
+      const walls: InstanceItem[] = [];
+      const wallCaps: InstanceItem[] = [];
+      const crates: InstanceItem[] = [];
+      const barrels: InstanceItem[] = [];
+      const cyanStrips: InstanceItem[] = [];
+      const amberStrips: InstanceItem[] = [];
+      const magentaFloorMarks: InstanceItem[] = [];
 
-    for (let y = 0; y < mapData.length; y++) {
-      for (let x = 0; x < mapData[0].length; x++) {
-        const cell = mapData[y][x];
-        const px = x * cellSize + cellSize / 2;
-        const pz = y * cellSize + cellSize / 2;
+      for (let y = 0; y < mapData.length; y++) {
+        for (let x = 0; x < mapData[0].length; x++) {
+          const cell = mapData[y][x];
+          const px = x * cellSize + cellSize / 2;
+          const pz = y * cellSize + cellSize / 2;
 
-        if (cell === 1) {
-          walls.push({ x: px, y: cellSize / 2, z: pz, sx: cellSize * 0.98, sy: cellSize, sz: cellSize * 0.98 });
-          wallCaps.push({ x: px, y: cellSize * 1.02, z: pz, sx: cellSize, sy: cellSize * 0.045, sz: cellSize });
+          if (cell === 1) {
+            walls.push({
+              x: px,
+              y: cellSize / 2,
+              z: pz,
+              sx: cellSize * 0.98,
+              sy: cellSize,
+              sz: cellSize * 0.98,
+            });
+            wallCaps.push({
+              x: px,
+              y: cellSize * 1.02,
+              z: pz,
+              sx: cellSize,
+              sy: cellSize * 0.045,
+              sz: cellSize,
+            });
 
-          // Sparse sci-fi trims. Still cheap because all trims share instancing.
-          const r = h(x, y, 4);
-          if (r < 0.18) {
-            cyanStrips.push({ x: px, y: cellSize * 0.83, z: pz + cellSize * 0.502, sx: cellSize * 0.62, sy: cellSize * 0.018, sz: cellSize * 0.018 });
-          } else if (r < 0.28) {
-            amberStrips.push({ x: px + cellSize * 0.502, y: cellSize * 0.5, z: pz, sx: cellSize * 0.018, sy: cellSize * 0.5, sz: cellSize * 0.018 });
+            // Sparse sci-fi trims. Still cheap because all trims share instancing.
+            const r = h(x, y, 4);
+            if (r < 0.18) {
+              cyanStrips.push({
+                x: px,
+                y: cellSize * 0.83,
+                z: pz + cellSize * 0.502,
+                sx: cellSize * 0.62,
+                sy: cellSize * 0.018,
+                sz: cellSize * 0.018,
+              });
+            } else if (r < 0.28) {
+              amberStrips.push({
+                x: px + cellSize * 0.502,
+                y: cellSize * 0.5,
+                z: pz,
+                sx: cellSize * 0.018,
+                sy: cellSize * 0.5,
+                sz: cellSize * 0.018,
+              });
+            }
+          } else if (cell === 2) {
+            crates.push({
+              x: px,
+              y: cellSize * 0.31,
+              z: pz,
+              sx: cellSize * 0.72,
+              sy: cellSize * 0.62,
+              sz: cellSize * 0.72,
+            });
+            cyanStrips.push({
+              x: px,
+              y: cellSize * 0.64,
+              z: pz + cellSize * 0.36,
+              sx: cellSize * 0.42,
+              sy: cellSize * 0.018,
+              sz: cellSize * 0.018,
+            });
+          } else if (cell === 3) {
+            barrels.push({
+              x: px,
+              y: cellSize * 0.32,
+              z: pz,
+              sx: cellSize * 0.42,
+              sy: cellSize * 0.64,
+              sz: cellSize * 0.42,
+            });
+            amberStrips.push({
+              x: px,
+              y: cellSize * 0.66,
+              z: pz,
+              sx: cellSize * 0.3,
+              sy: cellSize * 0.018,
+              sz: cellSize * 0.3,
+            });
+          } else if (cell === 0 && h(x, y, 9) < 0.045) {
+            magentaFloorMarks.push({
+              x: px,
+              y: 0.018,
+              z: pz,
+              sx: cellSize * 0.42,
+              sy: 0.01,
+              sz: cellSize * 0.42,
+            });
           }
-        } else if (cell === 2) {
-          crates.push({ x: px, y: cellSize * 0.31, z: pz, sx: cellSize * 0.72, sy: cellSize * 0.62, sz: cellSize * 0.72 });
-          cyanStrips.push({ x: px, y: cellSize * 0.64, z: pz + cellSize * 0.36, sx: cellSize * 0.42, sy: cellSize * 0.018, sz: cellSize * 0.018 });
-        } else if (cell === 3) {
-          barrels.push({ x: px, y: cellSize * 0.32, z: pz, sx: cellSize * 0.42, sy: cellSize * 0.64, sz: cellSize * 0.42 });
-          amberStrips.push({ x: px, y: cellSize * 0.66, z: pz, sx: cellSize * 0.3, sy: cellSize * 0.018, sz: cellSize * 0.3 });
-        } else if (cell === 0 && h(x, y, 9) < 0.045) {
-          magentaFloorMarks.push({ x: px, y: 0.018, z: pz, sx: cellSize * 0.42, sy: 0.01, sz: cellSize * 0.42 });
         }
       }
-    }
 
-    return { walls, wallCaps, crates, barrels, cyanStrips, amberStrips, magentaFloorMarks };
-  }, [mapData, cellSize]);
+      return { walls, wallCaps, crates, barrels, cyanStrips, amberStrips, magentaFloorMarks };
+    }, [mapData, cellSize]);
 
   return (
     <group position={[-mapWidth / 2, 0, -mapHeight / 2]}>
@@ -176,7 +246,13 @@ export function WorldLite({ mapData, cellSize }: MapProps) {
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[mapWidth * 0.5, 0.025, mapHeight * 0.5]}>
         <ringGeometry args={[cellSize * 0.28, cellSize * 0.36, 24]} />
-        <meshBasicMaterial color="#fbbf24" transparent opacity={0.75} toneMapped={false} depthWrite={false} />
+        <meshBasicMaterial
+          color="#fbbf24"
+          transparent
+          opacity={0.75}
+          toneMapped={false}
+          depthWrite={false}
+        />
       </mesh>
     </group>
   );

@@ -1,5 +1,5 @@
-import { RefreshCcw } from 'lucide-react';
-import { WEAPONS, WeaponType } from '@/game-app/game/constants';
+import { RefreshCcw } from "lucide-react";
+import { WEAPONS, WeaponType } from "@/game-app/game/constants";
 
 interface Props {
   currentWeapon: WeaponType;
@@ -24,7 +24,7 @@ export function WeaponPanel({ currentWeapon, ammo, isReloading }: Props) {
             </span>
           ) : (
             <span className="font-mono text-xs">
-              <span className={`font-bold ${low ? 'text-red-400 animate-pulse' : 'text-cyan-300'}`}>
+              <span className={`font-bold ${low ? "text-red-400 animate-pulse" : "text-cyan-300"}`}>
                 {ammo.mag}
               </span>
               <span className="text-slate-500"> / {ammo.reserve}</span>
@@ -37,12 +37,12 @@ export function WeaponPanel({ currentWeapon, ammo, isReloading }: Props) {
               key={i}
               className={`flex-1 rounded-[1px] transition-all ${
                 isReloading
-                  ? 'bg-slate-800'
+                  ? "bg-slate-800"
                   : i < ammo.mag
                     ? low
-                      ? 'bg-red-400/80'
-                      : 'bg-cyan-400/80'
-                    : 'bg-slate-800'
+                      ? "bg-red-400/80"
+                      : "bg-cyan-400/80"
+                    : "bg-slate-800"
               }`}
             />
           ))}

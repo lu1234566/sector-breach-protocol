@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { Target, Coins, ChevronLeft } from 'lucide-react';
-import { GameScene } from './components/game/GameScene';
-import { MainMenu } from './components/menu/MainMenu';
+import React, { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Target, Coins, ChevronLeft } from "lucide-react";
+import { GameScene } from "./components/game/GameScene";
+import { MainMenu } from "./components/menu/MainMenu";
 
 import {
   WeaponType,
@@ -21,8 +21,8 @@ import {
   MAX_WEAPON_LEVEL,
   DIFFICULTIES,
   FINAL_WAVE,
-} from './game/constants';
-import { getArenaById, ARENAS, DEFAULT_ARENA_ID, type ArenaDef } from './data/arenas';
+} from "./game/constants";
+import { getArenaById, ARENAS, DEFAULT_ARENA_ID, type ArenaDef } from "./data/arenas";
 import {
   Player,
   Enemy,
@@ -37,12 +37,12 @@ import {
   WeaponUpgradeLevels,
   ObjectiveRuntime,
   WallDecal,
-} from './game/types';
-import { SniperScope } from './components/hud/SniperScope';
-import { getWaveObjective, createRuntime } from './game/objectives';
-import { GameHUD } from './components/hud/GameHUD';
-import { DeployScreen } from './components/hud/DeployScreen';
-import { PauseMenu } from './components/hud/PauseMenu';
+} from "./game/types";
+import { SniperScope } from "./components/hud/SniperScope";
+import { getWaveObjective, createRuntime } from "./game/objectives";
+import { GameHUD } from "./components/hud/GameHUD";
+import { DeployScreen } from "./components/hud/DeployScreen";
+import { PauseMenu } from "./components/hud/PauseMenu";
 import {
   loadCredits,
   loadUpgrades,
@@ -55,22 +55,22 @@ import {
   saveUpgrades,
   saveWeaponUpgrades,
   saveLifetimeStats,
-} from './game/persistence';
-import { clamp } from './game/helpers';
-import { sounds } from './game/SoundEngine';
-import { useInputSystem } from './game/systems/useInputSystem';
-import { useWaveSystem } from './game/systems/useWaveSystem';
-import { tickEnemyAI } from './game/systems/enemyAI';
-import { createHandleShoot, createReload } from './game/systems/combat';
-import { tickPickups } from './game/systems/pickups';
-import splashMissionComplete from '@/assets/splash_mission_complete.jpg';
-import splashMissionFailed from '@/assets/splash_mission_failed.jpg';
+} from "./game/persistence";
+import { clamp } from "./game/helpers";
+import { sounds } from "./game/SoundEngine";
+import { useInputSystem } from "./game/systems/useInputSystem";
+import { useWaveSystem } from "./game/systems/useWaveSystem";
+import { tickEnemyAI } from "./game/systems/enemyAI";
+import { createHandleShoot, createReload } from "./game/systems/combat";
+import { tickPickups } from "./game/systems/pickups";
+import splashMissionComplete from "@/assets/splash_mission_complete.jpg";
+import splashMissionFailed from "@/assets/splash_mission_failed.jpg";
 
 const PLAYER_RADIUS = 30;
 const DEBUG_MODE =
-  typeof window !== 'undefined' &&
-  (new URLSearchParams(window.location.search).get('debug') === '1' ||
-    (typeof localStorage !== 'undefined' && localStorage.getItem('sbp_debug') === '1'));
+  typeof window !== "undefined" &&
+  (new URLSearchParams(window.location.search).get("debug") === "1" ||
+    (typeof localStorage !== "undefined" && localStorage.getItem("sbp_debug") === "1"));
 const DEBUG_SAFE_MODE = false;
 
 const isBulletBlocking = (cell: number) => cell === 1 || cell === 2 || cell === 3;
@@ -118,8 +118,8 @@ export default function App() {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const pointerLockCooldownRef = useRef(0);
   const [gameState, setGameState] = useState<
-    'start' | 'deploy' | 'playing' | 'paused' | 'dead' | 'win' | 'upgrades'
-  >('start');
+    "start" | "deploy" | "playing" | "paused" | "dead" | "win" | "upgrades"
+  >("start");
   const gameStateRef = useRef(gameState);
   useEffect(() => {
     gameStateRef.current = gameState;
@@ -135,7 +135,7 @@ export default function App() {
   const bossSpawnTimeoutRef = useRef<number | null>(null);
   const [enemiesRemaining, setEnemiesRemaining] = useState(0);
   const [score, setScore] = useState(0);
-  const [waveMessage, setWaveMessage] = useState('');
+  const [waveMessage, setWaveMessage] = useState("");
   const objectiveRef = useRef<ObjectiveRuntime | null>(null);
   const [objectiveSnapshot, setObjectiveSnapshot] = useState<ObjectiveRuntime | null>(null);
   const objectiveLastSyncRef = useRef(0);
@@ -187,12 +187,12 @@ export default function App() {
     sniper: WEAPONS.sniper.magSize,
   });
   const [earnedCredits, setEarnedCredits] = useState(0);
-  const [difficulty, setDifficulty] = useState<DifficultyKey>('normal');
-  const [upgradeTab, setUpgradeTab] = useState<'biological' | 'weapon'>('biological');
-  const [selectedLabWeapon, setSelectedLabWeapon] = useState<WeaponType>('pistol');
+  const [difficulty, setDifficulty] = useState<DifficultyKey>("normal");
+  const [upgradeTab, setUpgradeTab] = useState<"biological" | "weapon">("biological");
+  const [selectedLabWeapon, setSelectedLabWeapon] = useState<WeaponType>("pistol");
   const [menuView, setMenuView] = useState<
-    'main' | 'armory' | 'difficulty' | 'profile' | 'arena' | 'settings'
-  >('main');
+    "main" | "armory" | "difficulty" | "profile" | "arena" | "settings"
+  >("main");
   const [selectedArenaId, setSelectedArenaId] = useState<string>(DEFAULT_ARENA_ID);
   const currentArenaRef = useRef<ArenaDef>(getArenaById(DEFAULT_ARENA_ID));
 
@@ -238,7 +238,7 @@ export default function App() {
     if (lStats) saveLifetimeStats(lStats);
   };
 
-  const [currentWeapon, setCurrentWeapon] = useState<WeaponType>('rifle');
+  const [currentWeapon, setCurrentWeapon] = useState<WeaponType>("rifle");
   const [ammo, setAmmo] = useState({ mag: WEAPONS.rifle.magSize, reserve: 120 });
   const ammoRef = useRef(ammo);
   const [hp, setHp] = useState(100);
@@ -268,10 +268,10 @@ export default function App() {
   // the Titan wave onward. The tracks ship in /public/audio but were never
   // wired up.
   useEffect(() => {
-    if (gameState === 'start' || gameState === 'upgrades') {
-      sounds.playMusic('menu_theme');
-    } else if (gameState === 'playing' || gameState === 'paused' || gameState === 'deploy') {
-      sounds.playMusic(wave >= 5 ? 'boss_theme' : 'combat_loop');
+    if (gameState === "start" || gameState === "upgrades") {
+      sounds.playMusic("menu_theme");
+    } else if (gameState === "playing" || gameState === "paused" || gameState === "deploy") {
+      sounds.playMusic(wave >= 5 ? "boss_theme" : "combat_loop");
     } else {
       sounds.stopMusic();
     }
@@ -317,8 +317,8 @@ export default function App() {
   const initGame = () => {
     gameStartTime.current = Date.now();
     isRunEndingRef.current = false;
-    setGameState('deploy');
-    setCurrentWeapon('pistol');
+    setGameState("deploy");
+    setCurrentWeapon("pistol");
     const maxHp = 100 + upgradeLevels.armorPlating * 5;
     setHp(maxHp);
     setStats({ kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0 });
@@ -355,7 +355,7 @@ export default function App() {
     isReloadingRef.current = false;
     setEnemiesRemaining(0);
     setBossHp(null);
-    setWaveMessage('');
+    setWaveMessage("");
     objectiveRef.current = null;
     setObjectiveSnapshot(null);
     setWeaponMags({
@@ -405,7 +405,7 @@ export default function App() {
     // Grace period counts from when gameplay actually starts, not from the
     // moment the deploy screen appeared.
     gameStartTime.current = Date.now();
-    setGameState('playing');
+    setGameState("playing");
     spawnWave(1);
     // Request pointer lock on next tick (after state flush)
     setTimeout(() => requestPointerLockSafe(), 50);
@@ -413,7 +413,7 @@ export default function App() {
 
   useEffect(() => {
     const updateNav = () => {
-      if (gameStateRef.current !== 'playing') return;
+      if (gameStateRef.current !== "playing") return;
       const activeMap = mapData.current;
       const rows = activeMap.length;
       const cols = activeMap[0].length;
@@ -518,22 +518,22 @@ export default function App() {
   };
 
   const spawnEnemies = (count: number, currentWave: number = 1, isBoss: boolean = false) => {
-    const types: ('rusher' | 'rifleman' | 'sniper')[] = ['rusher', 'rifleman', 'sniper'];
+    const types: ("rusher" | "rifleman" | "sniper")[] = ["rusher", "rifleman", "sniper"];
     for (let i = 0; i < count; i++) {
       const pos = pickSpawnPosition(currentWave);
       if (!pos) break;
       const rx = pos.x;
       const ry = pos.y;
       {
-        let type: 'rusher' | 'rifleman' | 'sniper' = 'rifleman';
-        if (isBoss) type = 'rifleman';
-        else if (currentWave === 1) type = Math.random() > 0.4 ? 'rifleman' : 'rusher';
+        let type: "rusher" | "rifleman" | "sniper" = "rifleman";
+        if (isBoss) type = "rifleman";
+        else if (currentWave === 1) type = Math.random() > 0.4 ? "rifleman" : "rusher";
         else type = types[Math.floor(Math.random() * types.length)];
         const diffMult = DIFFICULTIES[difficulty].hpMult;
         const hpBuff = 1 + (currentWave - 1) * 0.15;
         const speedBuff = 1 + (currentWave - 1) * 0.04;
         const finalHp =
-          (type === 'rusher' ? 60 : type === 'rifleman' ? 100 : 80) *
+          (type === "rusher" ? 60 : type === "rifleman" ? 100 : 80) *
           hpBuff *
           (isBoss ? 20 : 1) *
           diffMult;
@@ -550,16 +550,16 @@ export default function App() {
           lastShot: 0,
           nextShotAt: Date.now() + Math.random() * 2000,
           speed:
-            (type === 'rusher' ? 3.5 : type === 'rifleman' ? 2 : 1.5) *
+            (type === "rusher" ? 3.5 : type === "rifleman" ? 2 : 1.5) *
             speedBuff *
             (isBoss ? 0.7 : 1),
           color: isBoss
-            ? '#f43f5e'
-            : type === 'rusher'
-              ? '#f87171'
-              : type === 'rifleman'
-                ? '#fbbf24'
-                : '#38bdf8',
+            ? "#f43f5e"
+            : type === "rusher"
+              ? "#f87171"
+              : type === "rifleman"
+                ? "#fbbf24"
+                : "#38bdf8",
           stuckFrames: 0,
           lastX: rx,
           lastY: ry,
@@ -577,11 +577,18 @@ export default function App() {
   // Debug-only: spawn one of each enemy type next to the player so each model
   // (rusher / rifleman / sniper / titan) can be inspected individually without
   // depending on wave randomness. Activated via ?debug=1 or localStorage.
-  const spawnDebugEnemy = (type: 'rusher' | 'rifleman' | 'sniper' | 'titan') => {
-    const baseHp = type === 'rusher' ? 60 : type === 'rifleman' ? 100 : type === 'sniper' ? 80 : 400;
-    const speed = type === 'rusher' ? 3.5 : type === 'rifleman' ? 2 : type === 'sniper' ? 1.5 : 1.2;
+  const spawnDebugEnemy = (type: "rusher" | "rifleman" | "sniper" | "titan") => {
+    const baseHp =
+      type === "rusher" ? 60 : type === "rifleman" ? 100 : type === "sniper" ? 80 : 400;
+    const speed = type === "rusher" ? 3.5 : type === "rifleman" ? 2 : type === "sniper" ? 1.5 : 1.2;
     const color =
-      type === 'rusher' ? '#f87171' : type === 'rifleman' ? '#fbbf24' : type === 'sniper' ? '#38bdf8' : '#0ea5e9';
+      type === "rusher"
+        ? "#f87171"
+        : type === "rifleman"
+          ? "#fbbf24"
+          : type === "sniper"
+            ? "#38bdf8"
+            : "#0ea5e9";
     const offX = Math.cos(player.current.angle) * CELL_SIZE * 3;
     const offY = Math.sin(player.current.angle) * CELL_SIZE * 3;
     enemies.current.push({
@@ -603,26 +610,26 @@ export default function App() {
     } as any);
     setEnemiesState([...enemies.current]);
     setEnemiesRemaining(enemies.current.length);
-    console.log('[DEBUG] spawned', type);
+    console.log("[DEBUG] spawned", type);
   };
 
   useEffect(() => {
     if (!DEBUG_MODE) return;
     const onKey = (e: KeyboardEvent) => {
-      if (gameStateRef.current !== 'playing') return;
-      if (e.key === '1') spawnDebugEnemy('rusher');
-      else if (e.key === '2') spawnDebugEnemy('rifleman');
-      else if (e.key === '3') spawnDebugEnemy('sniper');
-      else if (e.key === '4') spawnDebugEnemy('titan');
-      else if (e.key === '5') {
+      if (gameStateRef.current !== "playing") return;
+      if (e.key === "1") spawnDebugEnemy("rusher");
+      else if (e.key === "2") spawnDebugEnemy("rifleman");
+      else if (e.key === "3") spawnDebugEnemy("sniper");
+      else if (e.key === "4") spawnDebugEnemy("titan");
+      else if (e.key === "5") {
         enemies.current = [];
         setEnemiesState([]);
         setEnemiesRemaining(0);
-        console.log('[DEBUG] cleared enemies');
+        console.log("[DEBUG] cleared enemies");
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   const graveyard = useRef<{ x: number; y: number; color: string; type: string }[]>([]);
@@ -636,9 +643,7 @@ export default function App() {
     isRunEndingRef.current = true;
 
     if (message) {
-      setKillfeed((prev) =>
-        [{ id: nextKillfeedId.current++, text: message }, ...prev].slice(0, 5),
-      );
+      setKillfeed((prev) => [{ id: nextKillfeedId.current++, text: message }, ...prev].slice(0, 5));
     }
 
     const diffMult = DIFFICULTIES[difficulty].creditMult;
@@ -685,12 +690,12 @@ export default function App() {
     }
     setIsReloading(false);
     isReloadingRef.current = false;
-    setWaveMessage('');
+    setWaveMessage("");
     isWaveTransitionRef.current = false;
     isSpawningRef.current = false;
     keys.current = {};
     if (document.pointerLockElement) document.exitPointerLock();
-    setGameState(won ? 'win' : 'dead');
+    setGameState(won ? "win" : "dead");
   };
 
   const combatDeps: any = {
@@ -732,8 +737,8 @@ export default function App() {
   combatDeps.reload = reload;
   const handleShoot = createHandleShoot(combatDeps);
 
-  const spawnParticles = (x: number, y: number, type: 'blood' | 'explosion' | 'shell') => {
-    const count = type === 'explosion' ? 20 : 5;
+  const spawnParticles = (x: number, y: number, type: "blood" | "explosion" | "shell") => {
+    const count = type === "explosion" ? 20 : 5;
     for (let i = 0; i < count; i++) {
       particles.current.push({
         id: nextParticleId.current++,
@@ -742,23 +747,23 @@ export default function App() {
         vx: (Math.random() - 0.5) * 10,
         vy: (Math.random() - 0.5) * 10,
         life: 1.0,
-        color: type === 'blood' ? '#ef4444' : type === 'shell' ? '#eab308' : '#fb923c',
+        color: type === "blood" ? "#ef4444" : type === "shell" ? "#eab308" : "#fb923c",
         size: Math.random() * 4 + 2,
       });
     }
   };
 
   const update = () => {
-    if (gameStateRef.current !== 'playing') return;
+    if (gameStateRef.current !== "playing") return;
 
     // Player Movement
     let dx = 0;
     let dy = 0;
-    const isW = keys.current['w'];
-    const isS = keys.current['s'];
-    const isA = keys.current['a'];
-    const isD = keys.current['d'];
-    const isShift = keys.current['shift'];
+    const isW = keys.current["w"];
+    const isS = keys.current["s"];
+    const isA = keys.current["a"];
+    const isD = keys.current["d"];
+    const isShift = keys.current["shift"];
 
     if (isW) {
       dx += Math.cos(player.current.angle);
@@ -778,7 +783,7 @@ export default function App() {
     }
 
     // ADS Hold (Right click or C)
-    player.current.isAds = keys.current['c'] || keys.current['m_right'];
+    player.current.isAds = keys.current["c"] || keys.current["m_right"];
     if (player.current.isAds) {
       player.current.adsProgress = Math.min(1, player.current.adsProgress + 0.1);
     } else {
@@ -835,7 +840,7 @@ export default function App() {
     recoilOffset.current *= 0.85;
     screenShake.current *= 0.9;
 
-    if (keys.current['m_left'] && WEAPONS[currentWeapon].isAuto) handleShoot();
+    if (keys.current["m_left"] && WEAPONS[currentWeapon].isAuto) handleShoot();
 
     // Enemy AI / objectives
     const now = Date.now();
@@ -844,7 +849,7 @@ export default function App() {
     const aliveEnemies = enemies.current.filter((e) => !e.dead);
 
     const obj = objectiveRef.current;
-    if (obj && obj.status === 'active' && !isWaveTransitionRef.current) {
+    if (obj && obj.status === "active" && !isWaveTransitionRef.current) {
       const dtMs = TICK_RATE;
       const px = player.current.x;
       const py = player.current.y;
@@ -852,11 +857,11 @@ export default function App() {
         const dz = Math.hypot(px - obj.zone.x, py - obj.zone.y);
         obj.inZone = dz <= obj.zone.radius;
       }
-      if (obj.kind === 'hack' && obj.zone) {
+      if (obj.kind === "hack" && obj.zone) {
         if (obj.inZone) obj.timer = Math.max(0, obj.timer - dtMs);
         obj.progress = obj.timer === 0 ? 1 : 1 - obj.timer / 12000;
-        if (obj.timer <= 0) obj.status = 'complete';
-      } else if (obj.kind === 'defend' && obj.zone) {
+        if (obj.timer <= 0) obj.status = "complete";
+      } else if (obj.kind === "defend" && obj.zone) {
         const drainRadius = obj.zone.radius * 2.4;
         let drainers = 0;
         for (const e of aliveEnemies)
@@ -866,26 +871,26 @@ export default function App() {
         obj.timer = Math.max(0, obj.timer - dtMs);
         obj.progress = 1 - obj.timer / 30000;
         if ((obj.coreHp ?? 0) <= 0) {
-          obj.status = 'failed';
-          endRun(false, 'CORE LOST · MISSION FAILED');
-        } else if (obj.timer <= 0) obj.status = 'complete';
-      } else if (obj.kind === 'extract' && obj.zone) {
+          obj.status = "failed";
+          endRun(false, "CORE LOST · MISSION FAILED");
+        } else if (obj.timer <= 0) obj.status = "complete";
+      } else if (obj.kind === "extract" && obj.zone) {
         if (!obj.extractActive) {
           if (obj.killCount >= (obj.killTarget ?? 0)) {
             obj.extractActive = true;
             obj.timer = 25000;
             setKillfeed((prev) =>
-              [{ id: nextKillfeedId.current++, text: 'EXTRACT ZONE ACTIVE' }, ...prev].slice(0, 5),
+              [{ id: nextKillfeedId.current++, text: "EXTRACT ZONE ACTIVE" }, ...prev].slice(0, 5),
             );
           }
           obj.progress = Math.min(1, obj.killCount / Math.max(1, obj.killTarget ?? 1)) * 0.5;
         } else {
           obj.timer = Math.max(0, obj.timer - dtMs);
           obj.progress = 0.5 + 0.5 * (1 - obj.timer / 25000);
-          if (obj.inZone) obj.status = 'complete';
+          if (obj.inZone) obj.status = "complete";
           else if (obj.timer <= 0) {
-            obj.status = 'failed';
-            endRun(false, 'EXTRACT FAILED · MISSION ABORT');
+            obj.status = "failed";
+            endRun(false, "EXTRACT FAILED · MISSION ABORT");
           }
         }
       }
@@ -899,8 +904,8 @@ export default function App() {
     const objCompleteForWave = (() => {
       const o = objectiveRef.current;
       if (!o) return aliveEnemies.length === 0;
-      if (o.kind === 'eliminate') return aliveEnemies.length === 0;
-      return o.status === 'complete';
+      if (o.kind === "eliminate") return aliveEnemies.length === 0;
+      return o.status === "complete";
     })();
     if (objCompleteForWave && !isSpawningRef.current && !isWaveTransitionRef.current) {
       if (waveRef.current >= FINAL_WAVE) {
@@ -974,14 +979,11 @@ export default function App() {
       setTacticalCredits(nextCredits);
       setUpgradeLevels(nextUpgrades);
       saveMeta(nextCredits, nextUpgrades, weaponUpgradeLevels);
-      sounds.playPickup('health');
+      sounds.playPickup("health");
     } else sounds.playError();
   };
 
-  const buyWeaponUpgrade = (
-    weapon: WeaponType,
-    attribute: 'damage' | 'reload' | 'stability',
-  ) => {
+  const buyWeaponUpgrade = (weapon: WeaponType, attribute: "damage" | "reload" | "stability") => {
     const currentLevels = weaponUpgradeLevels[weapon];
     const currentLevel = currentLevels[attribute];
     if (currentLevel >= MAX_WEAPON_LEVEL) return;
@@ -995,7 +997,7 @@ export default function App() {
       setTacticalCredits(nextCredits);
       setWeaponUpgradeLevels(nextWeaponUpgrades);
       saveMeta(nextCredits, upgradeLevels, nextWeaponUpgrades);
-      sounds.playPickup('ammo');
+      sounds.playPickup("ammo");
     } else sounds.playError();
   };
 
@@ -1016,14 +1018,16 @@ export default function App() {
     pointerLockCooldownRef.current = now;
     try {
       const promise = gameContainerRef.current.requestPointerLock();
-      if (promise && typeof (promise as any).catch === 'function') {
+      if (promise && typeof (promise as any).catch === "function") {
         (promise as any).catch(() => {});
       }
-    } catch {}
+    } catch {
+      // pointer lock can fail outside a user gesture; safe to ignore
+    }
   };
 
   const togglePointerLock = () => {
-    if (gameStateRef.current !== 'playing') return;
+    if (gameStateRef.current !== "playing") return;
     requestPointerLockSafe();
   };
 
@@ -1031,11 +1035,11 @@ export default function App() {
 
   const handlePauseToggle = () => {
     const s = gameStateRef.current;
-    if (s === 'playing') {
+    if (s === "playing") {
       pauseStartRef.current = Date.now();
-      setGameState('paused');
+      setGameState("paused");
       if (document.pointerLockElement) document.exitPointerLock();
-    } else if (s === 'paused') {
+    } else if (s === "paused") {
       // Shift every wall-clock timestamp by the pause duration, otherwise all
       // enemy cooldowns expire during the pause and the whole map opens fire
       // the instant the game resumes.
@@ -1055,7 +1059,7 @@ export default function App() {
           d.born += delta;
         });
       }
-      setGameState('playing');
+      setGameState("playing");
       setTimeout(() => requestPointerLockSafe(), 50);
     }
   };
@@ -1101,9 +1105,7 @@ export default function App() {
         className="relative group bg-black cursor-crosshair overflow-hidden shadow-2xl shadow-blue-900/20 border-4 border-slate-800 rounded-xl aspect-[16/9] max-w-[1400px] w-full"
         onClick={togglePointerLock}
       >
-        {(gameState === 'playing' ||
-          gameState === 'paused' ||
-          gameState === 'deploy') && (
+        {(gameState === "playing" || gameState === "paused" || gameState === "deploy") && (
           <>
             <GameScene
               player={player}
@@ -1122,13 +1124,13 @@ export default function App() {
               pickups={pickups.current}
               debugMode={DEBUG_MODE}
             />
-            {currentWeapon === 'sniper' && gameState === 'playing' && (
+            {currentWeapon === "sniper" && gameState === "playing" && (
               <SniperScope progress={player.current.adsProgress} />
             )}
           </>
         )}
 
-        {gameState === 'playing' && (
+        {gameState === "playing" && (
           <GameHUD
             wave={wave}
             difficulty={difficulty}
@@ -1154,11 +1156,11 @@ export default function App() {
         )}
 
         <AnimatePresence>
-          {gameState === 'deploy' && <DeployScreen onDeploy={startDeployedMatch} />}
+          {gameState === "deploy" && <DeployScreen onDeploy={startDeployedMatch} />}
         </AnimatePresence>
 
         <AnimatePresence>
-          {gameState === 'paused' && (
+          {gameState === "paused" && (
             <PauseMenu
               onResume={handlePauseToggle}
               onRestart={() => {
@@ -1167,8 +1169,8 @@ export default function App() {
               }}
               onExit={() => {
                 if (document.pointerLockElement) document.exitPointerLock();
-                setMenuView('main');
-                setGameState('start');
+                setMenuView("main");
+                setGameState("start");
               }}
             />
           )}
@@ -1176,32 +1178,32 @@ export default function App() {
 
         {/* Start / Dead / Win / Upgrades Overlays */}
         <AnimatePresence>
-          {(gameState === 'start' ||
-            gameState === 'dead' ||
-            gameState === 'win' ||
-            gameState === 'upgrades') && (
+          {(gameState === "start" ||
+            gameState === "dead" ||
+            gameState === "win" ||
+            gameState === "upgrades") && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center z-[100]"
               style={
-                gameState === 'win'
+                gameState === "win"
                   ? {
                       backgroundImage: `linear-gradient(rgba(2,6,23,0.78), rgba(2,6,23,0.92)), url(${splashMissionComplete})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
                     }
-                  : gameState === 'dead'
+                  : gameState === "dead"
                     ? {
                         backgroundImage: `linear-gradient(rgba(2,6,23,0.78), rgba(2,6,23,0.92)), url(${splashMissionFailed})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
                       }
                     : undefined
               }
             >
-              {gameState === 'upgrades' ? (
+              {gameState === "upgrades" ? (
                 <div className="w-full max-w-2xl bg-zinc-900/90 rounded-3xl border border-white/10 p-6 md:p-10 max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-8 text-left">
                     <div>
@@ -1226,24 +1228,24 @@ export default function App() {
                     <button
                       onClick={() => {
                         sounds.playUiClick();
-                        setUpgradeTab('biological');
+                        setUpgradeTab("biological");
                       }}
-                      className={`flex-1 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all ${upgradeTab === 'biological' ? 'bg-white text-slate-950 shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                      className={`flex-1 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all ${upgradeTab === "biological" ? "bg-white text-slate-950 shadow-lg" : "text-slate-500 hover:text-white"}`}
                     >
                       Biological
                     </button>
                     <button
                       onClick={() => {
                         sounds.playUiClick();
-                        setUpgradeTab('weapon');
+                        setUpgradeTab("weapon");
                       }}
-                      className={`flex-1 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all ${upgradeTab === 'weapon' ? 'bg-white text-slate-950 shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                      className={`flex-1 py-3 rounded-xl font-black uppercase text-xs tracking-widest transition-all ${upgradeTab === "weapon" ? "bg-white text-slate-950 shadow-lg" : "text-slate-500 hover:text-white"}`}
                     >
                       Weapon Lab
                     </button>
                   </div>
 
-                  {upgradeTab === 'biological' ? (
+                  {upgradeTab === "biological" ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                       {Object.entries(UPGRADES).map(([key, upgrade]) => {
                         const level = upgradeLevels[key];
@@ -1263,7 +1265,7 @@ export default function App() {
                                 {[...Array(upgrade.maxLevel)].map((_, i) => (
                                   <div
                                     key={i}
-                                    className={`w-1.5 h-1.5 rounded-full ${i < level ? 'bg-blue-500 shadow-[0_0_5px_#3b82f6]' : 'bg-slate-800'}`}
+                                    className={`w-1.5 h-1.5 rounded-full ${i < level ? "bg-blue-500 shadow-[0_0_5px_#3b82f6]" : "bg-slate-800"}`}
                                   />
                                 ))}
                               </div>
@@ -1276,16 +1278,16 @@ export default function App() {
                               onClick={() => buyUpgrade(key)}
                               className={`mt-auto py-2 rounded-xl flex items-center justify-center gap-2 font-black uppercase text-xs transition-all ${
                                 isMax
-                                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                                  ? "bg-slate-800 text-slate-500 cursor-not-allowed"
                                   : canAfford
-                                    ? 'bg-white text-slate-950 hover:scale-105 active:scale-95'
-                                    : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                                    ? "bg-white text-slate-950 hover:scale-105 active:scale-95"
+                                    : "bg-red-500/10 text-red-500 border border-red-500/20"
                               }`}
                             >
                               {isMax ? (
-                                'MAXED'
+                                "MAXED"
                               ) : !canAfford ? (
-                                'CREDITS NEEDED'
+                                "CREDITS NEEDED"
                               ) : (
                                 <>
                                   <Coins size={12} />
@@ -1310,7 +1312,7 @@ export default function App() {
                                 sounds.playUiClick();
                                 setSelectedLabWeapon(wKey as WeaponType);
                               }}
-                              className={`px-4 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest border transition-all ${isSelected ? 'bg-blue-500 border-blue-400 text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'bg-slate-950/50 border-white/5 text-slate-500 hover:border-white/20'}`}
+                              className={`px-4 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest border transition-all ${isSelected ? "bg-blue-500 border-blue-400 text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]" : "bg-slate-950/50 border-white/5 text-slate-500 hover:border-white/20"}`}
                             >
                               {weapon.name}
                             </button>
@@ -1318,15 +1320,15 @@ export default function App() {
                         })}
                       </div>
                       <div className="grid grid-cols-1 gap-3">
-                        {(['damage', 'reload', 'stability'] as const).map((attr) => {
+                        {(["damage", "reload", "stability"] as const).map((attr) => {
                           const level = weaponUpgradeLevels[selectedLabWeapon][attr];
                           const isMax = level >= MAX_WEAPON_LEVEL;
                           const cost = isMax ? 0 : WEAPON_UPGRADE_COSTS[level];
                           const canAfford = tacticalCredits >= cost;
                           const descriptions = {
-                            damage: '+5% Firepower per level',
-                            reload: '-4% Reload time per level',
-                            stability: '-5% Recoil/Spread per level',
+                            damage: "+5% Firepower per level",
+                            reload: "-4% Reload time per level",
+                            stability: "-5% Recoil/Spread per level",
                           };
                           return (
                             <div
@@ -1344,7 +1346,7 @@ export default function App() {
                                   {[...Array(MAX_WEAPON_LEVEL)].map((_, i) => (
                                     <div
                                       key={i}
-                                      className={`w-3 h-1 rounded-full ${i < level ? 'bg-blue-500 shadow-[0_0_5px_#3b82f6]' : 'bg-slate-800'}`}
+                                      className={`w-3 h-1 rounded-full ${i < level ? "bg-blue-500 shadow-[0_0_5px_#3b82f6]" : "bg-slate-800"}`}
                                     />
                                   ))}
                                 </div>
@@ -1354,16 +1356,16 @@ export default function App() {
                                 onClick={() => buyWeaponUpgrade(selectedLabWeapon, attr)}
                                 className={`py-2 px-6 rounded-xl flex items-center justify-center gap-2 font-black uppercase text-xs transition-all ${
                                   isMax
-                                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                                    ? "bg-slate-800 text-slate-500 cursor-not-allowed"
                                     : canAfford
-                                      ? 'bg-white text-slate-950 hover:scale-105 active:scale-95'
-                                      : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                                      ? "bg-white text-slate-950 hover:scale-105 active:scale-95"
+                                      : "bg-red-500/10 text-red-500 border border-red-500/20"
                                 }`}
                               >
                                 {isMax ? (
-                                  'MAX'
+                                  "MAX"
                                 ) : !canAfford ? (
-                                  'CREDITS NEEDED'
+                                  "CREDITS NEEDED"
                                 ) : (
                                   <>
                                     <Coins size={12} />
@@ -1381,15 +1383,15 @@ export default function App() {
                   <button
                     onClick={() => {
                       sounds.playUiClick();
-                      setMenuView('main');
-                      setGameState('start');
+                      setMenuView("main");
+                      setGameState("start");
                     }}
                     className="flex items-center justify-center gap-2 text-slate-500 hover:text-white transition-colors font-black uppercase text-[10px] tracking-widest w-full py-4 border-t border-white/5 mt-4"
                   >
                     <ChevronLeft size={16} /> Return to Operations
                   </button>
                 </div>
-              ) : gameState === 'start' ? (
+              ) : gameState === "start" ? (
                 <MainMenu
                   initGame={initGame}
                   setGameState={setGameState}
@@ -1408,7 +1410,7 @@ export default function App() {
                 />
               ) : (
                 <div
-                  className={`p-8 md:p-12 rounded-[2.5rem] bg-slate-900/90 border-4 backdrop-blur-2xl ${gameState === 'win' ? 'border-yellow-500 shadow-[0_0_60px_rgba(234,179,8,0.2)]' : 'border-red-600 shadow-[0_0_60px_rgba(220,38,38,0.2)]'} w-full max-w-2xl relative overflow-hidden`}
+                  className={`p-8 md:p-12 rounded-[2.5rem] bg-slate-900/90 border-4 backdrop-blur-2xl ${gameState === "win" ? "border-yellow-500 shadow-[0_0_60px_rgba(234,179,8,0.2)]" : "border-red-600 shadow-[0_0_60px_rgba(220,38,38,0.2)]"} w-full max-w-2xl relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
                   <div className="relative z-10 flex flex-col items-center">
@@ -1417,18 +1419,18 @@ export default function App() {
                       style={{ color: DIFFICULTIES[difficulty].color }}
                     >
                       <Target size={14} />
-                      {DIFFICULTIES[difficulty].name} PROTOCOL{' '}
-                      {gameState === 'win' ? 'COMPLETE' : 'FAILED'}
+                      {DIFFICULTIES[difficulty].name} PROTOCOL{" "}
+                      {gameState === "win" ? "COMPLETE" : "FAILED"}
                     </div>
                     <h2
-                      className={`text-6xl md:text-8xl font-black italic tracking-tighter mb-4 text-center ${gameState === 'win' ? 'text-yellow-500' : 'text-red-600'}`}
+                      className={`text-6xl md:text-8xl font-black italic tracking-tighter mb-4 text-center ${gameState === "win" ? "text-yellow-500" : "text-red-600"}`}
                     >
-                      {gameState === 'win' ? 'SUCCESS' : 'SYSTEM FAILURE'}
+                      {gameState === "win" ? "SUCCESS" : "SYSTEM FAILURE"}
                     </h2>
                     <p className="text-white/60 font-medium uppercase tracking-[0.2em] mb-12 text-center text-[10px] md:text-sm max-w-md mx-auto leading-relaxed">
-                      {gameState === 'win'
-                        ? 'Strategic objective achieved. Sector secured for extraction.'
-                        : 'Critical integrity loss detected. Mission aborted.'}
+                      {gameState === "win"
+                        ? "Strategic objective achieved. Sector secured for extraction."
+                        : "Critical integrity loss detected. Mission aborted."}
                     </p>
                     <div className="w-full bg-black/40 p-1 rounded-[2rem] border border-white/10 shadow-2xl mb-8 relative overflow-hidden">
                       <div className="relative z-10 flex flex-col md:flex-row justify-between items-center px-8 py-6 gap-6">
@@ -1455,13 +1457,13 @@ export default function App() {
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full mb-12">
                       {[
-                        { label: 'Score', value: score.toLocaleString(), color: 'text-white' },
-                        { label: 'Max Wave', value: wave, color: 'text-cyan-400' },
-                        { label: 'Kills', value: stats.kills, color: 'text-red-500' },
+                        { label: "Score", value: score.toLocaleString(), color: "text-white" },
+                        { label: "Max Wave", value: wave, color: "text-cyan-400" },
+                        { label: "Kills", value: stats.kills, color: "text-red-500" },
                         {
-                          label: 'Accuracy',
+                          label: "Accuracy",
                           value: `${stats.shotsFired > 0 ? Math.round((stats.shotsHit / stats.shotsFired) * 100) : 0}%`,
-                          color: 'text-green-500',
+                          color: "text-green-500",
                         },
                       ].map((stat, i) => (
                         <div
@@ -1471,9 +1473,7 @@ export default function App() {
                           <span className="text-[8px] text-white/30 uppercase font-bold tracking-widest">
                             {stat.label}
                           </span>
-                          <span
-                            className={`text-xl font-black ${stat.color} tracking-tight`}
-                          >
+                          <span className={`text-xl font-black ${stat.color} tracking-tight`}>
                             {stat.value}
                           </span>
                         </div>
@@ -1482,7 +1482,7 @@ export default function App() {
                     <div className="flex flex-col sm:flex-row gap-4 w-full">
                       <button
                         onClick={initGame}
-                        className={`flex-1 py-5 rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group ${gameState === 'win' ? 'bg-yellow-500 text-slate-950 font-black' : 'bg-red-600 text-white font-black'}`}
+                        className={`flex-1 py-5 rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group ${gameState === "win" ? "bg-yellow-500 text-slate-950 font-black" : "bg-red-600 text-white font-black"}`}
                       >
                         <Target className="group-hover:rotate-12 transition-transform" />
                         <span className="text-xl uppercase tracking-tighter italic">Re-Deploy</span>
@@ -1490,8 +1490,8 @@ export default function App() {
                       <button
                         onClick={() => {
                           sounds.playUiClick();
-                          setMenuView('main');
-                          setGameState('start');
+                          setMenuView("main");
+                          setGameState("start");
                         }}
                         className="px-10 py-5 bg-white/5 text-white/60 rounded-2xl border border-white/10 hover:bg-white/10 hover:text-white transition-all font-black uppercase text-xs tracking-widest"
                       >

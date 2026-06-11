@@ -1,12 +1,12 @@
-import React, { useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import type { ObjectiveRuntime } from '../../game/types';
+import React, { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import type { ObjectiveRuntime } from "../../game/types";
 
 const KIND_COLORS: Record<string, string> = {
-  hack: '#22d3ee',
-  defend: '#34d399',
-  extract: '#fbbf24',
+  hack: "#22d3ee",
+  defend: "#34d399",
+  extract: "#fbbf24",
 };
 
 interface Props {
@@ -26,7 +26,7 @@ export function ObjectiveZone3D({ objective, cellSize, mapData }: Props) {
   const beamMatRef = useRef<THREE.MeshBasicMaterial>(null);
   const discMatRef = useRef<THREE.MeshBasicMaterial>(null);
 
-  const color = KIND_COLORS[objective.kind] ?? '#22d3ee';
+  const color = KIND_COLORS[objective.kind] ?? "#22d3ee";
 
   const { posX, posZ } = useMemo(() => {
     const mapWidth = mapData[0].length * cellSize;
@@ -45,9 +45,9 @@ export function ObjectiveZone3D({ objective, cellSize, mapData }: Props) {
     if (discMatRef.current) discMatRef.current.opacity = 0.16 + pulse * 0.14;
   });
 
-  if (!zone || objective.status !== 'active') return null;
+  if (!zone || objective.status !== "active") return null;
   // Extraction zone only becomes visible once it activates.
-  if (objective.kind === 'extract' && !objective.extractActive) return null;
+  if (objective.kind === "extract" && !objective.extractActive) return null;
 
   const r = zone.radius;
 

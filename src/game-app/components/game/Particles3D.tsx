@@ -1,6 +1,6 @@
 // @ts-nocheck
-import React from 'react';
-import * as THREE from 'three';
+import React from "react";
+import * as THREE from "three";
 
 interface Particle {
   id: number;
@@ -28,22 +28,22 @@ export function Particles3D({
   return (
     <>
       {particles.map((p) => {
-        const isShell = p.color === '#fef08a' || p.color === '#fbbf24';
+        const isShell = p.color === "#fef08a" || p.color === "#fbbf24";
         return (
           <mesh
             key={p.id}
-            position={[p.x - mapWidth / 2, cellSize / 3 + (1 - p.life) * cellSize * 0.2, p.y - mapHeight / 2]}
+            position={[
+              p.x - mapWidth / 2,
+              cellSize / 3 + (1 - p.life) * cellSize * 0.2,
+              p.y - mapHeight / 2,
+            ]}
           >
             {isShell ? (
               <sphereGeometry args={[p.size / 7, 6, 6]} />
             ) : (
               <boxGeometry args={[p.size / 5, p.size / 5, p.size / 5]} />
             )}
-            <meshBasicMaterial
-              color={p.color}
-              transparent
-              opacity={p.life * 0.85}
-            />
+            <meshBasicMaterial color={p.color} transparent opacity={p.life * 0.85} />
           </mesh>
         );
       })}

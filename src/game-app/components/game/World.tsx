@@ -1,10 +1,10 @@
 // @ts-nocheck
-import React, { useMemo } from 'react';
-import * as THREE from 'three';
-import { useTexture } from '@react-three/drei';
-import { PropModel } from './PropModel';
+import React, { useMemo } from "react";
+import * as THREE from "three";
+import { useTexture } from "@react-three/drei";
+import { PropModel } from "./PropModel";
 
-const TEX_BASE = '/assets/textures';
+const TEX_BASE = "/assets/textures";
 const TEX_URLS = {
   wallA: `${TEX_BASE}/wall_blue.webp`,
   wallB: `${TEX_BASE}/wall_concrete.webp`,
@@ -18,11 +18,11 @@ interface MapProps {
   propsDensity?: number;
 }
 
-const NEON_CYAN = '#22d3ee';
-const NEON_MAGENTA = '#e879f9';
-const NEON_AMBER = '#fbbf24';
-const NEON_DANGER = '#ef4444';
-const NEON_PURPLE = '#a855f7';
+const NEON_CYAN = "#22d3ee";
+const NEON_MAGENTA = "#e879f9";
+const NEON_AMBER = "#fbbf24";
+const NEON_DANGER = "#ef4444";
+const NEON_PURPLE = "#a855f7";
 
 // Deterministic 0..1 hash from cell coords + salt
 const h = (x: number, y: number, salt = 0) => {
@@ -43,7 +43,7 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = 4;
-      if (k.startsWith('floor')) t.repeat.set(mapWidth / 6, mapHeight / 6);
+      if (k.startsWith("floor")) t.repeat.set(mapWidth / 6, mapHeight / 6);
       else t.repeat.set(1.2, 1.2);
     }
   }, [tex, mapWidth, mapHeight]);
@@ -52,41 +52,41 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
   const mats = useMemo(
     () => ({
       wallDark: new THREE.MeshStandardMaterial({
-        color: '#e1e8f5',
+        color: "#e1e8f5",
         map: tex.wallA,
         metalness: 0.06,
         roughness: 0.82,
-        emissive: '#9fb6da',
+        emissive: "#9fb6da",
         emissiveMap: tex.wallA,
         emissiveIntensity: 0.42,
       }),
       wallMid: new THREE.MeshStandardMaterial({
-        color: '#edf4ff',
+        color: "#edf4ff",
         map: tex.wallA,
         metalness: 0.05,
         roughness: 0.78,
-        emissive: '#a9c2e8',
+        emissive: "#a9c2e8",
         emissiveMap: tex.wallA,
         emissiveIntensity: 0.36,
       }),
       panelA: new THREE.MeshStandardMaterial({
-        color: '#f0f6ff',
+        color: "#f0f6ff",
         map: tex.wallB,
         metalness: 0.04,
         roughness: 0.84,
-        emissive: '#263a5f',
+        emissive: "#263a5f",
         emissiveIntensity: 0.2,
       }),
       panelB: new THREE.MeshStandardMaterial({
-        color: '#dde8f7',
+        color: "#dde8f7",
         map: tex.wallB,
         metalness: 0.05,
         roughness: 0.82,
-        emissive: '#263a5f',
+        emissive: "#263a5f",
         emissiveIntensity: 0.18,
       }),
       panelTrim: new THREE.MeshStandardMaterial({
-        color: '#0a1020',
+        color: "#0a1020",
         metalness: 0.8,
         roughness: 0.3,
       }),
@@ -157,61 +157,61 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
         side: THREE.DoubleSide,
       }),
       scuff: new THREE.MeshStandardMaterial({
-        color: '#000000',
+        color: "#000000",
         transparent: true,
         opacity: 0.45,
         depthWrite: false,
         side: THREE.DoubleSide,
       }),
       tilePlate: new THREE.MeshStandardMaterial({
-        color: '#e2eaf6',
+        color: "#e2eaf6",
         map: tex.floorAccent,
         metalness: 0.04,
         roughness: 0.9,
-        emissive: '#6f7f96',
+        emissive: "#6f7f96",
         emissiveMap: tex.floorAccent,
         emissiveIntensity: 0.18,
       }),
       tilePlateAlt: new THREE.MeshStandardMaterial({
-        color: '#d5e0ee',
+        color: "#d5e0ee",
         map: tex.floorAccent,
         metalness: 0.05,
         roughness: 0.88,
-        emissive: '#5f7088',
+        emissive: "#5f7088",
         emissiveMap: tex.floorAccent,
         emissiveIntensity: 0.16,
       }),
       floor: new THREE.MeshStandardMaterial({
-        color: '#d8e2f0',
+        color: "#d8e2f0",
         map: tex.floorMain,
         metalness: 0.03,
         roughness: 0.95,
-        emissive: '#64758f',
+        emissive: "#64758f",
         emissiveMap: tex.floorMain,
         emissiveIntensity: 0.16,
       }),
       crateBody: new THREE.MeshStandardMaterial({
-        color: '#1a2236',
+        color: "#1a2236",
         metalness: 0.5,
         roughness: 0.55,
       }),
       crateTrim: new THREE.MeshStandardMaterial({
-        color: '#0a0f1a',
+        color: "#0a0f1a",
         metalness: 0.7,
         roughness: 0.4,
       }),
       barrelBody: new THREE.MeshStandardMaterial({
-        color: '#1a2236',
+        color: "#1a2236",
         metalness: 0.6,
         roughness: 0.4,
       }),
       cable: new THREE.MeshStandardMaterial({
-        color: '#0a0f1a',
+        color: "#0a0f1a",
         metalness: 0.4,
         roughness: 0.6,
       }),
       terminalBody: new THREE.MeshStandardMaterial({
-        color: '#161e2f',
+        color: "#161e2f",
         metalness: 0.55,
         roughness: 0.45,
       }),
@@ -268,11 +268,7 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
       // Vertical hazard stripe (amber/black) on one side
       const side = ledSide;
       items.push(
-        <mesh
-          key="haz"
-          position={[side * cellSize * 0.35, 0, 0.013]}
-          material={mats.neonAmber}
-        >
+        <mesh key="haz" position={[side * cellSize * 0.35, 0, 0.013]} material={mats.neonAmber}>
           <planeGeometry args={[cellSize * 0.045, cellSize * 0.62]} />
         </mesh>,
       );
@@ -288,11 +284,7 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
     } else if (variant === 2) {
       // Bottom red warning bar + corner LEDs
       items.push(
-        <mesh
-          key="warn"
-          position={[0, -cellSize * 0.4, 0.013]}
-          material={mats.neonDanger}
-        >
+        <mesh key="warn" position={[0, -cellSize * 0.4, 0.013]} material={mats.neonDanger}>
           <planeGeometry args={[cellSize * 0.6, cellSize * 0.02]} />
         </mesh>,
       );
@@ -371,19 +363,13 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
                 position={[posX, 0.015, posZ]}
                 rotation={[-Math.PI / 2, 0, rot]}
               >
-                <mesh
-                  position={[0, cellSize * 0.05, 0]}
-                  material={mats.pathFloor}
-                >
+                <mesh position={[0, cellSize * 0.05, 0]} material={mats.pathFloor}>
                   <planeGeometry args={[cellSize * 0.32, cellSize * 0.05]} />
                 </mesh>
                 <mesh material={mats.pathFloor}>
                   <planeGeometry args={[cellSize * 0.42, cellSize * 0.05]} />
                 </mesh>
-                <mesh
-                  position={[0, -cellSize * 0.05, 0]}
-                  material={mats.pathFloor}
-                >
+                <mesh position={[0, -cellSize * 0.05, 0]} material={mats.pathFloor}>
                   <planeGeometry args={[cellSize * 0.32, cellSize * 0.05]} />
                 </mesh>
               </group>,
@@ -392,16 +378,10 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
             // Sector ring + center dot
             out.push(
               <group key={`sec-${x}-${y}`} position={[posX, 0.012, posZ]}>
-                <mesh
-                  rotation={[-Math.PI / 2, 0, 0]}
-                  material={mats.hazardFloor}
-                >
+                <mesh rotation={[-Math.PI / 2, 0, 0]} material={mats.hazardFloor}>
                   <ringGeometry args={[cellSize * 0.24, cellSize * 0.3, 28]} />
                 </mesh>
-                <mesh
-                  rotation={[-Math.PI / 2, 0, 0]}
-                  material={mats.neonAmber}
-                >
+                <mesh rotation={[-Math.PI / 2, 0, 0]} material={mats.neonAmber}>
                   <circleGeometry args={[cellSize * 0.04, 16]} />
                 </mesh>
               </group>,
@@ -443,16 +423,10 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
                 position={[posX, 0.012, posZ]}
                 rotation={[-Math.PI / 2, 0, rot]}
               >
-                <mesh
-                  position={[0, cellSize * 0.07, 0]}
-                  material={mats.hazardFloor}
-                >
+                <mesh position={[0, cellSize * 0.07, 0]} material={mats.hazardFloor}>
                   <planeGeometry args={[cellSize * 0.7, cellSize * 0.05]} />
                 </mesh>
-                <mesh
-                  position={[0, -cellSize * 0.07, 0]}
-                  material={mats.hazardFloor}
-                >
+                <mesh position={[0, -cellSize * 0.07, 0]} material={mats.hazardFloor}>
                   <planeGeometry args={[cellSize * 0.7, cellSize * 0.05]} />
                 </mesh>
               </group>,
@@ -524,10 +498,14 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
               out.push(
                 <group key={`bol-${x}-${y}`} position={[bx, cellSize * 0.12, bz]}>
                   <mesh material={mats.terminalBody}>
-                    <cylinderGeometry args={[cellSize * 0.045, cellSize * 0.06, cellSize * 0.22, 8]} />
+                    <cylinderGeometry
+                      args={[cellSize * 0.045, cellSize * 0.06, cellSize * 0.22, 8]}
+                    />
                   </mesh>
                   <mesh position={[0, cellSize * 0.12, 0]} material={mats.neonCyan}>
-                    <cylinderGeometry args={[cellSize * 0.05, cellSize * 0.05, cellSize * 0.02, 10]} />
+                    <cylinderGeometry
+                      args={[cellSize * 0.05, cellSize * 0.05, cellSize * 0.02, 10]}
+                    />
                   </mesh>
                 </group>,
               );
@@ -542,11 +520,7 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
               const tx = posX + fx * 0.6;
               const tz = posZ + fz * 0.6;
               out.push(
-                <group
-                  key={`term-${x}-${y}`}
-                  position={[tx, 0, tz]}
-                  rotation={exposed.rot as any}
-                >
+                <group key={`term-${x}-${y}`} position={[tx, 0, tz]} rotation={exposed.rot as any}>
                   <PropModel
                     modelKey="terminal"
                     cellSize={cellSize}
@@ -588,15 +562,32 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
           // because mapData still drives walls/blocking; this is purely visual.
           out.push(
             <group key={`crate-${x}-${y}`} position={[posX, 0, posZ]}>
-              <PropModel modelKey="crate" cellSize={cellSize} accentColor="#fbbf24" emissiveBoost={0.1} />
+              <PropModel
+                modelKey="crate"
+                cellSize={cellSize}
+                accentColor="#fbbf24"
+                emissiveBoost={0.1}
+              />
             </group>,
           );
         } else if (cell === 3) {
           // Energy barrel (GLB) — metallic body with subtle cyan energy strips.
           out.push(
             <group key={`bar-${x}-${y}`} position={[posX, 0, posZ]}>
-              <PropModel modelKey="barrel" cellSize={cellSize} accentColor={NEON_CYAN} pulse emissiveBoost={0} emissiveBase={0.08} />
-              <pointLight color={NEON_CYAN} intensity={0.06} distance={cellSize * 1.0} position={[0, cellSize * 0.4, 0]} />
+              <PropModel
+                modelKey="barrel"
+                cellSize={cellSize}
+                accentColor={NEON_CYAN}
+                pulse
+                emissiveBoost={0}
+                emissiveBase={0.08}
+              />
+              <pointLight
+                color={NEON_CYAN}
+                intensity={0.06}
+                distance={cellSize * 1.0}
+                position={[0, cellSize * 0.4, 0]}
+              />
             </group>,
           );
         }
@@ -632,11 +623,7 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
       );
       // Tiny floor light disc to motivate the glow visually
       out.push(
-        <mesh
-          key={`amb-disc-${i}`}
-          position={[s.px, 0.02, s.pz]}
-          rotation={[-Math.PI / 2, 0, 0]}
-        >
+        <mesh key={`amb-disc-${i}`} position={[s.px, 0.02, s.pz]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[cellSize * 0.06, cellSize * 0.1, 18]} />
           <meshStandardMaterial
             color={s.color}

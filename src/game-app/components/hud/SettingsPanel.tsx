@@ -1,5 +1,10 @@
-import { motion } from 'motion/react';
-import { useSettings, DEFAULT_SETTINGS, type QualityTier, type EnemyVisualMode } from '@/game-app/game/settings';
+import { motion } from "motion/react";
+import {
+  useSettings,
+  DEFAULT_SETTINGS,
+  type QualityTier,
+  type EnemyVisualMode,
+} from "@/game-app/game/settings";
 
 interface Props {
   onBack: () => void;
@@ -45,10 +50,7 @@ export function SettingsPanel({ onBack }: Props) {
           onChange={(v) => update({ invertY: v })}
         />
 
-        <QualityPicker
-          value={settings.quality}
-          onChange={(q) => update({ quality: q })}
-        />
+        <QualityPicker value={settings.quality} onChange={(q) => update({ quality: q })} />
 
         <EnemyVisualModePicker
           value={settings.enemyVisualMode}
@@ -125,12 +127,12 @@ function Toggle({
       </span>
       <span
         className={`relative w-12 h-6 rounded-full transition-colors ${
-          value ? 'bg-cyan-400' : 'bg-slate-700'
+          value ? "bg-cyan-400" : "bg-slate-700"
         }`}
       >
         <span
           className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-            value ? 'translate-x-6' : 'translate-x-0.5'
+            value ? "translate-x-6" : "translate-x-0.5"
           }`}
         />
       </span>
@@ -139,7 +141,6 @@ function Toggle({
 }
 
 function QualityPicker({
-
   value,
   onChange,
 }: {
@@ -148,28 +149,28 @@ function QualityPicker({
 }) {
   const options: { id: QualityTier; label: string; tag: string; desc: string }[] = [
     {
-      id: 'auto',
-      label: 'Auto',
-      tag: 'Recommended',
-      desc: 'Automatically chooses the best setting for your device.',
+      id: "auto",
+      label: "Auto",
+      tag: "Recommended",
+      desc: "Automatically chooses the best setting for your device.",
     },
     {
-      id: 'low',
-      label: 'Low / Performance',
-      tag: 'Chromebook',
-      desc: 'Best performance. Uses lightweight enemies and simplified world rendering.',
+      id: "low",
+      label: "Low / Performance",
+      tag: "Chromebook",
+      desc: "Best performance. Uses lightweight enemies and simplified world rendering.",
     },
     {
-      id: 'medium',
-      label: 'Medium / Balanced',
-      tag: 'Laptop',
-      desc: 'Balanced visuals. Uses some 3D assets with limited effects.',
+      id: "medium",
+      label: "Medium / Balanced",
+      tag: "Laptop",
+      desc: "Balanced visuals. Uses some 3D assets with limited effects.",
     },
     {
-      id: 'high',
-      label: 'High / Full Visuals',
-      tag: 'Desktop GPU',
-      desc: 'Full visuals. Uses all new 3D assets, props and enhanced effects.',
+      id: "high",
+      label: "High / Full Visuals",
+      tag: "Desktop GPU",
+      desc: "Full visuals. Uses all new 3D assets, props and enhanced effects.",
     },
   ];
   return (
@@ -186,15 +187,17 @@ function QualityPicker({
               onClick={() => onChange(o.id)}
               className={`flex flex-col items-start text-left px-3 py-2 rounded border transition-colors ${
                 active
-                  ? 'border-cyan-400 bg-cyan-400/15 text-cyan-100'
-                  : 'border-slate-700 bg-slate-900/50 text-slate-300 hover:border-cyan-500/50 hover:text-cyan-200'
+                  ? "border-cyan-400 bg-cyan-400/15 text-cyan-100"
+                  : "border-slate-700 bg-slate-900/50 text-slate-300 hover:border-cyan-500/50 hover:text-cyan-200"
               }`}
             >
               <div className="flex items-center justify-between w-full">
                 <span className="text-[11px] font-bold uppercase tracking-wider">{o.label}</span>
                 <span className="text-[8px] uppercase tracking-widest opacity-60">{o.tag}</span>
               </div>
-              <span className={`text-[9px] mt-1 leading-snug ${active ? 'text-cyan-200/90' : 'text-slate-500'}`}>
+              <span
+                className={`text-[9px] mt-1 leading-snug ${active ? "text-cyan-200/90" : "text-slate-500"}`}
+              >
                 {o.desc}
               </span>
             </button>
@@ -220,19 +223,19 @@ function EnemyVisualModePicker({
 }) {
   const options: { id: EnemyVisualMode; label: string; desc: string }[] = [
     {
-      id: 'auto',
-      label: 'Auto / Stable',
-      desc: 'Uses the safest current enemy renderer.',
+      id: "auto",
+      label: "Auto / Stable",
+      desc: "Uses the safest current enemy renderer.",
     },
     {
-      id: 'rig',
-      label: 'Procedural Rig',
-      desc: 'Uses animated part-based enemies.',
+      id: "rig",
+      label: "Procedural Rig",
+      desc: "Uses animated part-based enemies.",
     },
     {
-      id: 'glb',
-      label: 'GLB Model Test',
-      desc: 'Forces the original GLB enemy models for animation and positioning tests.',
+      id: "glb",
+      label: "GLB Model Test",
+      desc: "Forces the original GLB enemy models for animation and positioning tests.",
     },
   ];
   return (
@@ -249,14 +252,16 @@ function EnemyVisualModePicker({
               onClick={() => onChange(o.id)}
               className={`flex flex-col items-start text-left px-3 py-2 rounded border transition-colors ${
                 active
-                  ? 'border-cyan-400 bg-cyan-400/15 text-cyan-100'
-                  : 'border-slate-700 bg-slate-900/50 text-slate-300 hover:border-cyan-500/50 hover:text-cyan-200'
+                  ? "border-cyan-400 bg-cyan-400/15 text-cyan-100"
+                  : "border-slate-700 bg-slate-900/50 text-slate-300 hover:border-cyan-500/50 hover:text-cyan-200"
               }`}
             >
               <div className="flex items-center justify-between w-full">
                 <span className="text-[11px] font-bold uppercase tracking-wider">{o.label}</span>
               </div>
-              <span className={`text-[9px] mt-1 leading-snug ${active ? 'text-cyan-200/90' : 'text-slate-500'}`}>
+              <span
+                className={`text-[9px] mt-1 leading-snug ${active ? "text-cyan-200/90" : "text-slate-500"}`}
+              >
                 {o.desc}
               </span>
             </button>
@@ -264,7 +269,8 @@ function EnemyVisualModePicker({
         })}
       </div>
       <div className="text-[9px] text-amber-400/80 uppercase tracking-widest mt-2">
-        Affects Medium and High quality only. Low / Performance always uses the lightweight renderer.
+        Affects Medium and High quality only. Low / Performance always uses the lightweight
+        renderer.
       </div>
       <div className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">
         Changes will apply when restarting the mission.
@@ -272,6 +278,3 @@ function EnemyVisualModePicker({
     </div>
   );
 }
-
-
-

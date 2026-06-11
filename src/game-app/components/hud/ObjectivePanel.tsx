@@ -1,8 +1,8 @@
-import { motion } from 'motion/react';
-import { Target, Cpu, Shield, LogOut } from 'lucide-react';
-import type { ObjectiveRuntime } from '@/game-app/game/types';
+import { motion } from "motion/react";
+import { Target, Cpu, Shield, LogOut } from "lucide-react";
+import type { ObjectiveRuntime } from "@/game-app/game/types";
 
-const ICONS: Record<ObjectiveRuntime['kind'], typeof Target> = {
+const ICONS: Record<ObjectiveRuntime["kind"], typeof Target> = {
   eliminate: Target,
   hack: Cpu,
   defend: Shield,
@@ -15,18 +15,18 @@ interface Props {
 }
 
 export function ObjectivePanel({ runtime, enemiesRemaining }: Props) {
-  if (!runtime || runtime.status !== 'active') return null;
+  if (!runtime || runtime.status !== "active") return null;
   const pct = Math.max(0, Math.min(1, runtime.progress));
   const seconds = Math.max(0, Math.ceil(runtime.timer / 1000));
   const Icon = ICONS[runtime.kind];
 
-  let detail = '';
-  if (runtime.kind === 'hack') {
-    detail = runtime.inZone ? `Uploading · ${seconds}s` : 'Enter Zone';
-  } else if (runtime.kind === 'defend') {
+  let detail = "";
+  if (runtime.kind === "hack") {
+    detail = runtime.inZone ? `Uploading · ${seconds}s` : "Enter Zone";
+  } else if (runtime.kind === "defend") {
     const corePct = Math.round(((runtime.coreHp ?? 0) / (runtime.coreMaxHp ?? 1)) * 100);
     detail = `Core ${corePct}% · ${seconds}s left`;
-  } else if (runtime.kind === 'extract') {
+  } else if (runtime.kind === "extract") {
     detail = runtime.extractActive
       ? `Reach Zone · ${seconds}s`
       : `Eliminate ${runtime.killCount}/${runtime.killTarget ?? 0}`;
@@ -36,7 +36,7 @@ export function ObjectivePanel({ runtime, enemiesRemaining }: Props) {
 
   // Defend core HP overrides progress bar visualization
   const barPct =
-    runtime.kind === 'defend' && runtime.coreMaxHp
+    runtime.kind === "defend" && runtime.coreMaxHp
       ? (runtime.coreHp ?? 0) / runtime.coreMaxHp
       : pct;
 
@@ -59,9 +59,9 @@ export function ObjectivePanel({ runtime, enemiesRemaining }: Props) {
       <div className="h-0.5 w-52 bg-cyan-500/15 overflow-hidden rounded-full">
         <motion.div
           className={`h-full shadow-[0_0_8px_rgba(34,211,238,0.8)] ${
-            runtime.kind === 'defend'
-              ? 'bg-gradient-to-r from-rose-400 to-cyan-300'
-              : 'bg-gradient-to-r from-cyan-400 to-cyan-200'
+            runtime.kind === "defend"
+              ? "bg-gradient-to-r from-rose-400 to-cyan-300"
+              : "bg-gradient-to-r from-cyan-400 to-cyan-200"
           }`}
           animate={{ width: `${barPct * 100}%` }}
           transition={{ duration: 0.2 }}

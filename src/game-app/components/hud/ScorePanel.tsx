@@ -1,4 +1,4 @@
-import { Skull } from 'lucide-react';
+import { Skull } from "lucide-react";
 
 export function ScorePanel({ score, kills }: { score: number; kills: number }) {
   return (

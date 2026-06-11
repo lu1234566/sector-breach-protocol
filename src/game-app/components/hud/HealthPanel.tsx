@@ -1,5 +1,5 @@
-import { Shield } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Shield } from "lucide-react";
+import { motion } from "motion/react";
 
 export function HealthPanel({ hp, maxHp = 100 }: { hp: number; maxHp?: number }) {
   const pct = Math.max(0, Math.min(100, (hp / Math.max(1, maxHp)) * 100));
@@ -8,10 +8,10 @@ export function HealthPanel({ hp, maxHp = 100 }: { hp: number; maxHp?: number })
     <div className="pointer-events-none absolute bottom-4 left-4 z-40 w-52">
       <div className="flex items-center justify-between mb-1 text-[10px] font-bold tracking-[0.25em] uppercase">
         <div className="flex items-center gap-1.5 text-cyan-300/90">
-          <Shield size={11} className={low ? 'text-red-500 animate-pulse' : ''} />
+          <Shield size={11} className={low ? "text-red-500 animate-pulse" : ""} />
           <span>Integrity</span>
         </div>
-        <span className={`font-mono ${low ? 'text-red-400' : 'text-white'}`}>
+        <span className={`font-mono ${low ? "text-red-400" : "text-white"}`}>
           {Math.round(hp)}/{maxHp}
         </span>
       </div>
@@ -21,8 +21,8 @@ export function HealthPanel({ hp, maxHp = 100 }: { hp: number; maxHp?: number })
           transition={{ duration: 0.2 }}
           className={`h-full ${
             low
-              ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]'
-              : 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]'
+              ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]"
+              : "bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]"
           }`}
         />
       </div>

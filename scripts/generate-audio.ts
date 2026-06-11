@@ -21,26 +21,93 @@ type Sfx = { name: string; prompt: string; duration: number };
 type Music = { name: string; prompt: string; duration: number };
 
 const SFX: Sfx[] = [
-  { name: "pistol_shot", prompt: "sci-fi energy pistol shot, sharp dry crack with cyan plasma snap, short tail", duration: 0.8 },
-  { name: "rifle_shot", prompt: "futuristic assault rifle single shot, mid-weight punch with metallic plasma whine", duration: 0.8 },
-  { name: "shotgun_shot", prompt: "heavy sci-fi shotgun blast, deep boom with magenta energy roar, short reverb", duration: 1.0 },
-  { name: "sniper_shot", prompt: "high-power sci-fi sniper rifle, deep crack with long plasma decay and amber whine", duration: 1.5 },
-  { name: "reload_short", prompt: "futuristic magazine click and energy cell snap-in, mechanical, dry, no music", duration: 0.7 },
-  { name: "reload_long", prompt: "heavy sci-fi reload sequence, slide pull, magnetic clamp, energy cell hum", duration: 1.3 },
-  { name: "enemy_hit", prompt: "sharp metallic plasma impact on armored robot, short cyan zap", duration: 0.5 },
-  { name: "enemy_death", prompt: "sci-fi robot collapse, breaking metal panels with neon glitch and short electric fizz", duration: 1.2 },
-  { name: "pickup_health", prompt: "positive sci-fi medical pickup chime, ascending soft synth, calm cyan tone", duration: 0.7 },
-  { name: "pickup_ammo", prompt: "ammo magazine snap pickup, mechanical click with bright amber LED beep", duration: 0.6 },
+  {
+    name: "pistol_shot",
+    prompt: "sci-fi energy pistol shot, sharp dry crack with cyan plasma snap, short tail",
+    duration: 0.8,
+  },
+  {
+    name: "rifle_shot",
+    prompt: "futuristic assault rifle single shot, mid-weight punch with metallic plasma whine",
+    duration: 0.8,
+  },
+  {
+    name: "shotgun_shot",
+    prompt: "heavy sci-fi shotgun blast, deep boom with magenta energy roar, short reverb",
+    duration: 1.0,
+  },
+  {
+    name: "sniper_shot",
+    prompt: "high-power sci-fi sniper rifle, deep crack with long plasma decay and amber whine",
+    duration: 1.5,
+  },
+  {
+    name: "reload_short",
+    prompt: "futuristic magazine click and energy cell snap-in, mechanical, dry, no music",
+    duration: 0.7,
+  },
+  {
+    name: "reload_long",
+    prompt: "heavy sci-fi reload sequence, slide pull, magnetic clamp, energy cell hum",
+    duration: 1.3,
+  },
+  {
+    name: "enemy_hit",
+    prompt: "sharp metallic plasma impact on armored robot, short cyan zap",
+    duration: 0.5,
+  },
+  {
+    name: "enemy_death",
+    prompt: "sci-fi robot collapse, breaking metal panels with neon glitch and short electric fizz",
+    duration: 1.2,
+  },
+  {
+    name: "pickup_health",
+    prompt: "positive sci-fi medical pickup chime, ascending soft synth, calm cyan tone",
+    duration: 0.7,
+  },
+  {
+    name: "pickup_ammo",
+    prompt: "ammo magazine snap pickup, mechanical click with bright amber LED beep",
+    duration: 0.6,
+  },
   { name: "ui_click", prompt: "minimal HUD click, tiny crisp cyan blip", duration: 0.5 },
-  { name: "ui_error", prompt: "low denied buzz, dry square wave with magenta distortion", duration: 0.5 },
-  { name: "wave_start", prompt: "tactical alert horn, two-tone sci-fi siren rising, magenta then cyan", duration: 1.8 },
-  { name: "boss_roar", prompt: "massive industrial mech roar with deep magenta plasma surge", duration: 2.2 },
+  {
+    name: "ui_error",
+    prompt: "low denied buzz, dry square wave with magenta distortion",
+    duration: 0.5,
+  },
+  {
+    name: "wave_start",
+    prompt: "tactical alert horn, two-tone sci-fi siren rising, magenta then cyan",
+    duration: 1.8,
+  },
+  {
+    name: "boss_roar",
+    prompt: "massive industrial mech roar with deep magenta plasma surge",
+    duration: 2.2,
+  },
 ];
 
 const MUSIC: Music[] = [
-  { name: "menu_theme", prompt: "cold sci-fi synthwave loop, slow 90 BPM, dark cyan pads, distant magenta arpeggio, no drums on intro, becomes pulsing on second half, futuristic arena lobby, instrumental, no vocals", duration: 45 },
-  { name: "combat_loop", prompt: "aggressive cyberpunk drum and bass, 140 BPM, distorted neon synths, magenta lead, pumping bass, action shooter combat, instrumental, no vocals, loopable", duration: 45 },
-  { name: "boss_theme", prompt: "industrial sci-fi boss battle, 120 BPM, heavy distorted brass and detuned synths, pounding drums, magenta and amber tonal palette, instrumental, no vocals", duration: 45 },
+  {
+    name: "menu_theme",
+    prompt:
+      "cold sci-fi synthwave loop, slow 90 BPM, dark cyan pads, distant magenta arpeggio, no drums on intro, becomes pulsing on second half, futuristic arena lobby, instrumental, no vocals",
+    duration: 45,
+  },
+  {
+    name: "combat_loop",
+    prompt:
+      "aggressive cyberpunk drum and bass, 140 BPM, distorted neon synths, magenta lead, pumping bass, action shooter combat, instrumental, no vocals, loopable",
+    duration: 45,
+  },
+  {
+    name: "boss_theme",
+    prompt:
+      "industrial sci-fi boss battle, 120 BPM, heavy distorted brass and detuned synths, pounding drums, magenta and amber tonal palette, instrumental, no vocals",
+    duration: 45,
+  },
 ];
 
 async function exists(path: string): Promise<boolean> {

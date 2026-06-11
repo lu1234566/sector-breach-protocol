@@ -1,7 +1,7 @@
 // @ts-nocheck
-import React from 'react';
-import * as THREE from 'three';
-import { WallDecal } from '../../game/types';
+import React from "react";
+import * as THREE from "three";
+import { WallDecal } from "../../game/types";
 
 const DECAL_LIFETIME = 6000;
 
@@ -47,12 +47,22 @@ export function Decals3D({
             {/* Outer scorch */}
             <mesh>
               <circleGeometry args={[d.size * 0.55, 12]} />
-              <meshBasicMaterial color="#0a0f1a" transparent opacity={alpha * 0.7} depthWrite={false} />
+              <meshBasicMaterial
+                color="#0a0f1a"
+                transparent
+                opacity={alpha * 0.7}
+                depthWrite={false}
+              />
             </mesh>
             {/* Neon ring */}
             <mesh position={[0, 0, 0.01]}>
               <ringGeometry args={[d.size * 0.28, d.size * 0.4, 16]} />
-              <meshBasicMaterial color="#22d3ee" transparent opacity={alpha * 0.85} depthWrite={false} />
+              <meshBasicMaterial
+                color="#22d3ee"
+                transparent
+                opacity={alpha * 0.85}
+                depthWrite={false}
+              />
             </mesh>
             {/* Hot core */}
             <mesh position={[0, 0, 0.02]}>
