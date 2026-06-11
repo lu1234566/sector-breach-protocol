@@ -1027,12 +1027,34 @@ export default function App() {
     requestPointerLockSafe();
   };
 
+  const pauseStartRef = useRef(0);
+
   const handlePauseToggle = () => {
     const s = gameStateRef.current;
     if (s === 'playing') {
+      pauseStartRef.current = Date.now();
       setGameState('paused');
       if (document.pointerLockElement) document.exitPointerLock();
     } else if (s === 'paused') {
+      // Shift every wall-clock timestamp by the pause duration, otherwise all
+      // enemy cooldowns expire during the pause and the whole map opens fire
+      // the instant the game resumes.
+      const delta = Date.now() - pauseStartRef.current;
+      if (delta > 0) {
+        gameStartTime.current += delta;
+        lastDamageTaken.current += delta;
+        lastEnemyShotTimeGlobal.current += delta;
+        lastShotTime.current += delta;
+        enemies.current.forEach((e) => {
+          e.lastShot += delta;
+          e.spawnTime += delta;
+          if (e.nextShotAt) e.nextShotAt += delta;
+          if (e.diedAt) e.diedAt += delta;
+        });
+        decals.current.forEach((d) => {
+          d.born += delta;
+        });
+      }
       setGameState('playing');
       setTimeout(() => requestPointerLockSafe(), 50);
     }

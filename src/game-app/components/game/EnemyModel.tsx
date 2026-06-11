@@ -488,13 +488,30 @@ function Model({
     }
   });
 
-  useEffect(() => () => {
-    if (mixerRef.current) {
-      mixerRef.current.stopAllAction();
-      try { mixerRef.current.uncacheRoot(mixerRef.current.getRoot() as any); } catch {}
-      mixerRef.current = null;
-    }
-  }, []);
+  // Tear down per-clone resources both on unmount AND when the clone is
+  // rebuilt (url/cellSize change) — otherwise the old mixer keeps running on
+  // an orphaned root and the per-enemy cloned materials are never disposed.
+  // Geometries stay untouched: they are shared with the GLTF cache.
+  useEffect(() => {
+    const clone = cloned;
+    const mixer =
+      mixerRef.current && (mixerRef.current.getRoot() as any) === clone ? mixerRef.current : null;
+    return () => {
+      if (mixer) {
+        mixer.stopAllAction();
+        try { mixer.uncacheRoot(clone as any); } catch {}
+        if (mixerRef.current === mixer) mixerRef.current = null;
+      }
+      if (clone) {
+        clone.traverse((obj: any) => {
+          if (!obj.isMesh) return;
+          const mat = obj.material;
+          if (Array.isArray(mat)) mat.forEach((m: any) => m?.dispose?.());
+          else mat?.dispose?.();
+        });
+      }
+    };
+  }, [cloned]);
 
   if (!cloned) {
     if (debugRef) debugRef.current = {

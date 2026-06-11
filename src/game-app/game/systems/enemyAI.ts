@@ -106,7 +106,9 @@ export function tickEnemyAI(deps: EnemyAITickDeps): void {
         if (e.stuckFrames > 120) e.stuckFrames = 0;
       }
 
-      const fireRateBase = e.isBoss ? 600 : (e.type === 'sniper' ? 3000 : e.type === 'rifleman' ? 900 : 1800);
+      // Rushers are melee: claws only land at point-blank range, no tracer.
+      const isMelee = e.type === 'rusher' && !e.isBoss;
+      const fireRateBase = e.isBoss ? 600 : (e.type === 'sniper' ? 3000 : e.type === 'rifleman' ? 900 : 1100);
       const wave1FireRateBuffer = waveRef.current === 1 ? 1.5 : 1.0;
       const fireRate = fireRateBase * wave1FireRateBuffer;
 
@@ -120,7 +122,7 @@ export function tickEnemyAI(deps: EnemyAITickDeps): void {
         !globalShootCooldown &&
         now >= (e.nextShotAt ?? 0) &&
         now - e.lastShot > fireRate &&
-        dist < 1200
+        dist < (isMelee ? 110 : 1200)
       ) {
         const shotLOS = checkLineOfSightInfo(e.x, e.y, player.current.x, player.current.y, mapData.current);
         e.hasLineOfSight = shotLOS.hasLOS;
@@ -131,7 +133,7 @@ export function tickEnemyAI(deps: EnemyAITickDeps): void {
           lastEnemyShotTimeGlobal.current = now;
 
           if (!DEBUG_SAFE_MODE && now - lastDamageTaken.current > 600) {
-            const baseDamage = e.type === 'sniper' ? 35 : e.type === 'rifleman' ? 12 : 8;
+            const baseDamage = e.type === 'sniper' ? 35 : e.type === 'rifleman' ? 12 : 14;
             const wave1Mult = waveRef.current === 1 ? WAVE_1_DAMAGE_MULT : 1.0;
             const damage = (e.isBoss ? baseDamage * 2.5 : baseDamage) * DIFFICULTIES[difficulty].dmgMult * wave1Mult;
 
@@ -154,9 +156,12 @@ export function tickEnemyAI(deps: EnemyAITickDeps): void {
             screenShake.current = Math.min(20, screenShake.current + damage / 2);
             setDamageIndicators(prev => [...prev, { id: nextDamageId.current++, angle: angleToPlayer - player.current.angle + Math.PI, opacity: 1.2 }].slice(-5));
             spawnParticles(player.current.x, player.current.y, 'blood');
-            sounds.playShot(e.type === 'sniper' ? 'sniper' : 'pistol');
+            if (isMelee) sounds.playHit();
+            else sounds.playShot(e.type === 'sniper' ? 'sniper' : 'pistol');
           }
-          tracers.current.push({ id: nextTracerId.current++, x1: e.x, y1: e.y, x2: player.current.x, y2: player.current.y, alpha: 1 });
+          if (!isMelee) {
+            tracers.current.push({ id: nextTracerId.current++, x1: e.x, y1: e.y, x2: player.current.x, y2: player.current.y, alpha: 1 });
+          }
         }
       }
     } else {
@@ -221,4 +226,45 @@ export function tickEnemyAI(deps: EnemyAITickDeps): void {
     if (tryEnemyMove(curTx, tyY)) e.y = ny;
     else if (tyY !== curTy) e.stuckFrames++;
   });
+
+  // Soft separation pass so enemies don't stack inside one another.
+  const list = enemies.current;
+  const isFreeCell = (x: number, y: number) => {
+    const tx = Math.floor(x / CELL_SIZE);
+    const ty = Math.floor(y / CELL_SIZE);
+    return mapData.current[ty]?.[tx] === 0;
+  };
+  for (let i = 0; i < list.length; i++) {
+    const a: any = list[i];
+    if (a.dead) continue;
+    for (let j = i + 1; j < list.length; j++) {
+      const b: any = list[j];
+      if (b.dead) continue;
+      let dx = b.x - a.x;
+      let dy = b.y - a.y;
+      const d = Math.hypot(dx, dy);
+      const minD = (a.isBoss ? 44 : 24) + (b.isBoss ? 44 : 24);
+      if (d >= minD) continue;
+      if (d < 0.001) {
+        dx = 1;
+        dy = 0;
+      } else {
+        dx /= d;
+        dy /= d;
+      }
+      const push = (minD - d) * 0.25;
+      const ax = a.x - dx * push;
+      const ay = a.y - dy * push;
+      const bx = b.x + dx * push;
+      const by = b.y + dy * push;
+      if (isFreeCell(ax, ay)) {
+        a.x = ax;
+        a.y = ay;
+      }
+      if (isFreeCell(bx, by)) {
+        b.x = bx;
+        b.y = by;
+      }
+    }
+  }
 }

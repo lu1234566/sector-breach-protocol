@@ -128,7 +128,11 @@ export function GameScene({
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas
         shadows={false}
-        dpr={isLowQuality ? [0.45, 0.55] : [0.6, Math.min(quality.pixelRatio, 1)]}
+        dpr={
+          isLowQuality
+            ? [0.45, 0.55]
+            : [0.6, Math.min(quality.pixelRatio, quality.tier === 'high' ? 1.5 : 1)]
+        }
         gl={{
           antialias: false,
           alpha: false,
