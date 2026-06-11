@@ -3,6 +3,7 @@ import React from 'react';
 import * as THREE from 'three';
 
 interface Particle {
+  id: number;
   x: number;
   y: number;
   size: number;
@@ -26,12 +27,11 @@ export function Particles3D({
 
   return (
     <>
-      {particles.map((p, i) => {
+      {particles.map((p) => {
         const isShell = p.color === '#fef08a' || p.color === '#fbbf24';
-        const isBlood = p.color.startsWith('#e8') || p.color === '#e879f9' || p.color === '#dc2626';
         return (
           <mesh
-            key={i}
+            key={p.id}
             position={[p.x - mapWidth / 2, cellSize / 3 + (1 - p.life) * cellSize * 0.2, p.y - mapHeight / 2]}
           >
             {isShell ? (

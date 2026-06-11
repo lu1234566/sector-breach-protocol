@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useRef, useMemo, Suspense, Component } from 'react';
+import React, { useRef, useMemo, useEffect, Suspense, Component } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -117,9 +117,21 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
     fireKickRef.current = THREE.MathUtils.lerp(fireKickRef.current, kick, 0.45);
     const fk = fireKickRef.current * recoilWeight;
 
+    // Reload — tilts the gun down and pumps. These offsets must be part of
+    // the lerp TARGETS below; adding them after the lerp creates a feedback
+    // loop that flips the gun upside-down and drops it off screen.
+    reloadProgress.current = THREE.MathUtils.lerp(
+      reloadProgress.current,
+      isReloading ? 1 : 0,
+      0.14,
+    );
+    const rp = reloadProgress.current;
+    const reloadPump = Math.sin(t * 9) * 0.06 * rp;
+
     // ADS target
-    const targetX = isAds ? 0 : restPose.x + swayX;
-    const targetY = isAds ? -0.32 : restPose.y + swayY * 0.5 + breath + swapRef.current.y;
+    const targetX = (isAds ? 0 : restPose.x + swayX) + rp * 0.12;
+    const targetY =
+      (isAds ? -0.32 : restPose.y + swayY * 0.5 + breath + swapRef.current.y) - rp * 0.45;
     const targetZ = isAds ? 2.95 : restPose.z + recoilOffset * 0.45 + fk * 0.4;
 
     group.current.position.x = THREE.MathUtils.lerp(group.current.position.x, targetX, 0.16);
@@ -132,7 +144,7 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
 
     group.current.rotation.x = THREE.MathUtils.lerp(
       group.current.rotation.x,
-      restPose.rx + recoilOffset * 0.22 + fk * 0.35,
+      restPose.rx + recoilOffset * 0.22 + fk * 0.35 + rp * 0.65 + reloadPump,
       0.18,
     );
     group.current.rotation.y = THREE.MathUtils.lerp(
@@ -142,21 +154,9 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
     );
     group.current.rotation.z = THREE.MathUtils.lerp(
       group.current.rotation.z,
-      isAds ? 0 : -0.04 + Math.sin(t * 1.1) * 0.012,
+      (isAds ? 0 : -0.04 + Math.sin(t * 1.1) * 0.012) - rp * 0.25,
       0.1,
     );
-
-    // Reload — tilts the gun down and pumps
-    reloadProgress.current = THREE.MathUtils.lerp(
-      reloadProgress.current,
-      isReloading ? 1 : 0,
-      0.14,
-    );
-    const reloadPump = Math.sin(t * 9) * 0.06 * reloadProgress.current;
-    group.current.rotation.x += reloadProgress.current * 0.65 + reloadPump;
-    group.current.rotation.z += reloadProgress.current * -0.25;
-    group.current.position.y += -reloadProgress.current * 0.45;
-    group.current.position.x += reloadProgress.current * 0.12;
   });
 
   return (
@@ -266,7 +266,18 @@ function WeaponModel({
         if ('roughness' in mm) mm.roughness = Math.max(mm.roughness ?? 0.5, 0.4);
         mm.needsUpdate = true;
       };
-      Array.isArray(mat) ? mat.forEach(boost) : boost(mat);
+      // clone(true) shares materials with drei's GLTF cache — clone them
+      // before mutating or the boost leaks into every other consumer.
+      if (Array.isArray(mat)) {
+        obj.material = mat.map((m: any) => {
+          const c = m.clone();
+          boost(c);
+          return c;
+        });
+      } else if (mat) {
+        obj.material = mat.clone();
+        boost(obj.material);
+      }
     });
 
     const box = new THREE.Box3();
@@ -316,6 +327,23 @@ function WeaponModel({
   const lastShotRef = useRef(0);
   const lastReloadRef = useRef(false);
   const fireActiveUntil = useRef(0);
+
+  // Tear down the previous weapon's mixer/clone when switching weapons,
+  // otherwise each switch leaks a running AnimationMixer and its materials.
+  useEffect(() => {
+    return () => {
+      if (mixer) {
+        mixer.stopAllAction();
+        mixer.uncacheRoot(scene);
+      }
+      scene.traverse((obj: any) => {
+        if (!obj.isMesh) return;
+        const mat = obj.material;
+        if (Array.isArray(mat)) mat.forEach((m: any) => m?.dispose?.());
+        else mat?.dispose?.();
+      });
+    };
+  }, [mixer, scene]);
 
   useFrame((_, delta) => {
     if (groupRef.current) {

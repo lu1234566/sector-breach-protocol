@@ -11,11 +11,20 @@ import { Particles3D } from './Particles3D';
 import { Tracers3D } from './Tracers3D';
 import { Pickups3D } from './Pickups3D';
 import { Decals3D } from './Decals3D';
+import { ObjectiveZone3D } from './ObjectiveZone3D';
 import { Weapon3D } from '../../Weapon3D';
 import { resolveQuality } from '../../game/quality';
 import { useSettings } from '../../game/settings';
 
-import { Player, Enemy, Particle, Tracer, Pickup, WallDecal } from '../../game/types';
+import {
+  Player,
+  Enemy,
+  Particle,
+  Tracer,
+  Pickup,
+  WallDecal,
+  ObjectiveRuntime,
+} from '../../game/types';
 
 interface GameSceneProps {
   player: React.MutableRefObject<Player>;
@@ -24,6 +33,7 @@ interface GameSceneProps {
   tracers: Tracer[];
   pickups: Pickup[];
   decals?: WallDecal[];
+  objective?: ObjectiveRuntime | null;
   mapData: number[][];
   cellSize: number;
   currentWeapon: string;
@@ -99,6 +109,7 @@ export function GameScene({
   lastShotTime,
   pickups,
   decals,
+  objective,
   debugMode,
 }: GameSceneProps) {
   const now = Date.now();
@@ -147,6 +158,9 @@ export function GameScene({
         <Tracers3D tracers={visibleTracers} cellSize={cellSize} mapData={mapData} />
         {visibleDecals && visibleDecals.length > 0 && (
           <Decals3D decals={visibleDecals} cellSize={cellSize} mapData={mapData} now={now} />
+        )}
+        {objective && objective.zone && objective.status === 'active' && (
+          <ObjectiveZone3D objective={objective} cellSize={cellSize} mapData={mapData} />
         )}
         {!isLowQuality && <Pickups3D pickups={pickups} cellSize={cellSize} mapData={mapData} />}
         {isLowQuality && pickups.length > 0 && <Pickups3D pickups={pickups.slice(0, 6)} cellSize={cellSize} mapData={mapData} />}

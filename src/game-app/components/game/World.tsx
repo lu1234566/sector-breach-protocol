@@ -518,8 +518,6 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
-              const ox = posX + (fx / Math.abs(fx || 1)) * cellSize * 0.62 || posX;
-              const oz = posZ + ((fz || 0) / Math.abs(fz || 1)) * cellSize * 0.62 || posZ;
               // Place against exposed face, slightly off-center
               const bx = posX + fx * 1.3;
               const bz = posZ + fz * 1.3;

@@ -269,9 +269,9 @@ function RusherFallback({ cellSize, color }: any) {
     <group position={[0, s * 0.28, 0]}>
       <mesh material={m.shell} scale={[s * 0.45, s * 0.26, s * 0.58]}><boxGeometry args={[1, 1, 1]} /></mesh>
       <mesh position={[0, s * 0.16, 0]} material={m.glow} scale={[s * 0.08, s * 0.05, s * 0.52]}><boxGeometry args={[1, 1, 1]} /></mesh>
-      <mesh position={[0, s * 0.05, -s * 0.36]} material={m.glow} scale={[s * 0.18, s * 0.06, s * 0.025]}><boxGeometry args={[1, 1, 1]} /></mesh>
+      <mesh position={[0, s * 0.05, s * 0.36]} material={m.glow} scale={[s * 0.18, s * 0.06, s * 0.025]}><boxGeometry args={[1, 1, 1]} /></mesh>
       {[-1, 1].map((dx) => (
-        <mesh key={dx} position={[dx * s * 0.32, 0, -s * 0.08]} rotation={[0, 0, dx * 0.25]} material={m.glow} scale={[s * 0.04, s * 0.13, s * 0.48]}>
+        <mesh key={dx} position={[dx * s * 0.32, 0, s * 0.08]} rotation={[0, 0, dx * 0.25]} material={m.glow} scale={[s * 0.04, s * 0.13, s * 0.48]}>
           <boxGeometry args={[1, 1, 1]} />
         </mesh>
       ))}
@@ -288,7 +288,7 @@ function RiflemanFallback({ cellSize, color }: any) {
       <mesh material={m.shell} scale={[s * 0.42, s * 0.55, s * 0.3]}><boxGeometry args={[1, 1, 1]} /></mesh>
       <mesh position={[0, s * 0.38, 0]} material={m.shell2} scale={[s * 0.28, s * 0.2, s * 0.24]}><boxGeometry args={[1, 1, 1]} /></mesh>
       <mesh position={[0, s * 0.38, s * 0.13]} material={m.glow} scale={[s * 0.2, s * 0.045, s * 0.025]}><boxGeometry args={[1, 1, 1]} /></mesh>
-      <mesh position={[s * 0.2, 0, -s * 0.18]} material={m.shell2} scale={[s * 0.06, s * 0.07, s * 0.62]}><boxGeometry args={[1, 1, 1]} /></mesh>
+      <mesh position={[s * 0.2, 0, s * 0.18]} material={m.shell2} scale={[s * 0.06, s * 0.07, s * 0.62]}><boxGeometry args={[1, 1, 1]} /></mesh>
       <GroundRing cellSize={s} color={color} />
     </group>
   );
@@ -301,7 +301,7 @@ function SniperFallback({ cellSize, color }: any) {
     <group position={[0, s * 0.52, 0]}>
       <mesh position={[0, s * 0.18, 0]} material={m.shell} scale={[s * 0.2, s * 0.72, s * 0.18]}><boxGeometry args={[1, 1, 1]} /></mesh>
       <mesh position={[0, s * 0.58, 0]} material={m.glow}><sphereGeometry args={[s * 0.1, 8, 8]} /></mesh>
-      <mesh position={[s * 0.14, s * 0.2, -s * 0.22]} material={m.shell2} scale={[s * 0.045, s * 0.06, s * 0.8]}><boxGeometry args={[1, 1, 1]} /></mesh>
+      <mesh position={[s * 0.14, s * 0.2, s * 0.22]} material={m.shell2} scale={[s * 0.045, s * 0.06, s * 0.8]}><boxGeometry args={[1, 1, 1]} /></mesh>
       <GroundRing cellSize={s} color={color} />
     </group>
   );

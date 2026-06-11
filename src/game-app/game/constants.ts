@@ -95,6 +95,11 @@ export const MAP = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 ];
 
+// Wave structure: waves 1-4 build up, wave 5 is the Titan boss,
+// wave 6 is the final extraction run.
+export const BOSS_WAVE = 5;
+export const FINAL_WAVE = 6;
+
 export const CELL_SIZE = 64;
 export const TICK_RATE = 1000 / 60;
 export const FOV = Math.PI / 3;

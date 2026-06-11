@@ -29,10 +29,11 @@ import { saveDifficulty } from '../../game/persistence';
 import { sounds } from '../../game/SoundEngine';
 import { ASSETS } from '../../game/assets';
 import { useSettings } from '../../game/settings';
+import { SettingsPanel } from '../hud/SettingsPanel';
 import type { ArenaDef } from '../../data/arenas';
 import { Map as MapIcon } from 'lucide-react';
 
-type MenuView = 'main' | 'armory' | 'difficulty' | 'profile' | 'arena';
+type MenuView = 'main' | 'armory' | 'difficulty' | 'profile' | 'arena' | 'settings';
 
 const SbpButton: React.FC<{
   icon: React.ReactNode;
@@ -125,7 +126,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   const allowVideo = settings.quality !== 'low' && !reducedMotion;
   const [videoReady, setVideoReady] = useState(false);
 
-  const handleSettings = () => { sounds.playUiClick(); setMenuView('difficulty'); };
+  const handleSettings = () => { sounds.playUiClick(); setMenuView('settings'); };
   const handleDatabase = () => { sounds.playUiClick(); setMenuView('profile'); };
 
 
@@ -167,7 +168,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
 
       <AnimatePresence mode="wait">
-        {(menuView === 'main' || !['armory', 'difficulty', 'profile', 'arena'].includes(menuView)) && (
+        {(menuView === 'main' ||
+          !['armory', 'difficulty', 'profile', 'arena', 'settings'].includes(menuView)) && (
           <motion.div
             key="main"
             initial={{ opacity: 0 }}
@@ -305,7 +307,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                   <div className="space-y-2 font-mono">
                     <OpRow label="Sector" value="Containment-05" tone="white" />
                     <OpRow label="Threat Level" value="Adaptive" tone="amber" />
-                    <OpRow label="Wave Protocol" value="01 → 05" tone="cyan" />
+                    <OpRow label="Wave Protocol" value="01 → 06" tone="cyan" />
                     <OpRow label="Final Hostile" value="Sapphire Dragonoid" tone="emerald" />
                     <OpRow label="Arena Status" value="Locked Down" tone="red" />
                     <OpRow label="Mission State" value="Ready" tone="cyan" />
@@ -389,12 +391,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
                 {/* Quick chips */}
                 <div className="flex flex-wrap gap-2 text-[10px] font-mono uppercase tracking-[0.3em]">
-                  <span
-                    className="px-3 py-1.5 rounded-sm border border-white/10 bg-slate-950/60"
+                  <button
+                    onClick={() => { sounds.playUiClick(); setMenuView('difficulty'); }}
+                    className="px-3 py-1.5 rounded-sm border border-white/10 bg-slate-950/60 hover:border-white/30 transition-colors"
                     style={{ color: DIFFICULTIES[difficulty].color }}
                   >
                     Protocol: {difficulty}
-                  </span>
+                  </button>
                   <button
                     onClick={() => { sounds.playUiClick(); setMenuView('arena'); }}
                     className="px-3 py-1.5 rounded-sm border border-cyan-500/30 bg-slate-950/60 text-cyan-300 hover:border-cyan-400/60 transition-colors flex items-center gap-2"
@@ -705,7 +708,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                        <span className="text-[10px] text-cyan-400 font-bold uppercase">Peak WAVE {lifetimeStats.bestWave}</span>
                     </div>
                     <div className="flex gap-3 h-12">
-                      {[1,2,3,4,5].map(w => (
+                      {[1,2,3,4,5,6].map(w => (
                         <div key={w} className="flex-1 relative group">
                            <div className={`absolute inset-0 rounded-xl transition-all duration-500 ${w <= lifetimeStats.bestWave ? 'bg-cyan-500 shadow-[0_0_15px_rgba(34,211,238,0.5)]' : 'bg-white/5'}`} />
                            {w <= lifetimeStats.bestWave && (
@@ -831,6 +834,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               </div>
             </div>
           </motion.div>
+        )}
+
+        {menuView === 'settings' && (
+          <SettingsPanel
+            key="settings"
+            onBack={() => { sounds.playUiClick(); setMenuView('main'); }}
+          />
         )}
       </AnimatePresence>
     </div>

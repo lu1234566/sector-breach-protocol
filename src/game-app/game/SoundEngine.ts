@@ -104,6 +104,11 @@ export class SoundEngine {
         this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
       } catch {}
     }
+    // Browsers create the context suspended until a user gesture; init() is
+    // called from one, so resume here or the synth fallbacks stay silent.
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
     // Probe SFX files in background — non-blocking
     this.preload();
   }
@@ -190,9 +195,18 @@ export class SoundEngine {
     el.volume = this.musicVolume;
     el.preload = 'auto';
     el.addEventListener('error', () => {
-      // No file available — silently skip; oscillator music isn't worth synthesizing
+      // No file available — forget the track so a later call can retry
+      // instead of being swallowed by the key guard above.
+      if (this.music?.el === el) this.music = null;
     }, { once: true });
-    el.play().catch(() => {});
+    el.play().catch(() => {
+      // Autoplay blocked before any user gesture — retry on the first one.
+      const retry = () => {
+        if (this.music?.el === el) el.play().catch(() => {});
+      };
+      window.addEventListener('pointerdown', retry, { once: true });
+      window.addEventListener('keydown', retry, { once: true });
+    });
     this.music = { key, el };
   }
 

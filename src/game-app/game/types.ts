@@ -49,6 +49,9 @@ export interface Enemy {
   hasLineOfSight?: boolean;
   blockedBy?: number;
   dead?: boolean;
+  diedAt?: number;
+  /** Earliest timestamp this enemy may fire its first shot. */
+  nextShotAt?: number;
 }
 
 export interface Pickup {
@@ -60,6 +63,7 @@ export interface Pickup {
 }
 
 export interface Particle {
+  id: number;
   x: number;
   y: number;
   vx: number;

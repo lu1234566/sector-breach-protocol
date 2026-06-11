@@ -123,9 +123,15 @@ export function createHandleShoot(deps: CombatDeps) {
             let nx = 0, ny = 0;
             if (Math.abs(localX) > Math.abs(localY)) nx = Math.sign(localX) || 1;
             else ny = Math.sign(localY) || 1;
+            // The raymarch steps 8 units at a time, so (hx, hy) can be well
+            // inside the wall cell. Snap the decal onto the cell face along
+            // the normal so it stays visible.
+            let dxFace = hx, dyFace = hy;
+            if (nx !== 0) dxFace = (tx + (nx > 0 ? 1 : 0)) * CELL_SIZE;
+            else dyFace = (ty + (ny > 0 ? 1 : 0)) * CELL_SIZE;
             decals.current.push({
               id: nextDecalId.current++,
-              x: hx, y: hy, nx, ny,
+              x: dxFace, y: dyFace, nx, ny,
               born: Date.now(),
               size: weapon.type === 'shotgun' ? 5 : weapon.type === 'sniper' ? 10 : 5,
             });
@@ -137,20 +143,33 @@ export function createHandleShoot(deps: CombatDeps) {
         }
       }
 
+      // Each pellet hits at most the closest enemy on its path (no piercing
+      // through bodies). Hit cone scales with distance so close targets are
+      // forgiving and far targets need real aim.
+      let target: Enemy | null = null;
+      let targetDist = Infinity;
       enemies.current.forEach(enemy => {
         if (enemy.dead) return;
         const dx = enemy.x - player.current.x;
         const dy = enemy.y - player.current.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > hitDist) return;
+        if (dist > hitDist || dist >= targetDist) return;
 
         const angleToEnemy = Math.atan2(dy, dx);
         const angleDiff = Math.atan2(Math.sin(angleToEnemy - shotAngle), Math.cos(angleToEnemy - shotAngle));
 
-        // Per-pellet narrow hit cone; size scales with distance for fairness
-        if (Math.abs(angleDiff) < 0.12) {
+        const hitRadius = enemy.isBoss ? 48 : 26;
+        const hitCone = Math.min(0.35, Math.atan2(hitRadius, Math.max(dist, 1)));
+        if (Math.abs(angleDiff) < hitCone) {
           if (!checkLineOfSight(player.current.x, player.current.y, enemy.x, enemy.y, mapData.current)) return;
+          target = enemy;
+          targetDist = dist;
+        }
+      });
 
+      {
+        const enemy = target;
+        if (enemy) {
           enemy.hp -= perPelletDamage;
           pelletHit = true;
 
@@ -162,6 +181,7 @@ export function createHandleShoot(deps: CombatDeps) {
           spawnParticles(enemy.x, enemy.y, 'blood');
           if (enemy.hp <= 0) {
             enemy.dead = true;
+            enemy.diedAt = Date.now();
             setHitMarker({ time: Date.now(), killed: true });
             sounds.playKill();
             setStats(prev => ({ ...prev, kills: prev.kills + 1 }));
@@ -189,13 +209,14 @@ export function createHandleShoot(deps: CombatDeps) {
             setHitMarker({ time: Date.now(), killed: false });
           }
         }
-      });
+      }
 
+      const tracerDist = Math.min(hitDist, targetDist);
       tracers.current.push({
         id: nextTracerId.current++,
         x1: player.current.x, y1: player.current.y,
-        x2: player.current.x + cos * hitDist,
-        y2: player.current.y + sin * hitDist,
+        x2: player.current.x + cos * tracerDist,
+        y2: player.current.y + sin * tracerDist,
         alpha: 1,
       });
 

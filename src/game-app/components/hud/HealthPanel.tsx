@@ -1,8 +1,9 @@
 import { Shield } from 'lucide-react';
 import { motion } from 'motion/react';
 
-export function HealthPanel({ hp }: { hp: number }) {
-  const low = hp < 30;
+export function HealthPanel({ hp, maxHp = 100 }: { hp: number; maxHp?: number }) {
+  const pct = Math.max(0, Math.min(100, (hp / Math.max(1, maxHp)) * 100));
+  const low = pct < 30;
   return (
     <div className="pointer-events-none absolute bottom-4 left-4 z-40 w-52">
       <div className="flex items-center justify-between mb-1 text-[10px] font-bold tracking-[0.25em] uppercase">
@@ -11,12 +12,12 @@ export function HealthPanel({ hp }: { hp: number }) {
           <span>Integrity</span>
         </div>
         <span className={`font-mono ${low ? 'text-red-400' : 'text-white'}`}>
-          {Math.round(hp)}%
+          {Math.round(hp)}/{maxHp}
         </span>
       </div>
       <div className="h-2 rounded-sm bg-slate-900/70 border border-cyan-500/20 overflow-hidden backdrop-blur-sm">
         <motion.div
-          animate={{ width: `${Math.max(0, hp)}%` }}
+          animate={{ width: `${pct}%` }}
           transition={{ duration: 0.2 }}
           className={`h-full ${
             low

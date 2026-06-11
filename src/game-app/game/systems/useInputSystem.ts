@@ -11,6 +11,7 @@ interface UseInputSystemArgs {
   keys: React.MutableRefObject<Record<string, boolean>>;
   player: React.MutableRefObject<{ angle: number; pitch: number; isAds: boolean }>;
   ammoRef: React.MutableRefObject<{ mag: number; reserve: number }>;
+  isReloadingRef: React.MutableRefObject<boolean>;
   currentWeapon: WeaponType;
   weaponMags: Record<WeaponType, number>;
   reloadTimeoutRef: React.MutableRefObject<number | null>;
@@ -31,7 +32,7 @@ interface UseInputSystemArgs {
 export function useInputSystem(args: UseInputSystemArgs) {
   const {
     gameState, gameContainerRef, pointerLockCooldownRef,
-    keys, player, ammoRef, currentWeapon, weaponMags, reloadTimeoutRef,
+    keys, player, ammoRef, isReloadingRef, currentWeapon, weaponMags, reloadTimeoutRef,
     setWeaponMags, setCurrentWeapon, setAmmo, setIsReloading,
     reload, handleShoot, togglePointerLock, onPauseToggle,
   } = args;
@@ -40,7 +41,8 @@ export function useInputSystem(args: UseInputSystemArgs) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { onPauseToggle(); return; }
       keys.current[e.key.toLowerCase()] = true;
-      if (e.key === 'r') reload();
+      if (gameState !== 'playing') return;
+      if (e.key.toLowerCase() === 'r') reload();
       if (['1', '2', '3', '4'].includes(e.key)) {
         const weaponMap: Record<string, WeaponType> = { '1': 'pistol', '2': 'rifle', '3': 'shotgun', '4': 'sniper' };
         const next = weaponMap[e.key];
@@ -52,7 +54,10 @@ export function useInputSystem(args: UseInputSystemArgs) {
         setCurrentWeapon(next);
         setAmmo(prev => ({ ...prev, mag: weaponMags[next] }));
 
+        // Cancel any in-flight reload; the ref must be cleared too or
+        // shooting/reloading stays blocked for the rest of the run.
         setIsReloading(false);
+        isReloadingRef.current = false;
         if (reloadTimeoutRef.current) {
           clearTimeout(reloadTimeoutRef.current);
           reloadTimeoutRef.current = null;
@@ -117,5 +122,5 @@ export function useInputSystem(args: UseInputSystemArgs) {
       document.removeEventListener('pointerlockchange', handlePointerLockChange);
       document.removeEventListener('pointerlockerror', handlePointerLockError);
     };
-  }, [gameState, currentWeapon]);
+  }, [gameState, currentWeapon, weaponMags]);
 }

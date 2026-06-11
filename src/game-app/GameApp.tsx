@@ -20,6 +20,7 @@ import {
   WEAPON_UPGRADE_COSTS,
   MAX_WEAPON_LEVEL,
   DIFFICULTIES,
+  FINAL_WAVE,
 } from './game/constants';
 import { getArenaById, ARENAS, DEFAULT_ARENA_ID, type ArenaDef } from './data/arenas';
 import {
@@ -147,7 +148,21 @@ export default function App() {
     totalWins: 0,
     totalGames: 0,
   });
+  // Synchronous mirrors so end-of-run credit math never reads a stale closure
+  // (the killing blow and the win check can land in the same tick).
+  const statsRef = useRef<RunStats>({ kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0 });
+  const scoreRef = useRef(0);
+  const lifetimeStatsRef = useRef<LifetimeStats>(lifetimeStats);
   const isRunEndingRef = useRef(false);
+
+  const setStatsSynced = (fn: (prev: RunStats) => RunStats) => {
+    statsRef.current = fn(statsRef.current);
+    setStats(statsRef.current);
+  };
+  const setScoreSynced = (fn: (prev: number) => number) => {
+    scoreRef.current = fn(scoreRef.current);
+    setScore(scoreRef.current);
+  };
 
   // --- Meta Progression State ---
   const [tacticalCredits, setTacticalCredits] = useState(0);
@@ -176,7 +191,7 @@ export default function App() {
   const [upgradeTab, setUpgradeTab] = useState<'biological' | 'weapon'>('biological');
   const [selectedLabWeapon, setSelectedLabWeapon] = useState<WeaponType>('pistol');
   const [menuView, setMenuView] = useState<
-    'main' | 'armory' | 'difficulty' | 'profile' | 'arena'
+    'main' | 'armory' | 'difficulty' | 'profile' | 'arena' | 'settings'
   >('main');
   const [selectedArenaId, setSelectedArenaId] = useState<string>(DEFAULT_ARENA_ID);
   const currentArenaRef = useRef<ArenaDef>(getArenaById(DEFAULT_ARENA_ID));
@@ -192,7 +207,13 @@ export default function App() {
     const diff = loadDifficulty();
     if (diff) setDifficulty(diff);
     const ls = loadLifetimeStats();
-    if (ls) setLifetimeStats((prev) => ({ ...prev, ...ls }));
+    if (ls) {
+      setLifetimeStats((prev) => {
+        const next = { ...prev, ...ls };
+        lifetimeStatsRef.current = next;
+        return next;
+      });
+    }
     const arenaId = loadArena();
     if (arenaId) {
       setSelectedArenaId(arenaId);
@@ -243,6 +264,19 @@ export default function App() {
     ammoRef.current = ammo;
   }, [ammo]);
 
+  // Soundtrack: menu theme on menus, combat loop in-game, boss theme from
+  // the Titan wave onward. The tracks ship in /public/audio but were never
+  // wired up.
+  useEffect(() => {
+    if (gameState === 'start' || gameState === 'upgrades') {
+      sounds.playMusic('menu_theme');
+    } else if (gameState === 'playing' || gameState === 'paused' || gameState === 'deploy') {
+      sounds.playMusic(wave >= 5 ? 'boss_theme' : 'combat_loop');
+    } else {
+      sounds.stopMusic();
+    }
+  }, [gameState, wave]);
+
   // Game Engine Refs
   const safeStart = getArenaPlayerStart(currentArenaRef.current);
   const player = useRef<Player>({
@@ -265,6 +299,7 @@ export default function App() {
   const keys = useRef<Record<string, boolean>>({});
   const enemies = useRef<Enemy[]>([]);
   const particles = useRef<Particle[]>([]);
+  const nextParticleId = useRef(0);
   const navGridRef = useRef<number[][]>([]);
   const mapData = useRef(currentArenaRef.current.mapData.map((row) => [...row]));
   const [mapDataState, setMapDataState] = useState(
@@ -292,6 +327,8 @@ export default function App() {
     const initialAmmo = { mag: WEAPONS.pistol.magSize, reserve: initialReserve };
     setAmmo(initialAmmo);
     ammoRef.current = initialAmmo;
+    statsRef.current = { kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0 };
+    scoreRef.current = 0;
     setScore(0);
     setWave(1);
     setEarnedCredits(0);
@@ -344,6 +381,15 @@ export default function App() {
     enemies.current = [];
     setEnemiesState([]);
     particles.current = [];
+    tracers.current = [];
+    decals.current = [];
+    setDamageIndicators([]);
+    setHitMarker({ time: 0, killed: false });
+    recoilOffset.current = 0;
+    screenShake.current = 0;
+    lastShotTime.current = 0;
+    lastEnemyShotTimeGlobal.current = 0;
+    lastDamageTaken.current = 0;
     const arenaMap = currentArenaRef.current.mapData;
     navGridRef.current = arenaMap.map((row) => row.map(() => 999));
     graveyard.current = [];
@@ -356,6 +402,9 @@ export default function App() {
   };
 
   const startDeployedMatch = () => {
+    // Grace period counts from when gameplay actually starts, not from the
+    // moment the deploy screen appeared.
+    gameStartTime.current = Date.now();
     setGameState('playing');
     spawnWave(1);
     // Request pointer lock on next tick (after state flush)
@@ -419,29 +468,63 @@ export default function App() {
     gameStateRef,
     setObjectiveSnapshot,
     setWaveMessage,
-    setEnemiesRemaining,
     spawnEnemies: (...args) => spawnEnemies(...args),
   });
 
-  const spawnEnemies = (count: number, currentWave: number = 1, isBoss: boolean = false) => {
-    const types: ('rusher' | 'rifleman' | 'sniper')[] = ['rusher', 'rifleman', 'sniper'];
-    let spawned = 0;
-    let attempts = 0;
+  const pickSpawnPosition = (currentWave: number): { x: number; y: number } | null => {
     const activeMap = mapData.current;
-    while (spawned < count && attempts < 100) {
-      attempts++;
+    const minDist = currentWave === 1 ? 600 : 500;
+
+    // Prefer the arena's hand-placed spawn points when one is far enough away
+    // (and, on wave 1, out of sight).
+    const candidates = currentArenaRef.current.spawnPoints.filter((sp) => {
+      const mapX = Math.floor(sp.x / CELL_SIZE);
+      const mapY = Math.floor(sp.y / CELL_SIZE);
+      if (activeMap[mapY]?.[mapX] !== 0) return false;
+      if (Math.hypot(sp.x - player.current.x, sp.y - player.current.y) <= minDist) return false;
+      if (
+        currentWave === 1 &&
+        checkLineOfSight(sp.x, sp.y, player.current.x, player.current.y, activeMap)
+      )
+        return false;
+      return true;
+    });
+    if (candidates.length > 0) {
+      const sp = candidates[Math.floor(Math.random() * candidates.length)];
+      // Jitter so simultaneous spawns at the same point don't stack exactly.
+      return {
+        x: sp.x + (Math.random() - 0.5) * CELL_SIZE * 0.5,
+        y: sp.y + (Math.random() - 0.5) * CELL_SIZE * 0.5,
+      };
+    }
+
+    // Fallback: random free cell sampling (relaxes LOS rule after many tries).
+    for (let attempts = 0; attempts < 100; attempts++) {
       const rx = Math.random() * (activeMap[0].length * CELL_SIZE);
       const ry = Math.random() * (activeMap.length * CELL_SIZE);
-      const distToPlayer = Math.hypot(rx - player.current.x, ry - player.current.y);
       const mapX = Math.floor(rx / CELL_SIZE);
       const mapY = Math.floor(ry / CELL_SIZE);
-      let validSpawn =
-        distToPlayer > (currentWave === 1 ? 600 : 500) && activeMap[mapY]?.[mapX] === 0;
-      if (validSpawn && currentWave === 1 && attempts < 80) {
-        if (checkLineOfSight(rx, ry, player.current.x, player.current.y, activeMap))
-          validSpawn = false;
-      }
-      if (validSpawn) {
+      if (activeMap[mapY]?.[mapX] !== 0) continue;
+      if (Math.hypot(rx - player.current.x, ry - player.current.y) <= minDist) continue;
+      if (
+        currentWave === 1 &&
+        attempts < 80 &&
+        checkLineOfSight(rx, ry, player.current.x, player.current.y, activeMap)
+      )
+        continue;
+      return { x: rx, y: ry };
+    }
+    return null;
+  };
+
+  const spawnEnemies = (count: number, currentWave: number = 1, isBoss: boolean = false) => {
+    const types: ('rusher' | 'rifleman' | 'sniper')[] = ['rusher', 'rifleman', 'sniper'];
+    for (let i = 0; i < count; i++) {
+      const pos = pickSpawnPosition(currentWave);
+      if (!pos) break;
+      const rx = pos.x;
+      const ry = pos.y;
+      {
         let type: 'rusher' | 'rifleman' | 'sniper' = 'rifleman';
         if (isBoss) type = 'rifleman';
         else if (currentWave === 1) type = Math.random() > 0.4 ? 'rifleman' : 'rusher';
@@ -462,7 +545,10 @@ export default function App() {
           isBoss,
           hp: finalHp,
           maxHp: finalHp,
-          lastShot: Date.now() + Math.random() * 2000,
+          // lastShot must stay in the past — renderers derive the attack pose
+          // from it. The initial stagger lives in nextShotAt instead.
+          lastShot: 0,
+          nextShotAt: Date.now() + Math.random() * 2000,
           speed:
             (type === 'rusher' ? 3.5 : type === 'rifleman' ? 2 : 1.5) *
             speedBuff *
@@ -482,11 +568,10 @@ export default function App() {
         };
         if (isBoss) setBossHp({ current: finalHp, max: finalHp });
         enemies.current.push(newEnemy);
-        spawned++;
       }
     }
     setEnemiesState([...enemies.current]);
-    setEnemiesRemaining(enemies.current.length);
+    setEnemiesRemaining(enemies.current.filter((e) => !e.dead).length);
   };
 
   // Debug-only: spawn one of each enemy type next to the player so each model
@@ -507,7 +592,7 @@ export default function App() {
       isBoss: false,
       hp: baseHp,
       maxHp: baseHp,
-      lastShot: Date.now(),
+      lastShot: 0,
       speed,
       color,
       stuckFrames: 0,
@@ -542,7 +627,71 @@ export default function App() {
 
   const graveyard = useRef<{ x: number; y: number; color: string; type: string }[]>([]);
 
+  /**
+   * Single end-of-run path for win, death and objective failure. Awards
+   * credits, records lifetime stats, stops every timer and releases input.
+   */
+  const endRun = (won: boolean, message?: string) => {
+    if (isRunEndingRef.current) return;
+    isRunEndingRef.current = true;
 
+    if (message) {
+      setKillfeed((prev) =>
+        [{ id: nextKillfeedId.current++, text: message }, ...prev].slice(0, 5),
+      );
+    }
+
+    const diffMult = DIFFICULTIES[difficulty].creditMult;
+    const kills = statsRef.current.kills;
+    const runScore = scoreRef.current;
+    const finalCredits = won
+      ? Math.floor((kills * 15 + waveRef.current * 100 + runScore / 5 + 1500) * diffMult)
+      : Math.floor((kills * 10 + waveRef.current * 50 + runScore / 10) * diffMult);
+    setEarnedCredits(finalCredits);
+
+    const prevL = lifetimeStatsRef.current;
+    const nextLStats = {
+      ...prevL,
+      totalKills: prevL.totalKills + kills,
+      bestWave: Math.max(prevL.bestWave, waveRef.current),
+      totalWins: prevL.totalWins + (won ? 1 : 0),
+      totalDeaths: prevL.totalDeaths + (won ? 0 : 1),
+      totalGames: prevL.totalGames + 1,
+      totalCredits: prevL.totalCredits + finalCredits,
+    };
+    lifetimeStatsRef.current = nextLStats;
+    setLifetimeStats(nextLStats);
+    setTacticalCredits((prev) => {
+      const total = prev + finalCredits;
+      saveMeta(total, upgradeLevels, weaponUpgradeLevels, nextLStats);
+      return total;
+    });
+
+    if (spawnIntervalRef.current) {
+      clearInterval(spawnIntervalRef.current);
+      spawnIntervalRef.current = null;
+    }
+    if (reloadTimeoutRef.current) {
+      clearTimeout(reloadTimeoutRef.current);
+      reloadTimeoutRef.current = null;
+    }
+    if (waveTransitionTimeoutRef.current) {
+      clearTimeout(waveTransitionTimeoutRef.current);
+      waveTransitionTimeoutRef.current = null;
+    }
+    if (bossSpawnTimeoutRef.current) {
+      clearTimeout(bossSpawnTimeoutRef.current);
+      bossSpawnTimeoutRef.current = null;
+    }
+    setIsReloading(false);
+    isReloadingRef.current = false;
+    setWaveMessage('');
+    isWaveTransitionRef.current = false;
+    isSpawningRef.current = false;
+    keys.current = {};
+    if (document.pointerLockElement) document.exitPointerLock();
+    setGameState(won ? 'win' : 'dead');
+  };
 
   const combatDeps: any = {
     gameStateRef,
@@ -568,11 +717,11 @@ export default function App() {
     weaponUpgradeLevels,
     upgradeLevels,
     setAmmo,
-    setStats,
+    setStats: setStatsSynced,
     setMapDataState,
     setBossHp,
     setHitMarker,
-    setScore,
+    setScore: setScoreSynced,
     setKillfeed,
     setIsReloading,
     setWeaponMags,
@@ -587,6 +736,7 @@ export default function App() {
     const count = type === 'explosion' ? 20 : 5;
     for (let i = 0; i < count; i++) {
       particles.current.push({
+        id: nextParticleId.current++,
         x,
         y,
         vx: (Math.random() - 0.5) * 10,
@@ -689,7 +839,9 @@ export default function App() {
 
     // Enemy AI / objectives
     const now = Date.now();
-    enemies.current = enemies.current.filter((e) => !e.dead);
+    // Keep corpses around briefly so the death animations can play.
+    enemies.current = enemies.current.filter((e) => !e.dead || now - (e.diedAt ?? 0) < 700);
+    const aliveEnemies = enemies.current.filter((e) => !e.dead);
 
     const obj = objectiveRef.current;
     if (obj && obj.status === 'active' && !isWaveTransitionRef.current) {
@@ -707,7 +859,7 @@ export default function App() {
       } else if (obj.kind === 'defend' && obj.zone) {
         const drainRadius = obj.zone.radius * 2.4;
         let drainers = 0;
-        for (const e of enemies.current)
+        for (const e of aliveEnemies)
           if (Math.hypot(e.x - obj.zone.x, e.y - obj.zone.y) < drainRadius) drainers++;
         const drain = drainers * 18 * (dtMs / 1000);
         obj.coreHp = Math.max(0, (obj.coreHp ?? 0) - drain);
@@ -715,16 +867,7 @@ export default function App() {
         obj.progress = 1 - obj.timer / 30000;
         if ((obj.coreHp ?? 0) <= 0) {
           obj.status = 'failed';
-          if (!isRunEndingRef.current) {
-            isRunEndingRef.current = true;
-            setKillfeed((prev) =>
-              [{ id: nextKillfeedId.current++, text: 'CORE LOST · MISSION FAILED' }, ...prev].slice(
-                0,
-                5,
-              ),
-            );
-            setGameState('dead');
-          }
+          endRun(false, 'CORE LOST · MISSION FAILED');
         } else if (obj.timer <= 0) obj.status = 'complete';
       } else if (obj.kind === 'extract' && obj.zone) {
         if (!obj.extractActive) {
@@ -742,16 +885,7 @@ export default function App() {
           if (obj.inZone) obj.status = 'complete';
           else if (obj.timer <= 0) {
             obj.status = 'failed';
-            if (!isRunEndingRef.current) {
-              isRunEndingRef.current = true;
-              setKillfeed((prev) =>
-                [
-                  { id: nextKillfeedId.current++, text: 'EXTRACT FAILED · MISSION ABORT' },
-                  ...prev,
-                ].slice(0, 5),
-              );
-              setGameState('dead');
-            }
+            endRun(false, 'EXTRACT FAILED · MISSION ABORT');
           }
         }
       }
@@ -764,55 +898,13 @@ export default function App() {
     // Wave Management
     const objCompleteForWave = (() => {
       const o = objectiveRef.current;
-      if (!o) return enemies.current.length === 0;
-      if (o.kind === 'eliminate') return enemies.current.length === 0;
+      if (!o) return aliveEnemies.length === 0;
+      if (o.kind === 'eliminate') return aliveEnemies.length === 0;
       return o.status === 'complete';
     })();
     if (objCompleteForWave && !isSpawningRef.current && !isWaveTransitionRef.current) {
-      if (waveRef.current >= 5) {
-        if (!isRunEndingRef.current) {
-          isRunEndingRef.current = true;
-          const diffMult = DIFFICULTIES[difficulty].creditMult;
-          const finalCredits = Math.floor(
-            (stats.kills * 15 + waveRef.current * 100 + score / 5 + 1500) * diffMult,
-          );
-          setEarnedCredits(finalCredits);
-          const nextLStats = {
-            ...lifetimeStats,
-            totalKills: lifetimeStats.totalKills + stats.kills,
-            bestWave: Math.max(lifetimeStats.bestWave, waveRef.current),
-            totalWins: lifetimeStats.totalWins + 1,
-            totalGames: lifetimeStats.totalGames + 1,
-            totalCredits: lifetimeStats.totalCredits + finalCredits,
-          };
-          setLifetimeStats(nextLStats);
-          setTacticalCredits((prev) => {
-            const total = prev + finalCredits;
-            saveMeta(total, upgradeLevels, weaponUpgradeLevels, nextLStats);
-            return total;
-          });
-          setGameState('win');
-        }
-        if (spawnIntervalRef.current) {
-          clearInterval(spawnIntervalRef.current);
-          spawnIntervalRef.current = null;
-        }
-        if (reloadTimeoutRef.current) {
-          clearTimeout(reloadTimeoutRef.current);
-          reloadTimeoutRef.current = null;
-        }
-        if (waveTransitionTimeoutRef.current) {
-          clearTimeout(waveTransitionTimeoutRef.current);
-          waveTransitionTimeoutRef.current = null;
-        }
-        if (bossSpawnTimeoutRef.current) {
-          clearTimeout(bossSpawnTimeoutRef.current);
-          bossSpawnTimeoutRef.current = null;
-        }
-        setIsReloading(false);
-        setWaveMessage('');
-        isWaveTransitionRef.current = false;
-        keys.current = {};
+      if (waveRef.current >= FINAL_WAVE) {
+        endRun(true);
       } else {
         const nextWave = waveRef.current + 1;
         setWave(nextWave);
@@ -838,27 +930,10 @@ export default function App() {
       waveRef,
       gameStateRef,
       isRunEndingRef,
-      isWaveTransitionRef,
-      spawnIntervalRef,
-      reloadTimeoutRef,
-      waveTransitionTimeoutRef,
-      bossSpawnTimeoutRef,
-      keys,
       difficulty,
-      stats,
-      score,
-      lifetimeStats,
-      upgradeLevels,
-      weaponUpgradeLevels,
       setHp,
-      setEarnedCredits,
-      setLifetimeStats,
-      setTacticalCredits,
-      setGameState,
-      setIsReloading,
-      setWaveMessage,
       setDamageIndicators,
-      saveMeta,
+      endRun,
       checkLineOfSightInfo,
       spawnParticles,
       WAVE_1_DAMAGE_MULT,
@@ -869,7 +944,7 @@ export default function App() {
     renderTick.current++;
     if (renderTick.current % 2 === 0) {
       setEnemiesState([...enemies.current]);
-      setEnemiesRemaining(Math.max(0, enemies.current.length));
+      setEnemiesRemaining(aliveEnemies.length);
       setDamageIndicators((prev) =>
         prev.map((ind) => ({ ...ind, opacity: ind.opacity - 0.02 })).filter((i) => i.opacity > 0),
       );
@@ -924,10 +999,14 @@ export default function App() {
     } else sounds.playError();
   };
 
+  // Single stable interval; the ref always points at the latest render's
+  // update closure, so state stays fresh without tearing the loop down.
+  const updateRef = useRef(update);
+  updateRef.current = update;
   useEffect(() => {
-    const loop = setInterval(update, TICK_RATE);
+    const loop = setInterval(() => updateRef.current(), TICK_RATE);
     return () => clearInterval(loop);
-  }, [gameState, currentWeapon, hp, ammo]);
+  }, []);
 
   const requestPointerLockSafe = () => {
     if (!gameContainerRef.current) return;
@@ -972,6 +1051,7 @@ export default function App() {
     keys,
     player,
     ammoRef,
+    isReloadingRef,
     currentWeapon,
     weaponMags,
     reloadTimeoutRef,
@@ -1009,6 +1089,7 @@ export default function App() {
               particles={particles.current}
               tracers={tracers.current}
               decals={decals.current}
+              objective={objectiveSnapshot}
               mapData={mapDataState}
               cellSize={CELL_SIZE}
               currentWeapon={currentWeapon}
@@ -1032,6 +1113,7 @@ export default function App() {
             score={score}
             kills={stats.kills}
             hp={hp}
+            maxHp={100 + upgradeLevels.armorPlating * 5}
             currentWeapon={currentWeapon}
             ammo={ammo}
             isReloading={isReloading}
@@ -1313,7 +1395,8 @@ export default function App() {
                       style={{ color: DIFFICULTIES[difficulty].color }}
                     >
                       <Target size={14} />
-                      {DIFFICULTIES[difficulty].name} PROTOCOL COMPLETE
+                      {DIFFICULTIES[difficulty].name} PROTOCOL{' '}
+                      {gameState === 'win' ? 'COMPLETE' : 'FAILED'}
                     </div>
                     <h2
                       className={`text-6xl md:text-8xl font-black italic tracking-tighter mb-4 text-center ${gameState === 'win' ? 'text-yellow-500' : 'text-red-600'}`}

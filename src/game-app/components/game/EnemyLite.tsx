@@ -32,6 +32,7 @@ export function EnemyLite({
   maxHp,
   lastShot = 0,
   spawnTime = 0,
+  diedAt = 0,
 }: any) {
   const root = useRef<THREE.Group>(null);
   const color = isBoss ? TYPE_COLOR.boss : TYPE_COLOR[type];
@@ -41,7 +42,11 @@ export function EnemyLite({
     if (!root.current) return;
     const sinceSpawn = (Date.now() - spawnTime) / 1000;
     const spawnK = Math.max(0, Math.min(1, sinceSpawn / 0.45));
-    root.current.scale.setScalar(spawnK * (isBoss ? 2.5 : 1));
+    // Quick collapse while the corpse lingers for the death window
+    const deadK = hp <= 0 && diedAt > 0
+      ? Math.max(0, 1 - (Date.now() - diedAt) / 700)
+      : 1;
+    root.current.scale.setScalar(spawnK * (isBoss ? 2.5 : 1) * deadK);
     root.current.rotation.y = Math.sin(state.clock.getElapsedTime() * (isBoss ? 0.7 : 1.6)) * 0.08;
   });
 

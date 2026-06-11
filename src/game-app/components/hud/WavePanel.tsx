@@ -1,4 +1,4 @@
-import { DIFFICULTIES, type DifficultyKey } from '@/game-app/game/constants';
+import { DIFFICULTIES, FINAL_WAVE, type DifficultyKey } from '@/game-app/game/constants';
 
 export function WavePanel({
   wave,
@@ -15,7 +15,7 @@ export function WavePanel({
         </div>
         <div className="font-mono font-black text-sm text-white leading-tight">
           {wave}
-          <span className="text-slate-500 text-[10px]">/5</span>
+          <span className="text-slate-500 text-[10px]">/{FINAL_WAVE}</span>
         </div>
       </div>
       <div

@@ -31,21 +31,24 @@ export function Tracers3D({
         const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
         const distance = p1.distanceTo(p2);
 
+        // Cylinders extend along local +Y; rotate that axis onto the shot
+        // direction. (lookAt would overwrite the rotation and leave the beam
+        // perpendicular to the trajectory.)
+        const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+        const beamQuat = new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0),
+          dir,
+        );
+
         return (
           <group key={t.id} position={mid}>
             {/* Outer glow */}
-            <mesh
-              onUpdate={(self) => self.lookAt(p2)}
-              rotation={[Math.PI / 2, 0, 0]}
-            >
+            <mesh quaternion={beamQuat}>
               <cylinderGeometry args={[0.06, 0.04, distance, 6]} />
               <meshBasicMaterial color="#22d3ee" transparent opacity={t.alpha * 0.35} />
             </mesh>
             {/* Bright core */}
-            <mesh
-              onUpdate={(self) => self.lookAt(p2)}
-              rotation={[Math.PI / 2, 0, 0]}
-            >
+            <mesh quaternion={beamQuat}>
               <cylinderGeometry args={[0.018, 0.018, distance, 6]} />
               <meshBasicMaterial color="#ffffff" transparent opacity={t.alpha * 0.9} />
             </mesh>

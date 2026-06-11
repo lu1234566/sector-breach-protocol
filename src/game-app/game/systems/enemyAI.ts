@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { CELL_SIZE, DIFFICULTIES } from '../constants';
 import { sounds } from '../SoundEngine';
-import type { Enemy, Player, Tracer, DamageIndicator, KillfeedItem, LifetimeStats, RunStats } from '../types';
+import type { Enemy, Player, Tracer, DamageIndicator } from '../types';
 
 interface EnemyAITickDeps {
   // Time
@@ -25,28 +25,11 @@ interface EnemyAITickDeps {
   waveRef: React.MutableRefObject<number>;
   gameStateRef: React.MutableRefObject<string>;
   isRunEndingRef: React.MutableRefObject<boolean>;
-  isWaveTransitionRef: React.MutableRefObject<boolean>;
-  spawnIntervalRef: React.MutableRefObject<number | null>;
-  reloadTimeoutRef: React.MutableRefObject<number | null>;
-  waveTransitionTimeoutRef: React.MutableRefObject<number | null>;
-  bossSpawnTimeoutRef: React.MutableRefObject<number | null>;
-  keys: React.MutableRefObject<Record<string, boolean>>;
   // Stats / setters
   difficulty: keyof typeof DIFFICULTIES;
-  stats: RunStats;
-  score: number;
-  lifetimeStats: LifetimeStats;
-  upgradeLevels: Record<string, number>;
-  weaponUpgradeLevels: any;
   setHp: (fn: (prev: number) => number) => void;
-  setEarnedCredits: (n: number) => void;
-  setLifetimeStats: (s: LifetimeStats) => void;
-  setTacticalCredits: (fn: (prev: number) => number) => void;
-  setGameState: (s: 'start' | 'playing' | 'dead' | 'win' | 'upgrades') => void;
-  setIsReloading: (b: boolean) => void;
-  setWaveMessage: (m: string) => void;
   setDamageIndicators: (fn: (prev: DamageIndicator[]) => DamageIndicator[]) => void;
-  saveMeta: (credits: number, upgrades: any, weaponUpgrades: any, lStats: LifetimeStats) => void;
+  endRun: (won: boolean, message?: string) => void;
   // Helpers
   checkLineOfSightInfo: (x1: number, y1: number, x2: number, y2: number, mapData: number[][]) => { hasLOS: boolean; blockedBy: any };
   spawnParticles: (x: number, y: number, type: 'blood' | 'explosion' | 'shell') => void;
@@ -66,18 +49,16 @@ export function tickEnemyAI(deps: EnemyAITickDeps): void {
     enemies, player, mapData, navGridRef, setMapDataState,
     lastDamageTaken, lastDamageSource, lastEnemyShotTimeGlobal,
     tracers, nextTracerId, nextDamageId, screenShake,
-    waveRef, gameStateRef, isRunEndingRef, isWaveTransitionRef,
-    spawnIntervalRef, reloadTimeoutRef, waveTransitionTimeoutRef, bossSpawnTimeoutRef,
-    keys,
-    difficulty, stats, score, lifetimeStats, upgradeLevels, weaponUpgradeLevels,
-    setHp, setEarnedCredits, setLifetimeStats, setTacticalCredits,
-    setGameState, setIsReloading, setWaveMessage, setDamageIndicators,
-    saveMeta,
+    waveRef, gameStateRef, isRunEndingRef,
+    difficulty,
+    setHp, setDamageIndicators,
+    endRun,
     checkLineOfSightInfo, spawnParticles,
     WAVE_1_DAMAGE_MULT, INITIAL_GRACE_PERIOD, DEBUG_SAFE_MODE,
   } = deps;
 
   enemies.current.forEach((e: any) => {
+    if (e.dead) return;
     const pDx = player.current.x - e.x;
     const pDy = player.current.y - e.y;
     const dist = Math.sqrt(pDx * pDx + pDy * pDy);
@@ -134,7 +115,13 @@ export function tickEnemyAI(deps: EnemyAITickDeps): void {
 
       const globalShootCooldown = waveRef.current === 1 ? now - lastEnemyShotTimeGlobal.current < 1000 : false;
 
-      if (canShoot && !globalShootCooldown && now - e.lastShot > fireRate && dist < 1200) {
+      if (
+        canShoot &&
+        !globalShootCooldown &&
+        now >= (e.nextShotAt ?? 0) &&
+        now - e.lastShot > fireRate &&
+        dist < 1200
+      ) {
         const shotLOS = checkLineOfSightInfo(e.x, e.y, player.current.x, player.current.y, mapData.current);
         e.hasLineOfSight = shotLOS.hasLOS;
         e.blockedBy = shotLOS.blockedBy;
@@ -159,46 +146,7 @@ export function tickEnemyAI(deps: EnemyAITickDeps): void {
             setHp(prev => {
               const newHp = Math.max(0, prev - damage);
               if (newHp === 0 && gameStateRef.current === 'playing' && !isRunEndingRef.current) {
-                isRunEndingRef.current = true;
-                const diffMult = DIFFICULTIES[difficulty].creditMult;
-                const runCredits = Math.floor((stats.kills * 10 + waveRef.current * 50 + score / 10) * diffMult);
-                setEarnedCredits(runCredits);
-
-                const nextLStats = {
-                  ...lifetimeStats,
-                  totalKills: lifetimeStats.totalKills + stats.kills,
-                  bestWave: Math.max(lifetimeStats.bestWave, waveRef.current),
-                  totalDeaths: lifetimeStats.totalDeaths + 1,
-                  totalGames: lifetimeStats.totalGames + 1,
-                  totalCredits: lifetimeStats.totalCredits + runCredits,
-                };
-                setLifetimeStats(nextLStats);
-                setTacticalCredits(prevCred => {
-                  const total = prevCred + runCredits;
-                  saveMeta(total, upgradeLevels, weaponUpgradeLevels, nextLStats);
-                  return total;
-                });
-                setGameState('dead');
-                if (spawnIntervalRef.current) {
-                  clearInterval(spawnIntervalRef.current);
-                  spawnIntervalRef.current = null;
-                }
-                if (reloadTimeoutRef.current) {
-                  clearTimeout(reloadTimeoutRef.current);
-                  reloadTimeoutRef.current = null;
-                }
-                if (waveTransitionTimeoutRef.current) {
-                  clearTimeout(waveTransitionTimeoutRef.current);
-                  waveTransitionTimeoutRef.current = null;
-                }
-                if (bossSpawnTimeoutRef.current) {
-                  clearTimeout(bossSpawnTimeoutRef.current);
-                  bossSpawnTimeoutRef.current = null;
-                }
-                setIsReloading(false);
-                setWaveMessage('');
-                isWaveTransitionRef.current = false;
-                keys.current = {};
+                endRun(false);
               }
               return newHp;
             });

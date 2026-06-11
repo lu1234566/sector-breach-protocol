@@ -23,6 +23,7 @@ interface GameHUDProps {
   score: number;
   kills: number;
   hp: number;
+  maxHp: number;
   currentWeapon: WeaponType;
   ammo: { mag: number; reserve: number };
   isReloading: boolean;
@@ -45,6 +46,7 @@ export function GameHUD({
   score,
   kills,
   hp,
+  maxHp,
   currentWeapon,
   ammo,
   isReloading,
@@ -65,7 +67,7 @@ export function GameHUD({
       <ObjectivePanel runtime={objectiveSnapshot} enemiesRemaining={enemiesRemaining} />
       <WavePanel wave={wave} difficulty={difficulty} />
       <ScorePanel score={score} kills={kills} />
-      <HealthPanel hp={hp} />
+      <HealthPanel hp={hp} maxHp={maxHp} />
       <WeaponPanel currentWeapon={currentWeapon} ammo={ammo} isReloading={isReloading} />
       <Crosshair isAds={isAds} recentShot={Date.now() - lastShotTime < 90} />
       <Killfeed items={killfeed} />

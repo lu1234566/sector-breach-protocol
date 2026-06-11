@@ -87,10 +87,10 @@ function RusherRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps) {
     lungeRef.current = lerp(lungeRef.current, attackPulse, Math.min(1, delta * 14));
 
     if (dying) {
-      body.current.rotation.x = lerp(body.current.rotation.x, -1.0, Math.min(1, delta * 5));
+      body.current.rotation.x = lerp(body.current.rotation.x, 1.0, Math.min(1, delta * 5));
       body.current.position.y = lerp(body.current.position.y, -s * 0.1, Math.min(1, delta * 5));
-      clawL.current.rotation.x = lerp(clawL.current.rotation.x, 1.2, Math.min(1, delta * 5));
-      clawR.current.rotation.x = lerp(clawR.current.rotation.x, 1.2, Math.min(1, delta * 5));
+      clawL.current.rotation.x = lerp(clawL.current.rotation.x, -1.2, Math.min(1, delta * 5));
+      clawR.current.rotation.x = lerp(clawR.current.rotation.x, -1.2, Math.min(1, delta * 5));
       visorMat.emissiveIntensity = lerp(visorMat.emissiveIntensity, 0.1, Math.min(1, delta * 4));
       return;
     }
@@ -99,8 +99,8 @@ function RusherRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps) {
     const f = moving ? 11 : 3.4;
     const bob = moving ? 0.06 : 0.018;
     body.current.position.y = Math.abs(Math.sin(t * f)) * s * bob;
-    body.current.rotation.x = -0.28 - lungeRef.current * 0.18;
-    body.current.position.z = -lungeRef.current * s * 0.18;
+    body.current.rotation.x = 0.28 + lungeRef.current * 0.18;
+    body.current.position.z = lungeRef.current * s * 0.18;
 
     // head/visor scans side to side when idle, locks forward on attack
     headBob.current.rotation.y = moving ? Math.sin(t * f * 0.5) * 0.12 : Math.sin(t * 1.6) * 0.18;
@@ -108,8 +108,8 @@ function RusherRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps) {
 
     // claws swing opposite while running, snap in on attack
     const swing = moving ? Math.sin(t * f) * 0.9 : Math.sin(t * 2.2) * 0.15;
-    clawL.current.rotation.x = -0.4 + swing - lungeRef.current * 1.1;
-    clawR.current.rotation.x = -0.4 - swing - lungeRef.current * 1.1;
+    clawL.current.rotation.x = 0.4 - swing + lungeRef.current * 1.1;
+    clawR.current.rotation.x = 0.4 + swing + lungeRef.current * 1.1;
     clawL.current.rotation.z = 0.25 - lungeRef.current * 0.4;
     clawR.current.rotation.z = -0.25 + lungeRef.current * 0.4;
   });
@@ -129,44 +129,44 @@ function RusherRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps) {
           <boxGeometry args={[1, 1, 1]} />
         </mesh>
 
-        {/* head + visor */}
-        <group ref={headBob} position={[0, s * 0.08, -s * 0.34]}>
+        {/* head + visor — model forward is +Z (yaw aligns +Z with movement) */}
+        <group ref={headBob} position={[0, s * 0.08, s * 0.34]}>
           <mesh material={m.shellMid} scale={[s * 0.28, s * 0.2, s * 0.24]}>
             <boxGeometry args={[1, 1, 1]} />
           </mesh>
-          <mesh material={visorMat} position={[0, s * 0.02, -s * 0.1]} scale={[s * 0.22, s * 0.07, s * 0.03]}>
+          <mesh material={visorMat} position={[0, s * 0.02, s * 0.1]} scale={[s * 0.22, s * 0.07, s * 0.03]}>
             <boxGeometry args={[1, 1, 1]} />
           </mesh>
         </group>
 
         {/* legs (static stance) */}
         {[-1, 1].map((dx) => (
-          <mesh key={`leg${dx}`} material={m.shellDark} position={[dx * s * 0.16, -s * 0.2, s * 0.05]} scale={[s * 0.12, s * 0.22, s * 0.16]}>
+          <mesh key={`leg${dx}`} material={m.shellDark} position={[dx * s * 0.16, -s * 0.2, -s * 0.05]} scale={[s * 0.12, s * 0.22, s * 0.16]}>
             <boxGeometry args={[1, 1, 1]} />
           </mesh>
         ))}
       </group>
 
       {/* articulated claw arms */}
-      <group ref={clawL} position={[-s * 0.32, s * 0.05, -s * 0.05]}>
-        <mesh material={m.shellMid} position={[0, 0, -s * 0.18]} scale={[s * 0.07, s * 0.07, s * 0.42]}>
+      <group ref={clawL} position={[-s * 0.32, s * 0.05, s * 0.05]}>
+        <mesh material={m.shellMid} position={[0, 0, s * 0.18]} scale={[s * 0.07, s * 0.07, s * 0.42]}>
           <boxGeometry args={[1, 1, 1]} />
         </mesh>
-        <mesh material={m.accentSoft} position={[0, 0, -s * 0.42]} rotation={[0, 0, 0.4]} scale={[s * 0.04, s * 0.13, s * 0.22]}>
+        <mesh material={m.accentSoft} position={[0, 0, s * 0.42]} rotation={[0, 0, 0.4]} scale={[s * 0.04, s * 0.13, s * 0.22]}>
           <boxGeometry args={[1, 1, 1]} />
         </mesh>
-        <mesh material={m.accentSoft} position={[0, 0, -s * 0.42]} rotation={[0, 0, -0.4]} scale={[s * 0.04, s * 0.13, s * 0.22]}>
+        <mesh material={m.accentSoft} position={[0, 0, s * 0.42]} rotation={[0, 0, -0.4]} scale={[s * 0.04, s * 0.13, s * 0.22]}>
           <boxGeometry args={[1, 1, 1]} />
         </mesh>
       </group>
-      <group ref={clawR} position={[s * 0.32, s * 0.05, -s * 0.05]}>
-        <mesh material={m.shellMid} position={[0, 0, -s * 0.18]} scale={[s * 0.07, s * 0.07, s * 0.42]}>
+      <group ref={clawR} position={[s * 0.32, s * 0.05, s * 0.05]}>
+        <mesh material={m.shellMid} position={[0, 0, s * 0.18]} scale={[s * 0.07, s * 0.07, s * 0.42]}>
           <boxGeometry args={[1, 1, 1]} />
         </mesh>
-        <mesh material={m.accentSoft} position={[0, 0, -s * 0.42]} rotation={[0, 0, 0.4]} scale={[s * 0.04, s * 0.13, s * 0.22]}>
+        <mesh material={m.accentSoft} position={[0, 0, s * 0.42]} rotation={[0, 0, 0.4]} scale={[s * 0.04, s * 0.13, s * 0.22]}>
           <boxGeometry args={[1, 1, 1]} />
         </mesh>
-        <mesh material={m.accentSoft} position={[0, 0, -s * 0.42]} rotation={[0, 0, -0.4]} scale={[s * 0.04, s * 0.13, s * 0.22]}>
+        <mesh material={m.accentSoft} position={[0, 0, s * 0.42]} rotation={[0, 0, -0.4]} scale={[s * 0.04, s * 0.13, s * 0.22]}>
           <boxGeometry args={[1, 1, 1]} />
         </mesh>
       </group>
@@ -222,10 +222,10 @@ function RiflemanRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps)
     body.current.position.y = moving ? Math.abs(Math.sin(t * f * 2)) * s * 0.025 : Math.sin(t * 2) * s * 0.008;
     torso.current.rotation.y = moving ? Math.sin(t * f) * 0.08 : Math.sin(t * 1.8) * 0.04;
 
-    // arms holding rifle, recoil on shot
-    armR.current.rotation.x = -1.05 - recoilRef.current * 0.35;
-    armL.current.rotation.x = -1.0 - recoilRef.current * 0.2;
-    torso.current.position.z = recoilRef.current * s * 0.06;
+    // arms holding rifle (forward = +Z), recoil pushes torso back (-Z)
+    armR.current.rotation.x = 1.05 + recoilRef.current * 0.35;
+    armL.current.rotation.x = 1.0 + recoilRef.current * 0.2;
+    torso.current.position.z = -recoilRef.current * s * 0.06;
     visorMat.emissiveIntensity = 1.1 + recoilRef.current * 1.2 + Math.sin(t * 4) * 0.1;
   });
 
@@ -254,26 +254,26 @@ function RiflemanRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps)
           <boxGeometry args={[1, 1, 1]} />
         </mesh>
 
-        {/* arms */}
+        {/* arms — rifle points forward (+Z), matching the visor */}
         <group ref={armL} position={[-s * 0.27, s * 0.1, 0]}>
-          <mesh material={m.shellMid} position={[0, -s * 0.05, -s * 0.18]} scale={[s * 0.1, s * 0.1, s * 0.36]}>
+          <mesh material={m.shellMid} position={[0, -s * 0.05, s * 0.18]} scale={[s * 0.1, s * 0.1, s * 0.36]}>
             <boxGeometry args={[1, 1, 1]} />
           </mesh>
         </group>
         <group ref={armR} position={[s * 0.27, s * 0.1, 0]}>
-          <mesh material={m.shellMid} position={[0, -s * 0.05, -s * 0.18]} scale={[s * 0.1, s * 0.1, s * 0.36]}>
+          <mesh material={m.shellMid} position={[0, -s * 0.05, s * 0.18]} scale={[s * 0.1, s * 0.1, s * 0.36]}>
             <boxGeometry args={[1, 1, 1]} />
           </mesh>
           {/* rifle */}
-          <mesh material={m.weapon} position={[0, -s * 0.08, -s * 0.42]} scale={[s * 0.06, s * 0.08, s * 0.58]}>
+          <mesh material={m.weapon} position={[0, -s * 0.08, s * 0.42]} scale={[s * 0.06, s * 0.08, s * 0.58]}>
             <boxGeometry args={[1, 1, 1]} />
           </mesh>
           {/* energy strip on rifle */}
-          <mesh material={m.accentSoft} position={[0, -s * 0.13, -s * 0.42]} scale={[s * 0.04, s * 0.015, s * 0.42]}>
+          <mesh material={m.accentSoft} position={[0, -s * 0.13, s * 0.42]} scale={[s * 0.04, s * 0.015, s * 0.42]}>
             <boxGeometry args={[1, 1, 1]} />
           </mesh>
           {/* muzzle flash */}
-          <mesh ref={muzzle} visible={false} position={[0, -s * 0.08, -s * 0.74]} material={m.visor}>
+          <mesh ref={muzzle} visible={false} position={[0, -s * 0.08, s * 0.74]} material={m.visor}>
             <sphereGeometry args={[s * 0.06, 10, 10]} />
           </mesh>
         </group>
@@ -341,10 +341,10 @@ function SniperRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps) {
     legR.current.rotation.x = -Math.sin(t * f) * stride;
     body.current.position.y = moving ? Math.abs(Math.sin(t * f * 2)) * s * 0.015 : 0;
 
-    // rifle aims slightly, recoils strongly
-    rifle.current.position.z = recoilRef.current * s * 0.18;
-    rifle.current.rotation.x = -recoilRef.current * 0.25;
-    torso.current.rotation.x = -recoilRef.current * 0.08;
+    // rifle aims slightly, recoils strongly (kick pushes back along -Z)
+    rifle.current.position.z = -recoilRef.current * s * 0.18;
+    rifle.current.rotation.x = recoilRef.current * 0.25;
+    torso.current.rotation.x = recoilRef.current * 0.08;
 
     // scope pulses, gets brighter when charging next shot
     const charge = Math.min(1, sinceShot / 1.5);
@@ -370,9 +370,9 @@ function SniperRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps) {
           <boxGeometry args={[1, 1, 1]} />
         </mesh>
 
-        {/* long rifle on right shoulder */}
-        <group ref={rifle} position={[s * 0.16, s * 0.2, -s * 0.15]}>
-          <mesh material={m.weapon} position={[0, 0, -s * 0.05]} scale={[s * 0.06, s * 0.07, s * 0.95]}>
+        {/* long rifle on right shoulder, barrel forward (+Z) */}
+        <group ref={rifle} position={[s * 0.16, s * 0.2, s * 0.15]}>
+          <mesh material={m.weapon} position={[0, 0, s * 0.05]} scale={[s * 0.06, s * 0.07, s * 0.95]}>
             <boxGeometry args={[1, 1, 1]} />
           </mesh>
           {/* scope */}
@@ -380,11 +380,11 @@ function SniperRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps) {
             <sphereGeometry args={[s * 0.05, 12, 12]} />
           </mesh>
           {/* muzzle flash */}
-          <mesh ref={muzzle} visible={false} position={[0, 0, -s * 0.54]} material={m.visor}>
+          <mesh ref={muzzle} visible={false} position={[0, 0, s * 0.54]} material={m.visor}>
             <sphereGeometry args={[s * 0.07, 10, 10]} />
           </mesh>
           {/* aim laser */}
-          <mesh ref={laser} visible={false} position={[0, 0, -s * 1.2]} rotation={[Math.PI / 2, 0, 0]}>
+          <mesh ref={laser} visible={false} position={[0, 0, s * 1.2]} rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.012, 0.012, s * 1.8, 6]} />
             <meshBasicMaterial color={color} transparent opacity={0.6} toneMapped={false} depthWrite={false} />
           </mesh>
@@ -449,7 +449,7 @@ function TitanRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps) {
     body.current.position.y = moving
       ? Math.abs(Math.sin(t * f * 2)) * s * 0.06
       : Math.sin(t * 1.1) * s * 0.025;
-    body.current.rotation.x = -0.12 + slamRef.current * 0.35;
+    body.current.rotation.x = 0.12 + slamRef.current * 0.35;
     torso.current.rotation.y = moving ? Math.sin(t * f) * 0.1 : Math.sin(t * 0.8) * 0.05;
 
     // arms swing while walking, raise on slam

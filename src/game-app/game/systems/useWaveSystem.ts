@@ -1,5 +1,7 @@
 // @ts-nocheck
 import { useCallback } from 'react';
+import { BOSS_WAVE } from '../constants';
+import { sounds } from '../SoundEngine';
 import { getWaveObjective, createRuntime } from '../objectives';
 import type { ArenaDef } from '../../data/arenas';
 import type { ObjectiveRuntime } from '../types';
@@ -18,7 +20,6 @@ interface UseWaveSystemArgs {
   // Setters
   setObjectiveSnapshot: (s: ObjectiveRuntime | null) => void;
   setWaveMessage: (m: string) => void;
-  setEnemiesRemaining: (fn: (n: number) => number) => void;
   // Spawn callback
   spawnEnemies: (count: number, currentWave?: number, isBoss?: boolean) => void;
 }
@@ -32,7 +33,7 @@ export function useWaveSystem(args: UseWaveSystemArgs) {
     waveRef, isWaveTransitionRef, isSpawningRef,
     spawnIntervalRef, waveTransitionTimeoutRef, bossSpawnTimeoutRef,
     objectiveRef, currentArenaRef, gameStateRef,
-    setObjectiveSnapshot, setWaveMessage, setEnemiesRemaining,
+    setObjectiveSnapshot, setWaveMessage,
     spawnEnemies,
   } = args;
 
@@ -63,13 +64,43 @@ export function useWaveSystem(args: UseWaveSystemArgs) {
     objectiveRef.current = objRuntime;
     setObjectiveSnapshot({ ...objRuntime });
     setWaveMessage(`WAVE ${waveNum} · ${objDef.label.toUpperCase()}`);
+    sounds.playWaveStart();
 
     // Gradual spawning
     const count = waveNum === 1 ? 3 : 3 + waveNum * 2;
     let spawnedCount = 0;
+
+    const scheduleBoss = () => {
+      isSpawningRef.current = true;
+      if (bossSpawnTimeoutRef.current) clearTimeout(bossSpawnTimeoutRef.current);
+      bossSpawnTimeoutRef.current = setTimeout(() => {
+        bossSpawnTimeoutRef.current = null;
+        // If paused (or still on the deploy screen) when the timer fires,
+        // retry instead of silently dropping the boss — otherwise the wave
+        // would complete without the Titan ever appearing.
+        if (gameStateRef.current === 'paused' || gameStateRef.current === 'deploy') {
+          scheduleBoss();
+          return;
+        }
+        if (gameStateRef.current === 'playing' && waveRef.current === BOSS_WAVE) {
+          spawnEnemies(1, BOSS_WAVE, true);
+          sounds.playBossRoar();
+        }
+        isSpawningRef.current = false;
+      }, 4000) as unknown as number;
+    };
+
     spawnIntervalRef.current = setInterval(() => {
-      if (gameStateRef.current !== 'playing') {
-        if (spawnIntervalRef.current) clearInterval(spawnIntervalRef.current);
+      const state = gameStateRef.current;
+      // While paused/deploying, just hold the spawn schedule. Clearing the
+      // interval here would soft-lock the wave on resume.
+      if (state === 'paused' || state === 'deploy') return;
+      if (state !== 'playing') {
+        if (spawnIntervalRef.current) {
+          clearInterval(spawnIntervalRef.current);
+          spawnIntervalRef.current = null;
+        }
+        isSpawningRef.current = false;
         return;
       }
 
@@ -79,20 +110,8 @@ export function useWaveSystem(args: UseWaveSystemArgs) {
           spawnIntervalRef.current = null;
         }
 
-        if (waveNum === 5) {
-          isSpawningRef.current = true;
-          if (bossSpawnTimeoutRef.current) clearTimeout(bossSpawnTimeoutRef.current);
-          bossSpawnTimeoutRef.current = setTimeout(() => {
-            if (gameStateRef.current === 'playing' && waveRef.current === 5) {
-              spawnEnemies(1, 5, true);
-              setEnemiesRemaining(prev => prev + 1);
-            }
-            isSpawningRef.current = false;
-            bossSpawnTimeoutRef.current = null;
-          }, 4000) as unknown as number;
-        } else {
-          isSpawningRef.current = false;
-        }
+        if (waveNum === BOSS_WAVE) scheduleBoss();
+        else isSpawningRef.current = false;
         return;
       }
       spawnEnemies(1, waveNum);
@@ -102,7 +121,7 @@ export function useWaveSystem(args: UseWaveSystemArgs) {
     spawnIntervalRef, waveTransitionTimeoutRef, bossSpawnTimeoutRef,
     isWaveTransitionRef, isSpawningRef, waveRef, objectiveRef,
     currentArenaRef, gameStateRef,
-    setObjectiveSnapshot, setWaveMessage, setEnemiesRemaining,
+    setObjectiveSnapshot, setWaveMessage,
     spawnEnemies,
   ]);
 

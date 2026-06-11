@@ -53,7 +53,15 @@ class EnemyModelBoundary extends Component<any, { err: boolean }> {
 const animatedProbeCache = new Map<string, Promise<boolean>>();
 function probeAnimatedUrl(url: string): Promise<boolean> {
   if (animatedProbeCache.has(url)) return animatedProbeCache.get(url)!;
-  const p = fetch(url, { method: 'HEAD' }).then((r) => r.ok).catch(() => false);
+  const p = fetch(url, { method: 'HEAD' })
+    .then((r) => {
+      if (!r.ok) return false;
+      // SPA hosts often rewrite missing paths to index.html with a 200;
+      // treat an HTML response as "file does not exist".
+      const ct = (r.headers.get('content-type') || '').toLowerCase();
+      return !ct.includes('text/html');
+    })
+    .catch(() => false);
   animatedProbeCache.set(url, p);
   return p;
 }

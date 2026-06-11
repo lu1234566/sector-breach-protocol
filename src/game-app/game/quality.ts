@@ -32,13 +32,14 @@ function detectAuto(): 'low' | 'medium' | 'high' {
     const renderer = ext ? (gl as any).getParameter(ext.UNMASKED_RENDERER_WEBGL) as string : '';
     const r = (renderer || '').toLowerCase();
     const cores = navigator.hardwareConcurrency || 4;
-    const dpr = window.devicePixelRatio || 1;
 
-    // Chromebook / integrated indicators
+    // Chromebook / integrated indicators. Note: devicePixelRatio must NOT
+    // gate this — desktop 1080p monitors report dpr === 1 and would all be
+    // misclassified as low-end.
     const isLowGpu = /intel|swiftshader|mali|adreno [3-5]\d\d|powervr|llvmpipe|chromebook/.test(r);
-    const isHighGpu = /rtx|radeon rx|apple m[1-9]|arc a\d/.test(r);
+    const isHighGpu = /rtx|geforce|radeon rx|apple m[1-9]|arc a\d/.test(r);
 
-    if (isLowGpu || cores <= 4 || dpr <= 1) return 'low';
+    if (isLowGpu || cores <= 4) return 'low';
     if (isHighGpu && cores >= 8) return 'high';
     return 'medium';
   } catch {
