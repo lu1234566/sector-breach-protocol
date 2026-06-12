@@ -14,6 +14,10 @@ export interface GameSettings {
   // rig: force procedural part-rig enemies.
   // glb: force EnemyModel/GLB enemies for testing animation/positioning.
   enemyVisualMode: EnemyVisualMode;
+  /** Music volume, 0..1. */
+  musicVolume: number;
+  /** Sound-effects volume, 0..1. */
+  sfxVolume: number;
 }
 
 const KEY = 'protocol_settings';
@@ -25,6 +29,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
   invertY: false,
   quality: 'auto',
   enemyVisualMode: 'auto',
+  musicVolume: 0.35,
+  sfxVolume: 0.7,
 };
 
 export function loadSettings(): GameSettings {
@@ -41,6 +47,8 @@ export function loadSettings(): GameSettings {
       invertY: Boolean(parsed.invertY),
       quality: (['auto', 'low', 'medium', 'high'] as const).includes(q) ? q : 'auto',
       enemyVisualMode: (['auto', 'rig', 'glb'] as const).includes(enemyVisualMode) ? enemyVisualMode : 'auto',
+      musicVolume: clampNum(parsed.musicVolume, 0, 1, DEFAULT_SETTINGS.musicVolume),
+      sfxVolume: clampNum(parsed.sfxVolume, 0, 1, DEFAULT_SETTINGS.sfxVolume),
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -72,6 +80,16 @@ export function updateSettings(patch: Partial<GameSettings>) {
   saveSettings(current);
   listeners.forEach((l) => l(current!));
 }
+
+/** Non-React subscription (e.g. the sound engine reacting to volume changes). */
+export function subscribeSettings(l: (s: GameSettings) => void): () => void {
+  listeners.add(l);
+  return () => {
+    listeners.delete(l);
+  };
+}
+
+
 
 export function useSettings(): [GameSettings, (patch: Partial<GameSettings>) => void] {
   const [s, setS] = useState<GameSettings>(() => getSettings());
