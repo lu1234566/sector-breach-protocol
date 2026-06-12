@@ -14,6 +14,10 @@ export interface GameSettings {
   // rig: force procedural part-rig enemies.
   // glb: force EnemyModel/GLB enemies for testing animation/positioning.
   enemyVisualMode: EnemyVisualMode;
+  /** Music volume, 0..1. */
+  musicVolume: number;
+  /** Sound-effects volume, 0..1. */
+  sfxVolume: number;
 }
 
 const KEY = 'protocol_settings';
