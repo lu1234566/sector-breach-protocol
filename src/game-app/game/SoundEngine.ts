@@ -5,6 +5,12 @@
  */
 
 import { WeaponType } from './constants';
+import { getSettings, subscribeSettings } from './settings';
+
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+// The synth gain constants were tuned against the old fixed sfxVolume of
+// 0.7, so the master gain is normalized to keep that loudness at default.
+const SFX_REFERENCE = 0.7;
 
 /**
  * SoundEngine — drop-in audio pipeline.
