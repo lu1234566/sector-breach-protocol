@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { useSettings, DEFAULT_SETTINGS, type QualityTier, type EnemyVisualMode } from '@/game-app/game/settings';
+import { sounds } from '@/game-app/game/SoundEngine';
 
 interface Props {
   onBack: () => void;
