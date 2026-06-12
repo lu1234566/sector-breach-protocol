@@ -81,6 +81,16 @@ export function updateSettings(patch: Partial<GameSettings>) {
   listeners.forEach((l) => l(current!));
 }
 
+/** Non-React subscription (e.g. the sound engine reacting to volume changes). */
+export function subscribeSettings(l: (s: GameSettings) => void): () => void {
+  listeners.add(l);
+  return () => {
+    listeners.delete(l);
+  };
+}
+
+
+
 export function useSettings(): [GameSettings, (patch: Partial<GameSettings>) => void] {
   const [s, setS] = useState<GameSettings>(() => getSettings());
   useEffect(() => {
