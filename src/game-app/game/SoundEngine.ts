@@ -101,14 +101,45 @@ export class SoundEngine {
   ctx: AudioContext | null = null;
   private files: Partial<Record<FileKey, FilePool>> = {};
   private music: { key: FileKey; el: HTMLAudioElement } | null = null;
-  private musicVolume = 0.35;
-  private sfxVolume = 0.7;
+  private masterGain: GainNode | null = null;
+
+  constructor() {
+    // Live-apply volume changes from the settings panel to whatever is
+    // already playing (file pools read the volume fresh on each play).
+    subscribeSettings((s) => {
+      if (this.music) this.music.el.volume = clamp01(s.musicVolume ?? 0.35);
+      if (this.masterGain) {
+        this.masterGain.gain.value = clamp01(s.sfxVolume ?? SFX_REFERENCE) / SFX_REFERENCE;
+      }
+    });
+  }
+
+  private get musicVolume() {
+    return clamp01(getSettings().musicVolume ?? 0.35);
+  }
+
+  private get sfxVolume() {
+    return clamp01(getSettings().sfxVolume ?? SFX_REFERENCE);
+  }
+
+  /** Output node for the oscillator fallbacks — scaled by the SFX volume. */
+  private out(): AudioNode {
+    if (!this.masterGain && this.ctx) {
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.value = this.sfxVolume / SFX_REFERENCE;
+      this.masterGain.connect(this.ctx.destination);
+    }
+    return this.masterGain ?? this.ctx!.destination;
+  }
 
   init() {
     if (!this.ctx) {
       try {
         this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
       } catch {}
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
     }
     // Probe SFX files in background — non-blocking
     this.preload();
