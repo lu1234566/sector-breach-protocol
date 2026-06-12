@@ -5,6 +5,12 @@
  */
 
 import { WeaponType } from "./constants";
+import { getSettings, subscribeSettings } from "./settings";
+
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+// The synth gain constants were tuned against the old fixed sfxVolume of
+// 0.7, so the master gain is normalized to keep that loudness at default.
+const SFX_REFERENCE = 0.7;
 
 /**
  * SoundEngine — drop-in audio pipeline.
@@ -103,8 +109,36 @@ export class SoundEngine {
   ctx: AudioContext | null = null;
   private files: Partial<Record<FileKey, FilePool>> = {};
   private music: { key: FileKey; el: HTMLAudioElement } | null = null;
-  private musicVolume = 0.35;
-  private sfxVolume = 0.7;
+  private masterGain: GainNode | null = null;
+
+  constructor() {
+    // Live-apply volume changes from the settings panel to whatever is
+    // already playing (file pools read the volume fresh on each play).
+    subscribeSettings((s) => {
+      if (this.music) this.music.el.volume = clamp01(s.musicVolume ?? 0.35);
+      if (this.masterGain) {
+        this.masterGain.gain.value = clamp01(s.sfxVolume ?? SFX_REFERENCE) / SFX_REFERENCE;
+      }
+    });
+  }
+
+  private get musicVolume() {
+    return clamp01(getSettings().musicVolume ?? 0.35);
+  }
+
+  private get sfxVolume() {
+    return clamp01(getSettings().sfxVolume ?? SFX_REFERENCE);
+  }
+
+  /** Output node for the oscillator fallbacks — scaled by the SFX volume. */
+  private out(): AudioNode {
+    if (!this.masterGain && this.ctx) {
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.value = this.sfxVolume / SFX_REFERENCE;
+      this.masterGain.connect(this.ctx.destination);
+    }
+    return this.masterGain ?? this.ctx!.destination;
+  }
 
   init() {
     if (!this.ctx) {
@@ -265,7 +299,7 @@ export class SoundEngine {
     );
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start();
     osc.stop(this.ctx.currentTime + 0.5);
   }
@@ -280,7 +314,7 @@ export class SoundEngine {
     gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start();
     osc.stop(this.ctx.currentTime + 0.2);
   }
@@ -295,7 +329,7 @@ export class SoundEngine {
     gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start();
     osc.stop(this.ctx.currentTime + 0.2);
   }
@@ -309,7 +343,7 @@ export class SoundEngine {
     gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start();
     osc.stop(this.ctx.currentTime + 0.05);
   }
@@ -323,7 +357,7 @@ export class SoundEngine {
     gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.02);
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start();
     osc.stop(this.ctx.currentTime + 0.02);
   }
@@ -343,7 +377,7 @@ export class SoundEngine {
     gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start();
     osc.stop(this.ctx.currentTime + 0.2);
   }
@@ -357,7 +391,7 @@ export class SoundEngine {
     gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
     gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.2);
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.out());
     osc.start();
     osc.stop(this.ctx.currentTime + 0.2);
   }

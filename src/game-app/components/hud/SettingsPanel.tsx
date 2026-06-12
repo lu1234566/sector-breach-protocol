@@ -5,6 +5,7 @@ import {
   type QualityTier,
   type EnemyVisualMode,
 } from "@/game-app/game/settings";
+import { sounds } from "@/game-app/game/SoundEngine";
 
 interface Props {
   onBack: () => void;
@@ -48,6 +49,19 @@ export function SettingsPanel({ onBack }: Props) {
           label="Invert Mouse Y"
           value={settings.invertY}
           onChange={(v) => update({ invertY: v })}
+        />
+
+        <VolumeSlider
+          label="Music Volume"
+          value={settings.musicVolume}
+          onChange={(v) => update({ musicVolume: v })}
+        />
+        <VolumeSlider
+          label="Effects Volume"
+          value={settings.sfxVolume}
+          onChange={(v) => update({ sfxVolume: v })}
+          // Audible preview of the new level when the user releases the slider
+          onCommit={() => sounds.playUiClick()}
         />
 
         <QualityPicker value={settings.quality} onChange={(q) => update({ quality: q })} />
@@ -102,6 +116,41 @@ function SensSlider({
         step={0.05}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="w-full accent-cyan-400"
+      />
+    </div>
+  );
+}
+
+function VolumeSlider({
+  label,
+  value,
+  onChange,
+  onCommit,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  onCommit?: () => void;
+}) {
+  return (
+    <div>
+      <div className="flex justify-between items-end mb-2">
+        <span className="text-[10px] text-cyan-300/90 uppercase tracking-widest font-bold">
+          {label}
+        </span>
+        <span className="font-mono text-xs text-white">
+          {value <= 0 ? "MUTE" : `${Math.round(value * 100)}%`}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.05}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        onPointerUp={onCommit}
         className="w-full accent-cyan-400"
       />
     </div>
