@@ -47,6 +47,8 @@ export function loadSettings(): GameSettings {
       invertY: Boolean(parsed.invertY),
       quality: (['auto', 'low', 'medium', 'high'] as const).includes(q) ? q : 'auto',
       enemyVisualMode: (['auto', 'rig', 'glb'] as const).includes(enemyVisualMode) ? enemyVisualMode : 'auto',
+      musicVolume: clampNum(parsed.musicVolume, 0, 1, DEFAULT_SETTINGS.musicVolume),
+      sfxVolume: clampNum(parsed.sfxVolume, 0, 1, DEFAULT_SETTINGS.sfxVolume),
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
