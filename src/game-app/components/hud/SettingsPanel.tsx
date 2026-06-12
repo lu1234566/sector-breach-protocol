@@ -120,6 +120,43 @@ function SensSlider({
   );
 }
 
+function VolumeSlider({
+  label,
+  value,
+  onChange,
+  onCommit,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  onCommit?: () => void;
+}) {
+  return (
+    <div>
+      <div className="flex justify-between items-end mb-2">
+        <span className="text-[10px] text-cyan-300/90 uppercase tracking-widest font-bold">
+          {label}
+        </span>
+        <span className="font-mono text-xs text-white">
+          {value <= 0 ? 'MUTE' : `${Math.round(value * 100)}%`}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.05}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        onPointerUp={onCommit}
+        className="w-full accent-cyan-400"
+      />
+    </div>
+  );
+}
+
+
+
 function Toggle({
   label,
   value,
