@@ -29,6 +29,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
   invertY: false,
   quality: 'auto',
   enemyVisualMode: 'auto',
+  musicVolume: 0.35,
+  sfxVolume: 0.7,
 };
 
 export function loadSettings(): GameSettings {
