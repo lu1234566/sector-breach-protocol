@@ -254,7 +254,7 @@ export class SoundEngine {
     filter.frequency.setValueAtTime(weapon === 'sniper' ? 400 : 800, this.ctx.currentTime);
     gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + (weapon === 'sniper' ? 0.4 : weapon === 'shotgun' ? 0.3 : 0.1));
-    osc.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+    osc.connect(filter); filter.connect(gain); gain.connect(this.out());
     osc.start(); osc.stop(this.ctx.currentTime + 0.5);
   }
 
@@ -267,7 +267,7 @@ export class SoundEngine {
     osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.2);
     gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.connect(gain); gain.connect(this.out());
     osc.start(); osc.stop(this.ctx.currentTime + 0.2);
   }
 
@@ -280,7 +280,7 @@ export class SoundEngine {
     osc.frequency.linearRampToValueAtTime(880, this.ctx.currentTime + 0.1);
     gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.connect(gain); gain.connect(this.out());
     osc.start(); osc.stop(this.ctx.currentTime + 0.2);
   }
 
@@ -292,7 +292,7 @@ export class SoundEngine {
     osc.frequency.setValueAtTime(200, this.ctx.currentTime);
     gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
-    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.connect(gain); gain.connect(this.out());
     osc.start(); osc.stop(this.ctx.currentTime + 0.05);
   }
 
@@ -304,7 +304,7 @@ export class SoundEngine {
     osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
     gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.02);
-    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.connect(gain); gain.connect(this.out());
     osc.start(); osc.stop(this.ctx.currentTime + 0.02);
   }
 
@@ -322,7 +322,7 @@ export class SoundEngine {
     }
     gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.connect(gain); gain.connect(this.out());
     osc.start(); osc.stop(this.ctx.currentTime + 0.2);
   }
 
@@ -334,7 +334,7 @@ export class SoundEngine {
     osc.frequency.setValueAtTime(100, this.ctx.currentTime);
     gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
     gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.2);
-    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.connect(gain); gain.connect(this.out());
     osc.start(); osc.stop(this.ctx.currentTime + 0.2);
   }
 }
