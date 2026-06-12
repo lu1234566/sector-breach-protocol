@@ -1,5 +1,6 @@
 // @ts-nocheck
-import React from "react";
+import React, { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 interface Particle {
@@ -13,40 +14,57 @@ interface Particle {
   vy: number;
 }
 
-export function Particles3D({
-  particles,
+const MAX_PARTICLES = 256;
+
+/**
+ * All particles render through a single InstancedMesh (one draw call) and
+ * read the live particle list from a ref every frame — no per-particle React
+ * elements, no geometry churn, and positions update at full frame rate
+ * instead of the 30Hz game-state sync.
+ */
+export const Particles3D = React.memo(function Particles3D({
+  particlesRef,
   cellSize,
-  mapData,
+  mapWidth,
+  mapHeight,
 }: {
-  particles: Particle[];
+  particlesRef: React.MutableRefObject<Particle[]>;
   cellSize: number;
-  mapData: number[][];
+  mapWidth: number;
+  mapHeight: number;
 }) {
-  const mapWidth = mapData[0].length * cellSize;
-  const mapHeight = mapData.length * cellSize;
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const colorObj = useMemo(() => new THREE.Color(), []);
+
+  useFrame(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const list = particlesRef.current ?? [];
+    const n = Math.min(list.length, MAX_PARTICLES);
+    for (let i = 0; i < n; i++) {
+      const p = list[i];
+      dummy.position.set(
+        p.x - mapWidth / 2,
+        cellSize / 3 + (1 - p.life) * cellSize * 0.2,
+        p.y - mapHeight / 2,
+      );
+      // Shrink with remaining life (replaces per-particle opacity fade,
+      // which is not available per-instance on a shared material).
+      dummy.scale.setScalar((p.size / 5) * Math.max(0.1, p.life));
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      mesh.setColorAt(i, colorObj.set(p.color));
+    }
+    mesh.count = n;
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  });
 
   return (
-    <>
-      {particles.map((p) => {
-        const isShell = p.color === "#fef08a" || p.color === "#fbbf24";
-        return (
-          <mesh
-            key={p.id}
-            position={[
-              p.x - mapWidth / 2,
-              cellSize / 3 + (1 - p.life) * cellSize * 0.2,
-              p.y - mapHeight / 2,
-            ]}
-          >
-            {isShell ? (
-              <sphereGeometry args={[p.size / 7, 6, 6]} />
-            ) : (
-              <boxGeometry args={[p.size / 5, p.size / 5, p.size / 5]} />
-            )}
-            <meshBasicMaterial color={p.color} transparent opacity={p.life * 0.85} />
-          </mesh>
-        );
-      })}
-    </>
+    <instancedMesh ref={meshRef} args={[undefined, undefined, MAX_PARTICLES]} frustumCulled={false}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshBasicMaterial toneMapped={false} />
+    </instancedMesh>
   );
-}
+});

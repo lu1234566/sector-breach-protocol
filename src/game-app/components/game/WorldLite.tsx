@@ -109,7 +109,8 @@ function InstancedStrips({ items, color, opacity = 0.85 }: any) {
  * lightweight texture maps and a few instanced trims so low quality no longer
  * looks like untextured debug geometry.
  */
-export function WorldLite({ mapData, cellSize }: MapProps) {
+// Memoized for the same reason as World: map identity changes are rare.
+export const WorldLite = React.memo(function WorldLite({ mapData, cellSize }: MapProps) {
   const mapWidth = mapData[0].length * cellSize;
   const mapHeight = mapData.length * cellSize;
 
@@ -256,4 +257,4 @@ export function WorldLite({ mapData, cellSize }: MapProps) {
       </mesh>
     </group>
   );
-}
+});

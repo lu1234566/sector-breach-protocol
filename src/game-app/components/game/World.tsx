@@ -32,7 +32,9 @@ const h = (x: number, y: number, salt = 0) => {
 
 const isWall = (c?: number) => c === 1; // visual occluder
 
-export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
+// Memoized: the world only re-renders when the map actually changes
+// (door opened / barrel destroyed), not on every 30Hz game-state sync.
+export const World = React.memo(function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
   const mapWidth = mapData[0].length * cellSize;
   const mapHeight = mapData.length * cellSize;
 
@@ -676,4 +678,4 @@ export function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
       {cells}
     </group>
   );
-}
+});

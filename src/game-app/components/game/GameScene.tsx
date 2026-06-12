@@ -29,7 +29,7 @@ import {
 interface GameSceneProps {
   player: React.MutableRefObject<Player>;
   enemies: Enemy[];
-  particles: Particle[];
+  particlesRef: React.MutableRefObject<Particle[]>;
   tracers: Tracer[];
   pickups: Pickup[];
   decals?: WallDecal[];
@@ -98,7 +98,7 @@ function PlayerController({
 export function GameScene({
   player,
   enemies,
-  particles,
+  particlesRef,
   tracers,
   mapData,
   cellSize,
@@ -116,10 +116,11 @@ export function GameScene({
   const [settingsState] = useSettings();
   const quality = resolveQuality(settingsState.quality);
   const isLowQuality = quality.tier === "low";
+  const mapWidth = mapData[0].length * cellSize;
+  const mapHeight = mapData.length * cellSize;
 
   // Chromebook-friendly caps. These reduce React/Three object count during
   // firefights, which is usually where FPS collapses on low-end integrated GPUs.
-  const visibleParticles = isLowQuality ? particles.slice(0, 18) : particles;
   const visibleTracers = isLowQuality ? tracers.slice(-8) : tracers;
   const visibleDecals = isLowQuality ? [] : decals;
   const EnemyRenderer = isLowQuality ? EnemyLite : Enemy3D;
@@ -162,7 +163,12 @@ export function GameScene({
           <World mapData={mapData} cellSize={cellSize} propsDensity={quality.propsDensity} />
         )}
 
-        <Particles3D particles={visibleParticles} cellSize={cellSize} mapData={mapData} />
+        <Particles3D
+          particlesRef={particlesRef}
+          cellSize={cellSize}
+          mapWidth={mapWidth}
+          mapHeight={mapHeight}
+        />
         <Tracers3D tracers={visibleTracers} cellSize={cellSize} mapData={mapData} />
         {visibleDecals && visibleDecals.length > 0 && (
           <Decals3D decals={visibleDecals} cellSize={cellSize} mapData={mapData} now={now} />
@@ -178,11 +184,14 @@ export function GameScene({
         {enemies.map((enemy) => (
           <EnemyRenderer
             key={enemy.id}
-            {...enemy}
+            live={enemy}
+            type={enemy.type}
+            isBoss={enemy.isBoss}
+            maxHp={enemy.maxHp}
             cellSize={cellSize}
+            mapWidth={mapWidth}
+            mapHeight={mapHeight}
             debug={debugMode}
-            x={enemy.x - (mapData[0].length * cellSize) / 2}
-            y={enemy.y - (mapData.length * cellSize) / 2}
           />
         ))}
 

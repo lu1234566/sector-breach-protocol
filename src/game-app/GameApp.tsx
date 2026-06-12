@@ -751,6 +751,11 @@ export default function App() {
         size: Math.random() * 4 + 2,
       });
     }
+    // Hard cap so heavy firefights can't grow the list unbounded (the
+    // renderer instances at most 256 anyway).
+    if (particles.current.length > 256) {
+      particles.current.splice(0, particles.current.length - 256);
+    }
   };
 
   const update = () => {
@@ -951,7 +956,13 @@ export default function App() {
       setEnemiesState([...enemies.current]);
       setEnemiesRemaining(aliveEnemies.length);
       setDamageIndicators((prev) =>
-        prev.map((ind) => ({ ...ind, opacity: ind.opacity - 0.02 })).filter((i) => i.opacity > 0),
+        // Returning the same (empty) array bails out of the state update —
+        // otherwise this forces a full re-render every other tick for nothing.
+        prev.length === 0
+          ? prev
+          : prev
+              .map((ind) => ({ ...ind, opacity: ind.opacity - 0.02 }))
+              .filter((i) => i.opacity > 0),
       );
     }
 
@@ -1110,7 +1121,7 @@ export default function App() {
             <GameScene
               player={player}
               enemies={enemiesState}
-              particles={particles.current}
+              particlesRef={particles}
               tracers={tracers.current}
               decals={decals.current}
               objective={objectiveSnapshot}
