@@ -51,6 +51,19 @@ export function SettingsPanel({ onBack }: Props) {
           onChange={(q) => update({ quality: q })}
         />
 
+        <VolumeSlider
+          label="Music Volume"
+          value={settings.musicVolume}
+          onChange={(v) => update({ musicVolume: v })}
+        />
+        <VolumeSlider
+          label="Effects Volume"
+          value={settings.sfxVolume}
+          onChange={(v) => update({ sfxVolume: v })}
+          onCommit={() => sounds.playUiClick()}
+        />
+
+
         <EnemyVisualModePicker
           value={settings.enemyVisualMode}
           onChange={(m) => update({ enemyVisualMode: m })}
