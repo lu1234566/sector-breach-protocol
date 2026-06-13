@@ -321,6 +321,10 @@ export default function App() {
 
   const [enemiesState, setEnemiesState] = useState<Enemy[]>([]);
   const renderTick = useRef(0);
+  const rosterKeyRef = useRef("");
+  // Slow heartbeat so transient visuals that still render declaratively
+  // (decal fade, pickup membership) refresh even when no game state changes.
+  const [, setHeartbeat] = useState(0);
 
   const initGame = (mode: "campaign" | "endless" = gameModeRef.current) => {
     gameModeRef.current = mode;
@@ -966,7 +970,14 @@ export default function App() {
 
     renderTick.current++;
     if (renderTick.current % 2 === 0) {
-      setEnemiesState([...enemies.current]);
+      // Positions/HP/animation are read imperatively from the live objects,
+      // so React only needs a new roster when membership actually changes
+      // (spawn, death, corpse cleanup) — not 30 times per second.
+      const rosterKey = enemies.current.map((e) => e.id).join("|");
+      if (rosterKey !== rosterKeyRef.current) {
+        rosterKeyRef.current = rosterKey;
+        setEnemiesState([...enemies.current]);
+      }
       setEnemiesRemaining(aliveEnemies.length);
       setDamageIndicators((prev) =>
         // Returning the same (empty) array bails out of the state update —
@@ -977,6 +988,11 @@ export default function App() {
               .map((ind) => ({ ...ind, opacity: ind.opacity - 0.02 }))
               .filter((i) => i.opacity > 0),
       );
+    }
+    // ~2Hz heartbeat, only while something on screen still renders
+    // declaratively from a ref (decal fade-out).
+    if (renderTick.current % 30 === 0 && decals.current.length > 0) {
+      setHeartbeat((h) => h + 1);
     }
 
     tracers.current.forEach((t) => (t.alpha -= 0.05));
@@ -1135,21 +1151,21 @@ export default function App() {
               player={player}
               enemies={enemiesState}
               particlesRef={particles}
-              tracers={tracers.current}
+              tracersRef={tracers}
               decals={decals.current}
               objective={objectiveSnapshot}
               mapData={mapDataState}
               cellSize={CELL_SIZE}
               currentWeapon={currentWeapon}
               isReloading={isReloading}
-              recoilOffset={recoilOffset.current}
-              screenShake={screenShake.current}
-              lastShotTime={lastShotTime.current}
+              recoilOffsetRef={recoilOffset}
+              screenShakeRef={screenShake}
+              lastShotTimeRef={lastShotTime}
               pickups={pickups.current}
               debugMode={DEBUG_MODE}
             />
             {currentWeapon === "sniper" && gameState === "playing" && (
-              <SniperScope progress={player.current.adsProgress} />
+              <SniperScope playerRef={player} />
             )}
           </>
         )}
@@ -1166,8 +1182,8 @@ export default function App() {
             currentWeapon={currentWeapon}
             ammo={ammo}
             isReloading={isReloading}
-            isAds={player.current.isAds}
-            lastShotTime={lastShotTime.current}
+            playerRef={player}
+            lastShotTimeRef={lastShotTime}
             killfeed={killfeed}
             damageIndicators={damageIndicators}
             lastDamageTime={lastDamageTaken.current}

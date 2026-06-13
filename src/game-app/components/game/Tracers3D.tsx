@@ -1,5 +1,6 @@
 // @ts-nocheck
-import React from "react";
+import React, { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 interface Tracer {
@@ -11,52 +12,97 @@ interface Tracer {
   alpha: number;
 }
 
-export function Tracers3D({
-  tracers,
+const MAX_TRACERS = 32;
+const UP = new THREE.Vector3(0, 1, 0);
+
+/**
+ * Pooled instanced tracers (3 draw calls: glow, core, impact spark) reading
+ * the live tracer list from a ref every frame. This removes the dependency
+ * on React re-renders — enemy shots that don't change any game state still
+ * show their tracer — and drops the per-tracer mesh/geometry churn.
+ * Fade is approximated by thinning the beam with the remaining alpha.
+ */
+export const Tracers3D = React.memo(function Tracers3D({
+  tracersRef,
   cellSize,
-  mapData,
+  mapWidth,
+  mapHeight,
 }: {
-  tracers: Tracer[];
+  tracersRef: React.MutableRefObject<Tracer[]>;
   cellSize: number;
-  mapData: number[][];
+  mapWidth: number;
+  mapHeight: number;
 }) {
-  const mapWidth = mapData[0].length * cellSize;
-  const mapHeight = mapData.length * cellSize;
+  const glowRef = useRef<THREE.InstancedMesh>(null);
+  const coreRef = useRef<THREE.InstancedMesh>(null);
+  const sparkRef = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const p1 = useMemo(() => new THREE.Vector3(), []);
+  const p2 = useMemo(() => new THREE.Vector3(), []);
+  const dir = useMemo(() => new THREE.Vector3(), []);
+  const quat = useMemo(() => new THREE.Quaternion(), []);
+
+  useFrame(() => {
+    const glow = glowRef.current;
+    const core = coreRef.current;
+    const spark = sparkRef.current;
+    if (!glow || !core || !spark) return;
+    const list = tracersRef.current ?? [];
+    const n = Math.min(list.length, MAX_TRACERS);
+    const y = cellSize / 2.5;
+
+    for (let i = 0; i < n; i++) {
+      const t = list[i];
+      p1.set(t.x1 - mapWidth / 2, y, t.y1 - mapHeight / 2);
+      p2.set(t.x2 - mapWidth / 2, y, t.y2 - mapHeight / 2);
+      const distance = Math.max(p1.distanceTo(p2), 0.001);
+      dir.subVectors(p2, p1).normalize();
+      quat.setFromUnitVectors(UP, dir);
+      const a = Math.max(0, Math.min(1, t.alpha));
+
+      dummy.position.copy(p1).add(p2).multiplyScalar(0.5);
+      dummy.quaternion.copy(quat);
+
+      dummy.scale.set(0.06 * a + 0.005, distance, 0.06 * a + 0.005);
+      dummy.updateMatrix();
+      glow.setMatrixAt(i, dummy.matrix);
+
+      dummy.scale.set(0.018 * a + 0.002, distance, 0.018 * a + 0.002);
+      dummy.updateMatrix();
+      core.setMatrixAt(i, dummy.matrix);
+
+      dummy.position.copy(p2);
+      dummy.quaternion.identity();
+      dummy.scale.setScalar(0.18 * a + 0.01);
+      dummy.updateMatrix();
+      spark.setMatrixAt(i, dummy.matrix);
+    }
+    glow.count = n;
+    core.count = n;
+    spark.count = n;
+    glow.instanceMatrix.needsUpdate = true;
+    core.instanceMatrix.needsUpdate = true;
+    spark.instanceMatrix.needsUpdate = true;
+  });
 
   return (
     <>
-      {tracers.map((t) => {
-        const p1 = new THREE.Vector3(t.x1 - mapWidth / 2, cellSize / 2.5, t.y1 - mapHeight / 2);
-        const p2 = new THREE.Vector3(t.x2 - mapWidth / 2, cellSize / 2.5, t.y2 - mapHeight / 2);
-        const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
-        const distance = p1.distanceTo(p2);
-
-        // Cylinders extend along local +Y; rotate that axis onto the shot
-        // direction. (lookAt would overwrite the rotation and leave the beam
-        // perpendicular to the trajectory.)
-        const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
-        const beamQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-
-        return (
-          <group key={t.id} position={mid}>
-            {/* Outer glow */}
-            <mesh quaternion={beamQuat}>
-              <cylinderGeometry args={[0.06, 0.04, distance, 6]} />
-              <meshBasicMaterial color="#22d3ee" transparent opacity={t.alpha * 0.35} />
-            </mesh>
-            {/* Bright core */}
-            <mesh quaternion={beamQuat}>
-              <cylinderGeometry args={[0.018, 0.018, distance, 6]} />
-              <meshBasicMaterial color="#ffffff" transparent opacity={t.alpha * 0.9} />
-            </mesh>
-            {/* Impact spark sprite at endpoint */}
-            <mesh position={p2.clone().sub(mid)}>
-              <sphereGeometry args={[0.18, 8, 8]} />
-              <meshBasicMaterial color="#fde68a" transparent opacity={t.alpha * 0.7} />
-            </mesh>
-          </group>
-        );
-      })}
+      <instancedMesh ref={glowRef} args={[undefined, undefined, MAX_TRACERS]} frustumCulled={false}>
+        <cylinderGeometry args={[1, 1, 1, 6]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.4} depthWrite={false} />
+      </instancedMesh>
+      <instancedMesh ref={coreRef} args={[undefined, undefined, MAX_TRACERS]} frustumCulled={false}>
+        <cylinderGeometry args={[1, 1, 1, 6]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.9} depthWrite={false} />
+      </instancedMesh>
+      <instancedMesh
+        ref={sparkRef}
+        args={[undefined, undefined, MAX_TRACERS]}
+        frustumCulled={false}
+      >
+        <sphereGeometry args={[1, 8, 8]} />
+        <meshBasicMaterial color="#fde68a" transparent opacity={0.7} depthWrite={false} />
+      </instancedMesh>
     </>
   );
-}
+});

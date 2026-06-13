@@ -1,20 +1,39 @@
 // @ts-nocheck
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 /**
  * Full-screen sniper scope overlay.
- * Shown only when sniper is equipped and ADS progress > threshold.
- * Pure CSS — no canvas/3D cost.
+ * Pure CSS — no canvas/3D cost. ADS progress is read from the player ref via
+ * rAF and applied imperatively (display/opacity), so the fade-in works
+ * without any React re-render.
  */
-export function SniperScope({ progress }: { progress: number }) {
-  // progress: 0..1 (player.adsProgress)
-  if (progress <= 0.05) return null;
-  const opacity = Math.min(1, progress * 1.4);
+export function SniperScope({ playerRef }: { playerRef: React.MutableRefObject<any> }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let raf = 0;
+    const loop = () => {
+      const progress = playerRef.current?.adsProgress ?? 0;
+      const el = rootRef.current;
+      if (el) {
+        if (progress <= 0.05) {
+          el.style.display = "none";
+        } else {
+          el.style.display = "block";
+          el.style.opacity = String(Math.min(1, progress * 1.4));
+        }
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [playerRef]);
 
   return (
     <div
+      ref={rootRef}
       className="absolute inset-0 pointer-events-none z-[55] overflow-hidden"
-      style={{ opacity }}
+      style={{ display: "none", opacity: 0 }}
     >
       {/* Black mask with circular cutout */}
       <div

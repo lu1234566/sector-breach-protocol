@@ -1,3 +1,4 @@
+import { useEffect, useReducer } from "react";
 import { motion } from "motion/react";
 import type { DamageIndicator } from "@/game-app/game/types";
 
@@ -10,6 +11,18 @@ interface Props {
 
 export function DamageOverlay({ indicators, hp, lastDamageTime, hitMarker }: Props) {
   const now = Date.now();
+  const [, forceExpire] = useReducer((n: number) => n + 1, 0);
+
+  // The damage flash / hit marker are time-windowed at render. The app only
+  // re-renders on real events now, so schedule one extra render to clear
+  // them once the window passes.
+  useEffect(() => {
+    const remain = 130 - (Date.now() - Math.max(lastDamageTime, hitMarker.time));
+    if (remain > 0) {
+      const t = setTimeout(forceExpire, remain + 16);
+      return () => clearTimeout(t);
+    }
+  }, [lastDamageTime, hitMarker.time, hitMarker]);
   return (
     <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
       {indicators.map((ind) => {

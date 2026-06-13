@@ -24,8 +24,8 @@ interface GameHUDProps {
   currentWeapon: WeaponType;
   ammo: { mag: number; reserve: number };
   isReloading: boolean;
-  isAds: boolean;
-  lastShotTime: number;
+  playerRef: React.MutableRefObject<{ isAds: boolean }>;
+  lastShotTimeRef: React.MutableRefObject<number>;
   killfeed: KillfeedItem[];
   damageIndicators: DamageIndicator[];
   lastDamageTime: number;
@@ -48,8 +48,8 @@ export function GameHUD({
   currentWeapon,
   ammo,
   isReloading,
-  isAds,
-  lastShotTime,
+  playerRef,
+  lastShotTimeRef,
   killfeed,
   damageIndicators,
   lastDamageTime,
@@ -67,7 +67,7 @@ export function GameHUD({
       <ScorePanel score={score} kills={kills} />
       <HealthPanel hp={hp} maxHp={maxHp} />
       <WeaponPanel currentWeapon={currentWeapon} ammo={ammo} isReloading={isReloading} />
-      <Crosshair isAds={isAds} recentShot={Date.now() - lastShotTime < 90} />
+      <Crosshair playerRef={playerRef} lastShotTimeRef={lastShotTimeRef} />
       <Killfeed items={killfeed} />
       <DamageOverlay
         indicators={damageIndicators}

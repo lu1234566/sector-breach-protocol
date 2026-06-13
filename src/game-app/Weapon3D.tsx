@@ -20,15 +20,15 @@ const NEON_CYAN = "#22d3ee";
 export function Weapon3D({
   type,
   isReloading,
-  isAds,
-  recoilOffset,
-  lastShotTime,
+  playerRef,
+  recoilOffsetRef,
+  lastShotTimeRef,
 }: {
   type: string;
   isReloading: boolean;
-  isAds: boolean;
-  recoilOffset: number;
-  lastShotTime: number;
+  playerRef: React.MutableRefObject<{ isAds: boolean }>;
+  recoilOffsetRef: React.MutableRefObject<number>;
+  lastShotTimeRef: React.MutableRefObject<number>;
 }) {
   return (
     <div
@@ -55,16 +55,16 @@ export function Weapon3D({
         <WeaponRig
           type={type}
           isReloading={isReloading}
-          isAds={isAds}
-          recoilOffset={recoilOffset}
-          lastShotTime={lastShotTime}
+          playerRef={playerRef}
+          recoilOffsetRef={recoilOffsetRef}
+          lastShotTimeRef={lastShotTimeRef}
         />
       </Canvas>
     </div>
   );
 }
 
-function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any) {
+function WeaponRig({ type, isReloading, playerRef, recoilOffsetRef, lastShotTimeRef }: any) {
   const group = useRef<THREE.Group>(null);
   const swapRef = useRef({ y: -3, lastType: type });
   const reloadProgress = useRef(0);
@@ -97,6 +97,12 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
   useFrame((state) => {
     if (!group.current) return;
     const t = state.clock.getElapsedTime();
+
+    // Live inputs read per frame from the game-loop refs — ADS, recoil and
+    // fire kick no longer depend on React re-render timing.
+    const isAds = !!playerRef.current?.isAds;
+    const recoilOffset = recoilOffsetRef.current;
+    const lastShotTime = lastShotTimeRef.current;
 
     swapRef.current.y = THREE.MathUtils.lerp(swapRef.current.y, 0, 0.13);
 
@@ -155,13 +161,13 @@ function WeaponRig({ type, isReloading, isAds, recoilOffset, lastShotTime }: any
 
   return (
     <group ref={group}>
-      <MuzzleFlash lastShotTime={lastShotTime} type={type} />
+      <MuzzleFlash lastShotTimeRef={lastShotTimeRef} type={type} />
       <WeaponErrorBoundary type={type}>
         <Suspense fallback={null}>
           <WeaponModel
             type={type}
             fireKick={fireKickRef}
-            lastShotTime={lastShotTime}
+            lastShotTimeRef={lastShotTimeRef}
             isReloading={isReloading}
           />
         </Suspense>
@@ -252,12 +258,12 @@ function autoBarrelRotation(size: THREE.Vector3): [number, number, number] {
 function WeaponModel({
   type,
   fireKick,
-  lastShotTime,
+  lastShotTimeRef,
   isReloading,
 }: {
   type: string;
   fireKick: any;
-  lastShotTime: number;
+  lastShotTimeRef: React.MutableRefObject<number>;
   isReloading: boolean;
 }) {
   const cfg = WEAPON_MODELS[type] ?? WEAPON_MODELS.pistol;
@@ -389,6 +395,7 @@ function WeaponModel({
     if (!mixer) return;
 
     // Rising edge: new shot -> play fire portion
+    const lastShotTime = lastShotTimeRef.current;
     if (fireAction && lastShotTime !== lastShotRef.current && lastShotTime > 0) {
       lastShotRef.current = lastShotTime;
       if (!isReloading) {
@@ -436,7 +443,13 @@ function WeaponModel({
   );
 }
 
-function MuzzleFlash({ lastShotTime, type }: { lastShotTime: number; type: string }) {
+function MuzzleFlash({
+  lastShotTimeRef,
+  type,
+}: {
+  lastShotTimeRef: React.MutableRefObject<number>;
+  type: string;
+}) {
   const lightRef = useRef<THREE.PointLight>(null);
   const coreRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
@@ -463,7 +476,7 @@ function MuzzleFlash({ lastShotTime, type }: { lastShotTime: number; type: strin
     type === "sniper" ? -3.3 : type === "shotgun" ? -2.1 : type === "rifle" ? -2.55 : -1.7;
 
   useFrame(() => {
-    const dt = Date.now() - lastShotTime;
+    const dt = Date.now() - lastShotTimeRef.current;
     const visible = dt < cfg.life;
     const k = visible ? 1 - dt / cfg.life : 0;
     if (lightRef.current) lightRef.current.intensity = visible ? cfg.light * k : 0;

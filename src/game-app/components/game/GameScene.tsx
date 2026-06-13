@@ -30,7 +30,7 @@ interface GameSceneProps {
   player: React.MutableRefObject<Player>;
   enemies: Enemy[];
   particlesRef: React.MutableRefObject<Particle[]>;
-  tracers: Tracer[];
+  tracersRef: React.MutableRefObject<Tracer[]>;
   pickups: Pickup[];
   decals?: WallDecal[];
   objective?: ObjectiveRuntime | null;
@@ -38,9 +38,9 @@ interface GameSceneProps {
   cellSize: number;
   currentWeapon: string;
   isReloading: boolean;
-  recoilOffset: number;
-  screenShake: number;
-  lastShotTime: number;
+  recoilOffsetRef: React.MutableRefObject<number>;
+  screenShakeRef: React.MutableRefObject<number>;
+  lastShotTimeRef: React.MutableRefObject<number>;
   debugMode?: boolean;
 }
 
@@ -48,15 +48,15 @@ function PlayerController({
   player,
   cellSize,
   mapData,
-  recoilOffset,
-  screenShake,
+  recoilOffsetRef,
+  screenShakeRef,
   currentWeapon,
 }: {
   player: React.MutableRefObject<Player>;
   cellSize: number;
   mapData: number[][];
-  recoilOffset: number;
-  screenShake: number;
+  recoilOffsetRef: React.MutableRefObject<number>;
+  screenShakeRef: React.MutableRefObject<number>;
   currentWeapon: string;
 }) {
   const { camera } = useThree();
@@ -72,9 +72,12 @@ function PlayerController({
 
     camera.rotation.order = "YXZ";
     camera.rotation.y = -player.current.angle - Math.PI / 2;
+    // Shake/recoil read from refs at full frame rate — previously these were
+    // props sampled at the 30Hz React sync, so the kick felt steppy.
+    const screenShake = screenShakeRef.current;
     const shakeY = (Math.random() - 0.5) * screenShake * 0.005;
     const shakeX = (Math.random() - 0.5) * screenShake * 0.004;
-    const recoilPitch = recoilOffset * 20;
+    const recoilPitch = recoilOffsetRef.current * 20;
     const visualPitch = THREE.MathUtils.clamp(player.current.pitch - recoilPitch, -25, 25);
     camera.rotation.x = THREE.MathUtils.degToRad(visualPitch) + shakeY;
     camera.rotation.z = shakeX * 0.3;
@@ -99,14 +102,14 @@ export function GameScene({
   player,
   enemies,
   particlesRef,
-  tracers,
+  tracersRef,
   mapData,
   cellSize,
   currentWeapon,
   isReloading,
-  recoilOffset,
-  screenShake,
-  lastShotTime,
+  recoilOffsetRef,
+  screenShakeRef,
+  lastShotTimeRef,
   pickups,
   decals,
   objective,
@@ -121,7 +124,6 @@ export function GameScene({
 
   // Chromebook-friendly caps. These reduce React/Three object count during
   // firefights, which is usually where FPS collapses on low-end integrated GPUs.
-  const visibleTracers = isLowQuality ? tracers.slice(-8) : tracers;
   const visibleDecals = isLowQuality ? [] : decals;
   const EnemyRenderer = isLowQuality ? EnemyLite : Enemy3D;
 
@@ -169,7 +171,12 @@ export function GameScene({
           mapWidth={mapWidth}
           mapHeight={mapHeight}
         />
-        <Tracers3D tracers={visibleTracers} cellSize={cellSize} mapData={mapData} />
+        <Tracers3D
+          tracersRef={tracersRef}
+          cellSize={cellSize}
+          mapWidth={mapWidth}
+          mapHeight={mapHeight}
+        />
         {visibleDecals && visibleDecals.length > 0 && (
           <Decals3D decals={visibleDecals} cellSize={cellSize} mapData={mapData} now={now} />
         )}
@@ -199,8 +206,8 @@ export function GameScene({
           player={player}
           cellSize={cellSize}
           mapData={mapData}
-          recoilOffset={recoilOffset}
-          screenShake={screenShake}
+          recoilOffsetRef={recoilOffsetRef}
+          screenShakeRef={screenShakeRef}
           currentWeapon={currentWeapon}
         />
       </Canvas>
@@ -208,9 +215,9 @@ export function GameScene({
       <Weapon3D
         type={currentWeapon}
         isReloading={isReloading}
-        isAds={player.current.isAds}
-        recoilOffset={recoilOffset}
-        lastShotTime={lastShotTime}
+        playerRef={player}
+        recoilOffsetRef={recoilOffsetRef}
+        lastShotTimeRef={lastShotTimeRef}
       />
     </div>
   );
