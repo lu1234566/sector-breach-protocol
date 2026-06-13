@@ -22,7 +22,7 @@ interface UseWaveSystemArgs {
   setObjectiveSnapshot: (s: ObjectiveRuntime | null) => void;
   setWaveMessage: (m: string) => void;
   // Spawn callback
-  spawnEnemies: (count: number, currentWave?: number, isBoss?: boolean) => void;
+  spawnEnemies: (count: number, currentWave?: number, isBoss?: boolean) => number;
 }
 
 /**
@@ -130,8 +130,9 @@ export function useWaveSystem(args: UseWaveSystemArgs) {
           else isSpawningRef.current = false;
           return;
         }
-        spawnEnemies(1, waveNum);
-        spawnedCount++;
+        // Only advance the counter when an enemy actually spawned — otherwise
+        // a blocked/too-close spawn slot could leave the wave short or empty.
+        spawnedCount += spawnEnemies(1, waveNum);
       }, 800) as unknown as number;
     },
     [

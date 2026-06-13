@@ -13,7 +13,7 @@ interface UseInputSystemArgs {
   ammoRef: React.MutableRefObject<{ mag: number; reserve: number }>;
   isReloadingRef: React.MutableRefObject<boolean>;
   currentWeapon: WeaponType;
-  weaponMags: Record<WeaponType, number>;
+  weaponMagsRef: React.MutableRefObject<Record<WeaponType, number>>;
   reloadTimeoutRef: React.MutableRefObject<number | null>;
   setWeaponMags: (fn: (prev: Record<WeaponType, number>) => Record<WeaponType, number>) => void;
   setCurrentWeapon: (w: WeaponType) => void;
@@ -41,7 +41,7 @@ export function useInputSystem(args: UseInputSystemArgs) {
     ammoRef,
     isReloadingRef,
     currentWeapon,
-    weaponMags,
+    weaponMagsRef,
     reloadTimeoutRef,
     setWeaponMags,
     setCurrentWeapon,
@@ -72,11 +72,14 @@ export function useInputSystem(args: UseInputSystemArgs) {
         const next = weaponMap[e.key];
         if (next === currentWeapon) return;
 
+        // Read/write per-weapon mags through the synced ref so rapid
+        // A→B→A swaps don't restore a stale (pre-reload) magazine count.
         const currentMag = ammoRef.current.mag;
         setWeaponMags((prev) => ({ ...prev, [currentWeapon]: currentMag }));
+        const nextMag = weaponMagsRef.current[next];
 
         setCurrentWeapon(next);
-        setAmmo((prev) => ({ ...prev, mag: weaponMags[next] }));
+        setAmmo((prev) => ({ ...prev, mag: nextMag }));
 
         // Cancel any in-flight reload; the ref must be cleared too or
         // shooting/reloading stays blocked for the rest of the run.
@@ -149,5 +152,5 @@ export function useInputSystem(args: UseInputSystemArgs) {
       document.removeEventListener("pointerlockchange", handlePointerLockChange);
       document.removeEventListener("pointerlockerror", handlePointerLockError);
     };
-  }, [gameState, currentWeapon, weaponMags]);
+  }, [gameState, currentWeapon]);
 }

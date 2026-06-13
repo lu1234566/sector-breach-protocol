@@ -194,6 +194,15 @@ export default function App() {
     shotgun: WEAPONS.shotgun.magSize,
     sniper: WEAPONS.sniper.magSize,
   });
+  // Synchronous mirror: rapid weapon swaps within one render must read/write
+  // the latest per-weapon magazine without waiting for the state to flush.
+  const weaponMagsRef = useRef(weaponMags);
+  const setWeaponMagsSynced = (
+    fn: (prev: Record<WeaponType, number>) => Record<WeaponType, number>,
+  ) => {
+    weaponMagsRef.current = fn(weaponMagsRef.current);
+    setWeaponMags(weaponMagsRef.current);
+  };
   const [earnedCredits, setEarnedCredits] = useState(0);
   const [difficulty, setDifficulty] = useState<DifficultyKey>("normal");
   const [upgradeTab, setUpgradeTab] = useState<"biological" | "weapon">("biological");
@@ -375,12 +384,14 @@ export default function App() {
     setWaveMessage("");
     objectiveRef.current = null;
     setObjectiveSnapshot(null);
-    setWeaponMags({
+    const freshMags = {
       pistol: WEAPONS.pistol.magSize,
       rifle: WEAPONS.rifle.magSize,
       shotgun: WEAPONS.shotgun.magSize,
       sniper: WEAPONS.sniper.magSize,
-    });
+    };
+    weaponMagsRef.current = freshMags;
+    setWeaponMags(freshMags);
     pickups.current = [];
     const s = getSafePlayerStart();
     player.current = {
@@ -535,8 +546,15 @@ export default function App() {
     return null;
   };
 
-  const spawnEnemies = (count: number, currentWave: number = 1, isBoss: boolean = false) => {
+  // Returns how many enemies actually spawned so the wave system doesn't
+  // count failed spawn attempts (which could leave an eliminate wave empty).
+  const spawnEnemies = (
+    count: number,
+    currentWave: number = 1,
+    isBoss: boolean = false,
+  ): number => {
     const types: ("rusher" | "rifleman" | "sniper")[] = ["rusher", "rifleman", "sniper"];
+    let spawned = 0;
     for (let i = 0; i < count; i++) {
       const pos = pickSpawnPosition(currentWave);
       if (!pos) break;
@@ -587,10 +605,12 @@ export default function App() {
         };
         if (isBoss) setBossHp({ current: finalHp, max: finalHp });
         enemies.current.push(newEnemy);
+        spawned++;
       }
     }
     setEnemiesState([...enemies.current]);
     setEnemiesRemaining(enemies.current.filter((e) => !e.dead).length);
+    return spawned;
   };
 
   // Debug-only: spawn one of each enemy type next to the player so each model
@@ -756,7 +776,7 @@ export default function App() {
     setScore: setScoreSynced,
     setKillfeed,
     setIsReloading,
-    setWeaponMags,
+    setWeaponMags: setWeaponMagsSynced,
     checkLineOfSight,
     spawnParticles: (x: number, y: number, t: any) => spawnParticles(x, y, t),
   };
@@ -1130,9 +1150,9 @@ export default function App() {
     ammoRef,
     isReloadingRef,
     currentWeapon,
-    weaponMags,
+    weaponMagsRef,
     reloadTimeoutRef,
-    setWeaponMags,
+    setWeaponMags: setWeaponMagsSynced,
     setCurrentWeapon: setCurrentWeaponWithToast,
     setAmmo,
     setIsReloading,

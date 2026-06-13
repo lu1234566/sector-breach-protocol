@@ -1,9 +1,8 @@
 // @ts-nocheck
 /**
  * Quality preset detection + presets for renderer/scene.
- * Heuristic: GPU renderer string + devicePixelRatio + cores.
+ * Heuristic: GPU renderer string + cores.
  */
-import * as THREE from "three";
 import type { QualityTier } from "./settings";
 
 export interface QualityPreset {
@@ -79,11 +78,4 @@ export function resolveQuality(tier: QualityTier): QualityPreset {
     return PRESETS[cached];
   }
   return PRESETS[tier];
-}
-
-export function applyQualityToRenderer(renderer: THREE.WebGLRenderer, p: QualityPreset) {
-  renderer.setPixelRatio(p.pixelRatio);
-  renderer.shadowMap.enabled = p.shadows !== false;
-  if (p.shadows === "pcfsoft") renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  else if (p.shadows === "basic") renderer.shadowMap.type = THREE.BasicShadowMap;
 }

@@ -133,6 +133,3 @@ export const FINAL_WAVE = 6;
 
 export const CELL_SIZE = 64;
 export const TICK_RATE = 1000 / 60;
-export const FOV = Math.PI / 3;
-export const RESOLUTION = 400; // Rays
-export const MAX_DEPTH = 1200;

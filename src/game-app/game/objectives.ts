@@ -13,35 +13,92 @@ const EXTRACT_TIME_LIMIT = 25_000;
 const EXTRACT_KILLS = 5;
 const CORE_HP = 500;
 
+// A cell is walkable for the player if it's floor (0) or a door (2, opens on
+// contact). Walls (1) and barrels (3) block movement.
+const isWalkable = (cell: number | undefined) => cell === 0 || cell === 2;
+
+/**
+ * BFS over walkable cells from the player spawn, returning every cell the
+ * player can actually reach. Objective zones MUST land on one of these —
+ * the geometric center of e.g. the Reactor arena is sealed inside the core
+ * and would soft-lock any zone-based objective.
+ */
+function reachableCells(arena: ArenaDef): Set<string> {
+  const map = arena.mapData;
+  const rows = map.length;
+  const cols = map[0].length;
+  const startX = Math.floor(arena.playerSpawn.x / CELL_SIZE);
+  const startY = Math.floor(arena.playerSpawn.y / CELL_SIZE);
+  const seen = new Set<string>();
+  const queue: [number, number][] = [[startX, startY]];
+  seen.add(`${startX},${startY}`);
+  while (queue.length) {
+    const [x, y] = queue.shift()!;
+    for (const [dx, dy] of [
+      [0, 1],
+      [0, -1],
+      [1, 0],
+      [-1, 0],
+    ]) {
+      const nx = x + dx;
+      const ny = y + dy;
+      const key = `${nx},${ny}`;
+      if (nx < 0 || nx >= cols || ny < 0 || ny >= rows || seen.has(key)) continue;
+      if (!isWalkable(map[ny][nx])) continue;
+      seen.add(key);
+      queue.push([nx, ny]);
+    }
+  }
+  return seen;
+}
+
+/** Reachable cell closest to a target grid position; falls back to spawn. */
+function nearestReachable(
+  arena: ArenaDef,
+  targetX: number,
+  targetY: number,
+): { x: number; y: number } {
+  const reachable = reachableCells(arena);
+  let best: { x: number; y: number } | null = null;
+  let bestD = Infinity;
+  for (const key of reachable) {
+    const [x, y] = key.split(",").map(Number);
+    const d = (x - targetX) ** 2 + (y - targetY) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = { x, y };
+    }
+  }
+  if (!best) {
+    best = {
+      x: Math.floor(arena.playerSpawn.x / CELL_SIZE),
+      y: Math.floor(arena.playerSpawn.y / CELL_SIZE),
+    };
+  }
+  return {
+    x: best.x * CELL_SIZE + CELL_SIZE / 2,
+    y: best.y * CELL_SIZE + CELL_SIZE / 2,
+  };
+}
+
 function arenaCenter(arena: ArenaDef): ObjectiveZone {
-  const cx = (arena.mapData[0].length / 2) * CELL_SIZE;
-  const cy = (arena.mapData.length / 2) * CELL_SIZE;
-  return { x: cx, y: cy, radius: CELL_SIZE * 1.6 };
+  // Snap the geometric center onto the nearest cell the player can reach.
+  const targetX = Math.floor(arena.mapData[0].length / 2);
+  const targetY = Math.floor(arena.mapData.length / 2);
+  const { x, y } = nearestReachable(arena, targetX, targetY);
+  return { x, y, radius: CELL_SIZE * 1.6 };
 }
 
 function extractCorner(arena: ArenaDef): ObjectiveZone {
-  // Pick a free cell near the corner opposite the player spawn.
+  // Reachable cell nearest the corner opposite the player spawn.
   const cols = arena.mapData[0].length;
   const rows = arena.mapData.length;
   const spawnCellX = Math.floor(arena.playerSpawn.x / CELL_SIZE);
   const spawnCellY = Math.floor(arena.playerSpawn.y / CELL_SIZE);
   const targetX = spawnCellX < cols / 2 ? cols - 3 : 2;
   const targetY = spawnCellY < rows / 2 ? rows - 3 : 2;
-  // Walk a few cells inward looking for a floor cell
-  for (let dx = 0; dx < 4; dx++) {
-    for (let dy = 0; dy < 4; dy++) {
-      const cx = targetX + (spawnCellX < cols / 2 ? -dx : dx);
-      const cy = targetY + (spawnCellY < rows / 2 ? -dy : dy);
-      if (arena.mapData[cy]?.[cx] === 0) {
-        return {
-          x: cx * CELL_SIZE + CELL_SIZE / 2,
-          y: cy * CELL_SIZE + CELL_SIZE / 2,
-          radius: CELL_SIZE * 1.4,
-        };
-      }
-    }
-  }
-  return arenaCenter(arena);
+  const { x, y } = nearestReachable(arena, targetX, targetY);
+  return { x, y, radius: CELL_SIZE * 1.4 };
 }
 
 export function getWaveObjective(wave: number, arena: ArenaDef, endless = false): WaveObjective {
