@@ -89,6 +89,7 @@ export const loadLifetimeStats = (): Partial<LifetimeStats> | null => {
           totalDeaths: Number(parsed.totalDeaths) || 0,
           totalCredits: Number(parsed.totalCredits) || 0,
           bestWave: Number(parsed.bestWave) || 0,
+          bestEndlessWave: Number(parsed.bestEndlessWave) || 0,
           totalWins: Number(parsed.totalWins) || 0,
           totalGames: Number(parsed.totalGames) || 0,
         };

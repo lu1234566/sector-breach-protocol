@@ -107,7 +107,8 @@ export interface LifetimeStats {
   totalKills: number;
   totalDeaths: number;
   totalCredits: number;
-  bestWave: number;
+  bestWave: number; // campaign best (1..6)
+  bestEndlessWave: number; // endless survival record
   totalWins: number;
   totalGames: number;
 }

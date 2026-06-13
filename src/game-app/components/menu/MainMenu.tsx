@@ -399,7 +399,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-cyan-500/20 grid grid-cols-3 gap-3 text-center">
-                    <Telemetry label="BEST WAVE" value={lifetimeStats?.bestWave ?? 0} />
+                    <Telemetry label="ENDLESS PEAK" value={lifetimeStats?.bestEndlessWave ?? 0} />
                     <Telemetry label="KILLS" value={lifetimeStats?.totalKills ?? 0} />
                     <Telemetry label="RUNS" value={lifetimeStats?.totalGames ?? 0} />
                   </div>
@@ -924,9 +924,17 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                       </div>
                     ))}
                   </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-fuchsia-500/20">
+                    <span className="text-[9px] text-fuchsia-300/80 uppercase font-black tracking-[0.3em] flex items-center gap-2">
+                      <InfinityIcon size={12} /> Endless Survival Record
+                    </span>
+                    <span className="text-lg font-black text-fuchsia-300 tabular-nums leading-none">
+                      WAVE {lifetimeStats.bestEndlessWave ?? 0}
+                    </span>
+                  </div>
                   <p className="text-[9px] text-slate-500 uppercase font-black leading-relaxed tracking-wider">
-                    Simulation shows 100% viability up to WAVE {lifetimeStats.bestWave}. Training
-                    recommended for higher sector targets.
+                    Campaign cleared to WAVE {lifetimeStats.bestWave} of {6}. Endless protocol holds
+                    until termination.
                   </p>
                 </div>
 

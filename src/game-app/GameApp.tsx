@@ -129,6 +129,8 @@ export default function App() {
   // every 5th, until the operator drops.
   const [gameMode, setGameMode] = useState<"campaign" | "endless">("campaign");
   const gameModeRef = useRef<"campaign" | "endless">("campaign");
+  // Set on the end screen when an endless run beats the previous wave record.
+  const [isNewRecord, setIsNewRecord] = useState(false);
 
   const [wave, setWave] = useState(1);
   const waveRef = useRef(1);
@@ -150,6 +152,7 @@ export default function App() {
     totalDeaths: 0,
     totalCredits: 0,
     bestWave: 0,
+    bestEndlessWave: 0,
     totalWins: 0,
     totalGames: 0,
   });
@@ -662,6 +665,7 @@ export default function App() {
       setKillfeed((prev) => [{ id: nextKillfeedId.current++, text: message }, ...prev].slice(0, 5));
     }
 
+    const isEndless = gameModeRef.current === "endless";
     const diffMult = DIFFICULTIES[difficulty].creditMult;
     const kills = statsRef.current.kills;
     const runScore = scoreRef.current;
@@ -671,10 +675,17 @@ export default function App() {
     setEarnedCredits(finalCredits);
 
     const prevL = lifetimeStatsRef.current;
+    // Campaign and endless keep separate wave records so the campaign
+    // progress bar (max 6) isn't blown out by an endless run reaching wave 30.
+    const newRecord = isEndless && waveRef.current > (prevL.bestEndlessWave ?? 0);
+    setIsNewRecord(newRecord);
     const nextLStats = {
       ...prevL,
       totalKills: prevL.totalKills + kills,
-      bestWave: Math.max(prevL.bestWave, waveRef.current),
+      bestWave: isEndless ? prevL.bestWave : Math.max(prevL.bestWave, waveRef.current),
+      bestEndlessWave: isEndless
+        ? Math.max(prevL.bestEndlessWave ?? 0, waveRef.current)
+        : (prevL.bestEndlessWave ?? 0),
       totalWins: prevL.totalWins + (won ? 1 : 0),
       totalDeaths: prevL.totalDeaths + (won ? 0 : 1),
       totalGames: prevL.totalGames + 1,
@@ -1468,11 +1479,18 @@ export default function App() {
                     >
                       {gameState === "win" ? "SUCCESS" : "SYSTEM FAILURE"}
                     </h2>
-                    <p className="text-white/60 font-medium uppercase tracking-[0.2em] mb-12 text-center text-[10px] md:text-sm max-w-md mx-auto leading-relaxed">
+                    <p className="text-white/60 font-medium uppercase tracking-[0.2em] mb-6 text-center text-[10px] md:text-sm max-w-md mx-auto leading-relaxed">
                       {gameState === "win"
                         ? "Strategic objective achieved. Sector secured for extraction."
-                        : "Critical integrity loss detected. Mission aborted."}
+                        : gameMode === "endless"
+                          ? `Endless protocol terminated at wave ${wave}. Containment overrun.`
+                          : "Critical integrity loss detected. Mission aborted."}
                     </p>
+                    {gameMode === "endless" && isNewRecord && (
+                      <div className="mb-8 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-fuchsia-500/15 border border-fuchsia-400/50 text-fuchsia-200 text-xs font-black uppercase tracking-[0.3em] animate-pulse">
+                        ★ New Survival Record · Wave {wave}
+                      </div>
+                    )}
                     <div className="w-full bg-black/40 p-1 rounded-[2rem] border border-white/10 shadow-2xl mb-8 relative overflow-hidden">
                       <div className="relative z-10 flex flex-col md:flex-row justify-between items-center px-8 py-6 gap-6">
                         <div className="flex flex-col items-center md:items-start">
