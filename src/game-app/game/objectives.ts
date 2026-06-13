@@ -44,7 +44,10 @@ function extractCorner(arena: ArenaDef): ObjectiveZone {
   return arenaCenter(arena);
 }
 
-export function getWaveObjective(wave: number, arena: ArenaDef): WaveObjective {
+export function getWaveObjective(wave: number, arena: ArenaDef, endless = false): WaveObjective {
+  // Endless keeps the campaign pacing for waves 1-5, then switches to the
+  // open-ended rotation — extraction is campaign-exclusive.
+  if (endless && wave >= 6) return endlessObjective(wave, arena);
   switch (wave) {
     case 1:
       return { kind: "eliminate", label: "Neutralize Hostiles" };
@@ -76,8 +79,30 @@ export function getWaveObjective(wave: number, arena: ArenaDef): WaveObjective {
         timeLimitMs: EXTRACT_TIME_LIMIT,
       };
     default:
-      return { kind: "eliminate", label: "Neutralize Hostiles" };
+      return endlessObjective(wave, arena);
   }
+}
+
+/** Open-ended rotation: a Titan every 5th wave, otherwise hack/defend/eliminate. */
+function endlessObjective(wave: number, arena: ArenaDef): WaveObjective {
+  if (wave % 5 === 0) return { kind: "eliminate", label: "Titan Protocol" };
+  const mod = wave % 3;
+  if (mod === 1)
+    return {
+      kind: "hack",
+      label: "Hack Node",
+      zone: arenaCenter(arena),
+      durationMs: HACK_DURATION,
+    };
+  if (mod === 2)
+    return {
+      kind: "defend",
+      label: "Defend Core",
+      zone: arenaCenter(arena),
+      durationMs: DEFEND_DURATION,
+      coreMaxHp: CORE_HP,
+    };
+  return { kind: "eliminate", label: "Neutralize Hostiles" };
 }
 
 export function createRuntime(obj: WaveObjective): ObjectiveRuntime {

@@ -1,6 +1,14 @@
 import { DIFFICULTIES, FINAL_WAVE, type DifficultyKey } from "@/game-app/game/constants";
 
-export function WavePanel({ wave, difficulty }: { wave: number; difficulty: DifficultyKey }) {
+export function WavePanel({
+  wave,
+  endless,
+  difficulty,
+}: {
+  wave: number;
+  endless?: boolean;
+  difficulty: DifficultyKey;
+}) {
   return (
     <div className="pointer-events-none absolute top-4 left-4 z-40 flex items-center gap-2">
       <div className="bg-slate-950/70 backdrop-blur-md border border-cyan-500/30 rounded-sm px-2.5 py-1">
@@ -9,7 +17,7 @@ export function WavePanel({ wave, difficulty }: { wave: number; difficulty: Diff
         </div>
         <div className="font-mono font-black text-sm text-white leading-tight">
           {wave}
-          <span className="text-slate-500 text-[10px]">/{FINAL_WAVE}</span>
+          <span className="text-slate-500 text-[10px]">{endless ? "/∞" : `/${FINAL_WAVE}`}</span>
         </div>
       </div>
       <div

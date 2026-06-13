@@ -15,6 +15,7 @@ import { BossHealthBar } from "./BossHealthBar";
 
 interface GameHUDProps {
   wave: number;
+  endless?: boolean;
   difficulty: DifficultyKey;
   score: number;
   kills: number;
@@ -38,6 +39,7 @@ interface GameHUDProps {
 
 export function GameHUD({
   wave,
+  endless,
   difficulty,
   score,
   kills,
@@ -61,7 +63,7 @@ export function GameHUD({
   return (
     <>
       <ObjectivePanel runtime={objectiveSnapshot} enemiesRemaining={enemiesRemaining} />
-      <WavePanel wave={wave} difficulty={difficulty} />
+      <WavePanel wave={wave} endless={endless} difficulty={difficulty} />
       <ScorePanel score={score} kills={kills} />
       <HealthPanel hp={hp} maxHp={maxHp} />
       <WeaponPanel currentWeapon={currentWeapon} ammo={ammo} isReloading={isReloading} />

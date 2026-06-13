@@ -17,6 +17,7 @@ interface UseWaveSystemArgs {
   objectiveRef: React.MutableRefObject<ObjectiveRuntime | null>;
   currentArenaRef: React.MutableRefObject<ArenaDef>;
   gameStateRef: React.MutableRefObject<string>;
+  gameModeRef: React.MutableRefObject<"campaign" | "endless">;
   // Setters
   setObjectiveSnapshot: (s: ObjectiveRuntime | null) => void;
   setWaveMessage: (m: string) => void;
@@ -39,6 +40,7 @@ export function useWaveSystem(args: UseWaveSystemArgs) {
     objectiveRef,
     currentArenaRef,
     gameStateRef,
+    gameModeRef,
     setObjectiveSnapshot,
     setWaveMessage,
     spawnEnemies,
@@ -67,16 +69,22 @@ export function useWaveSystem(args: UseWaveSystemArgs) {
       isSpawningRef.current = true;
 
       // Initialize objective for this wave
-      const objDef = getWaveObjective(waveNum, currentArenaRef.current);
+      const objDef = getWaveObjective(
+        waveNum,
+        currentArenaRef.current,
+        gameModeRef.current === "endless",
+      );
       const objRuntime = createRuntime(objDef);
       objectiveRef.current = objRuntime;
       setObjectiveSnapshot({ ...objRuntime });
       setWaveMessage(`WAVE ${waveNum} · ${objDef.label.toUpperCase()}`);
       sounds.playWaveStart();
 
-      // Gradual spawning
-      const count = waveNum === 1 ? 3 : 3 + waveNum * 2;
+      // Gradual spawning — count capped so endless waves stay playable.
+      const count = waveNum === 1 ? 3 : Math.min(3 + waveNum * 2, 24);
       let spawnedCount = 0;
+      // A Titan closes every 5th wave (campaign wave 5; endless 10, 15, ...).
+      const isBossWave = waveNum % BOSS_WAVE === 0;
 
       const scheduleBoss = () => {
         isSpawningRef.current = true;
@@ -90,8 +98,8 @@ export function useWaveSystem(args: UseWaveSystemArgs) {
             scheduleBoss();
             return;
           }
-          if (gameStateRef.current === "playing" && waveRef.current === BOSS_WAVE) {
-            spawnEnemies(1, BOSS_WAVE, true);
+          if (gameStateRef.current === "playing" && waveRef.current === waveNum) {
+            spawnEnemies(1, waveNum, true);
             sounds.playBossRoar();
           }
           isSpawningRef.current = false;
@@ -118,7 +126,7 @@ export function useWaveSystem(args: UseWaveSystemArgs) {
             spawnIntervalRef.current = null;
           }
 
-          if (waveNum === BOSS_WAVE) scheduleBoss();
+          if (isBossWave) scheduleBoss();
           else isSpawningRef.current = false;
           return;
         }
@@ -136,6 +144,7 @@ export function useWaveSystem(args: UseWaveSystemArgs) {
       objectiveRef,
       currentArenaRef,
       gameStateRef,
+      gameModeRef,
       setObjectiveSnapshot,
       setWaveMessage,
       spawnEnemies,

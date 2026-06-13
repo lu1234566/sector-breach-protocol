@@ -125,6 +125,11 @@ export default function App() {
     gameStateRef.current = gameState;
   }, [gameState]);
 
+  // campaign: 6 waves ending in extraction. endless: waves forever, a Titan
+  // every 5th, until the operator drops.
+  const [gameMode, setGameMode] = useState<"campaign" | "endless">("campaign");
+  const gameModeRef = useRef<"campaign" | "endless">("campaign");
+
   const [wave, setWave] = useState(1);
   const waveRef = useRef(1);
   const isWaveTransitionRef = useRef(false);
@@ -271,11 +276,14 @@ export default function App() {
     if (gameState === "start" || gameState === "upgrades") {
       sounds.playMusic("menu_theme");
     } else if (gameState === "playing" || gameState === "paused" || gameState === "deploy") {
-      sounds.playMusic(wave >= 5 ? "boss_theme" : "combat_loop");
+      // Campaign keeps the boss theme through the final extraction; endless
+      // saves it for the Titan waves.
+      const bossMusic = gameMode === "campaign" ? wave >= 5 : wave % 5 === 0;
+      sounds.playMusic(bossMusic ? "boss_theme" : "combat_loop");
     } else {
       sounds.stopMusic();
     }
-  }, [gameState, wave]);
+  }, [gameState, wave, gameMode]);
 
   // Game Engine Refs
   const safeStart = getArenaPlayerStart(currentArenaRef.current);
@@ -314,7 +322,9 @@ export default function App() {
   const [enemiesState, setEnemiesState] = useState<Enemy[]>([]);
   const renderTick = useRef(0);
 
-  const initGame = () => {
+  const initGame = (mode: "campaign" | "endless" = gameModeRef.current) => {
+    gameModeRef.current = mode;
+    setGameMode(mode);
     gameStartTime.current = Date.now();
     isRunEndingRef.current = false;
     setGameState("deploy");
@@ -466,6 +476,7 @@ export default function App() {
     objectiveRef,
     currentArenaRef,
     gameStateRef,
+    gameModeRef,
     setObjectiveSnapshot,
     setWaveMessage,
     spawnEnemies: (...args) => spawnEnemies(...args),
@@ -531,7 +542,8 @@ export default function App() {
         else type = types[Math.floor(Math.random() * types.length)];
         const diffMult = DIFFICULTIES[difficulty].hpMult;
         const hpBuff = 1 + (currentWave - 1) * 0.15;
-        const speedBuff = 1 + (currentWave - 1) * 0.04;
+        // Speed capped so endless waves never outrun the player outright.
+        const speedBuff = Math.min(1 + (currentWave - 1) * 0.04, 1.6);
         const finalHp =
           (type === "rusher" ? 60 : type === "rifleman" ? 100 : 80) *
           hpBuff *
@@ -913,7 +925,8 @@ export default function App() {
       return o.status === "complete";
     })();
     if (objCompleteForWave && !isSpawningRef.current && !isWaveTransitionRef.current) {
-      if (waveRef.current >= FINAL_WAVE) {
+      // Endless never wins — waves keep coming until the run ends in death.
+      if (gameModeRef.current === "campaign" && waveRef.current >= FINAL_WAVE) {
         endRun(true);
       } else {
         const nextWave = waveRef.current + 1;
@@ -1144,6 +1157,7 @@ export default function App() {
         {gameState === "playing" && (
           <GameHUD
             wave={wave}
+            endless={gameMode === "endless"}
             difficulty={difficulty}
             score={score}
             kills={stats.kills}

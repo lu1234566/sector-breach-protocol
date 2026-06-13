@@ -17,6 +17,7 @@ import {
   Settings as SettingsIcon,
   AlertTriangle,
   Activity,
+  Infinity as InfinityIcon,
 } from "lucide-react";
 import { WeaponType, DifficultyKey, WEAPONS, DIFFICULTIES } from "../../game/constants";
 import { LifetimeStats, WeaponUpgradeLevels } from "../../game/types";
@@ -84,7 +85,7 @@ const Telemetry: React.FC<{ label: string; value: number }> = ({ label, value })
 );
 
 interface MainMenuProps {
-  initGame: () => void;
+  initGame: (mode?: "campaign" | "endless") => void;
   setGameState: (state: "start" | "playing" | "dead" | "win" | "upgrades") => void;
   menuView: MenuView;
   setMenuView: (view: MenuView) => void;
@@ -265,7 +266,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                   <button
                     onClick={() => {
                       sounds.playUiClick();
-                      initGame();
+                      initGame("campaign");
                     }}
                     className="group relative overflow-hidden rounded-sm border border-cyan-400/70 bg-gradient-to-r from-cyan-500/15 via-sky-500/10 to-transparent hover:from-cyan-400/25 hover:via-sky-400/15 px-6 py-4 text-left transition-all shadow-[0_0_30px_rgba(34,211,238,0.35)] hover:shadow-[0_0_55px_rgba(34,211,238,0.7)] hover:border-cyan-300"
                   >
@@ -288,6 +289,33 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                       </div>
                       <div className="font-mono text-[10px] tracking-[0.3em] text-cyan-300/70 uppercase hidden sm:block">
                         ▸ EXEC
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* ENDLESS — survival mode */}
+                  <button
+                    onClick={() => {
+                      sounds.playUiClick();
+                      initGame("endless");
+                    }}
+                    className="group relative overflow-hidden rounded-sm border border-fuchsia-400/50 bg-gradient-to-r from-fuchsia-500/10 via-purple-500/5 to-transparent hover:from-fuchsia-400/20 hover:via-purple-400/10 px-6 py-3 text-left transition-all shadow-[0_0_20px_rgba(232,121,249,0.2)] hover:shadow-[0_0_40px_rgba(232,121,249,0.5)] hover:border-fuchsia-300"
+                  >
+                    <div className="absolute inset-y-0 left-0 w-1 bg-fuchsia-400 shadow-[0_0_12px_rgba(232,121,249,0.8)]" />
+                    <div className="flex items-center gap-4 pl-2">
+                      <div className="p-2 rounded-sm bg-fuchsia-400/20 border border-fuchsia-400/40 group-hover:bg-fuchsia-400/30">
+                        <InfinityIcon size={18} className="text-fuchsia-100" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-black text-lg tracking-[0.2em] text-white uppercase italic">
+                          ENDLESS
+                        </div>
+                        <div className="text-[10px] font-mono tracking-[0.35em] text-fuchsia-300/90 uppercase">
+                          Survive Until Termination
+                        </div>
+                      </div>
+                      <div className="font-mono text-[10px] tracking-[0.3em] text-fuchsia-300/70 uppercase hidden sm:block">
+                        ▸ ∞
                       </div>
                     </div>
                   </button>
