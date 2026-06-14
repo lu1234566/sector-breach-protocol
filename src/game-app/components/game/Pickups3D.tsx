@@ -5,6 +5,12 @@ import { useFrame } from "@react-three/fiber";
 import { Billboard, useTexture } from "@react-three/drei";
 import { ASSETS } from "../../game/assets";
 
+// Preload the pickup icon textures at module load so the first pickup drop
+// mid-match never suspends (which previously flashed the loading screen and
+// remounted the whole scene).
+useTexture.preload(ASSETS.ui.pickupHealth);
+useTexture.preload(ASSETS.ui.pickupAmmo);
+
 interface Pickup {
   id: number;
   x: number;

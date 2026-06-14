@@ -5,6 +5,10 @@ import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { PROP_MODELS, type PropModelDef } from "../../game/modelAssets";
 
+// Preload all prop GLBs so the arena's props don't suspend the scene
+// piecemeal during play.
+Object.values(PROP_MODELS).forEach((p: any) => useGLTF.preload(p.url));
+
 interface PropProps {
   modelKey: keyof typeof PROP_MODELS;
   cellSize: number;

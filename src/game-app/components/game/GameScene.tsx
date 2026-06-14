@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React from "react";
+import React, { Suspense } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
@@ -158,11 +158,26 @@ export function GameScene({
           </>
         )}
 
-        {isLowQuality ? (
-          <WorldLite mapData={mapData} cellSize={cellSize} />
-        ) : (
-          <World mapData={mapData} cellSize={cellSize} propsDensity={quality.propsDensity} />
-        )}
+        {/* Suspense boundary INSIDE the canvas: texture/GLB loads (World,
+            Pickups, props) suspend here with no visible fallback instead of
+            bubbling to the route-level Suspense, which would unmount and
+            remount the entire game (the "loading screen" flash on first
+            pickup, plus the resource leak that tanked FPS). */}
+        <Suspense fallback={null}>
+          {isLowQuality ? (
+            <WorldLite mapData={mapData} cellSize={cellSize} />
+          ) : (
+            <World mapData={mapData} cellSize={cellSize} propsDensity={quality.propsDensity} />
+          )}
+
+          {/* Always mounted so it never suspends mid-match when the first
+              pickup drops. */}
+          <Pickups3D
+            pickups={isLowQuality ? pickups.slice(0, 6) : pickups}
+            cellSize={cellSize}
+            mapData={mapData}
+          />
+        </Suspense>
 
         <Particles3D
           particlesRef={particlesRef}
@@ -181,10 +196,6 @@ export function GameScene({
         )}
         {objective && objective.zone && objective.status === "active" && (
           <ObjectiveZone3D objective={objective} cellSize={cellSize} mapData={mapData} />
-        )}
-        {!isLowQuality && <Pickups3D pickups={pickups} cellSize={cellSize} mapData={mapData} />}
-        {isLowQuality && pickups.length > 0 && (
-          <Pickups3D pickups={pickups.slice(0, 6)} cellSize={cellSize} mapData={mapData} />
         )}
 
         {enemies.map((enemy) => (

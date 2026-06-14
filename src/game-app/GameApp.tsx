@@ -1258,7 +1258,7 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center p-8 text-center z-[100]"
+              className="absolute inset-0 bg-slate-950/95 backdrop-blur-xl flex flex-col items-center overflow-y-auto custom-scrollbar p-4 text-center z-[100]"
               style={
                 gameState === "win"
                   ? {
@@ -1276,7 +1276,7 @@ export default function App() {
               }
             >
               {gameState === "upgrades" ? (
-                <div className="w-full max-w-2xl bg-zinc-900/90 rounded-3xl border border-white/10 p-6 md:p-10 max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl">
+                <div className="my-auto w-full max-w-2xl bg-zinc-900/90 rounded-3xl border border-white/10 p-6 md:p-10 max-h-[92vh] overflow-y-auto custom-scrollbar shadow-2xl">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-8 text-left">
                     <div>
                       <h2 className="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter">
@@ -1482,7 +1482,7 @@ export default function App() {
                 />
               ) : (
                 <div
-                  className={`p-8 md:p-12 rounded-[2.5rem] bg-slate-900/90 border-4 backdrop-blur-2xl ${gameState === "win" ? "border-yellow-500 shadow-[0_0_60px_rgba(234,179,8,0.2)]" : "border-red-600 shadow-[0_0_60px_rgba(220,38,38,0.2)]"} w-full max-w-2xl relative overflow-hidden`}
+                  className={`my-auto p-6 md:p-10 rounded-[2.5rem] bg-slate-900/90 border-4 backdrop-blur-2xl ${gameState === "win" ? "border-yellow-500 shadow-[0_0_60px_rgba(234,179,8,0.2)]" : "border-red-600 shadow-[0_0_60px_rgba(220,38,38,0.2)]"} w-full max-w-2xl relative overflow-hidden`}
                 >
                   <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
                   <div className="relative z-10 flex flex-col items-center">
@@ -1495,7 +1495,7 @@ export default function App() {
                       {gameState === "win" ? "COMPLETE" : "FAILED"}
                     </div>
                     <h2
-                      className={`text-6xl md:text-8xl font-black italic tracking-tighter mb-4 text-center ${gameState === "win" ? "text-yellow-500" : "text-red-600"}`}
+                      className={`text-5xl md:text-7xl font-black italic tracking-tighter mb-3 text-center ${gameState === "win" ? "text-yellow-500" : "text-red-600"}`}
                     >
                       {gameState === "win" ? "SUCCESS" : "SYSTEM FAILURE"}
                     </h2>
@@ -1534,7 +1534,7 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full mb-12">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full mb-6">
                       {[
                         { label: "Score", value: score.toLocaleString(), color: "text-white" },
                         { label: "Max Wave", value: wave, color: "text-cyan-400" },
