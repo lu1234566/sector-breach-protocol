@@ -527,9 +527,9 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
-            className="w-full max-w-5xl z-10 py-12"
+            className="absolute inset-0 z-10 flex items-center justify-center px-3 py-3"
           >
-            <div className="bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col w-full max-w-5xl max-h-full">
               {/* Header */}
               <div className="p-8 md:p-10 bg-slate-950/50 border-b border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
                 <div className="flex items-center gap-6">
@@ -700,12 +700,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className="flex flex-col items-center z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto px-4 md:px-8 custom-scrollbar py-12"
+            className="absolute inset-0 z-10 flex items-start justify-center overflow-y-auto custom-scrollbar px-4 py-6"
           >
-            <div className="bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] border border-white/10 shadow-2xl p-10 md:p-16 w-full relative overflow-hidden">
+            <div className="bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] border border-white/10 shadow-2xl p-6 md:p-10 w-full max-w-4xl relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
 
-              <div className="flex flex-col items-center mb-12">
+              <div className="flex flex-col items-center mb-6">
                 <div className="w-16 h-16 bg-red-500/10 rounded-2xl border-2 border-red-500/30 flex items-center justify-center mb-4">
                   <Zap className="text-red-500" size={32} />
                 </div>
@@ -717,7 +717,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mb-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-6">
                 {(Object.keys(DIFFICULTIES) as DifficultyKey[]).map((key) => (
                   <button
                     key={key}
@@ -807,12 +807,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.1 }}
-            className="w-full max-w-4xl z-10 py-12"
+            className="absolute inset-0 z-10 flex items-start justify-center overflow-y-auto custom-scrollbar px-3 py-6"
           >
-            <div className="bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] border border-white/10 shadow-2xl p-8 md:p-16 w-full relative overflow-hidden flex flex-col">
+            <div className="bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] border border-white/10 shadow-2xl p-6 md:p-10 w-full max-w-4xl relative overflow-hidden flex flex-col">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
 
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
                 <div className="flex items-center gap-8">
                   <div className="w-24 h-24 bg-cyan-500/10 rounded-3xl border-2 border-cyan-500/30 flex items-center justify-center shrink-0 relative group">
                     <div className="absolute inset-0 bg-cyan-500/10 rounded-3xl rotate-6 group-hover:rotate-12 transition-transform" />
@@ -850,8 +850,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-                <div className="bg-white/5 p-8 rounded-3xl border border-white/5 flex flex-col gap-2 group hover:border-white/20 transition-colors">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                <div className="bg-white/5 p-5 rounded-3xl border border-white/5 flex flex-col gap-2 group hover:border-white/20 transition-colors">
                   <div className="flex items-center gap-2 mb-2">
                     <Skull size={16} className="text-red-500/50" />
                     <span className="text-white/30 font-black text-[9px] uppercase tracking-[0.3em]">
@@ -862,7 +862,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                     {lifetimeStats.totalKills.toLocaleString()}
                   </div>
                 </div>
-                <div className="bg-white/5 p-8 rounded-3xl border border-white/5 flex flex-col gap-2 group hover:border-white/20 transition-colors">
+                <div className="bg-white/5 p-5 rounded-3xl border border-white/5 flex flex-col gap-2 group hover:border-white/20 transition-colors">
                   <div className="flex items-center gap-2 mb-2">
                     <Coins size={16} className="text-yellow-500/50" />
                     <span className="text-white/30 font-black text-[9px] uppercase tracking-[0.3em]">
@@ -873,7 +873,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                     {lifetimeStats.totalCredits.toLocaleString()}
                   </div>
                 </div>
-                <div className="bg-white/5 p-8 rounded-3xl border border-white/5 flex flex-col gap-2 group hover:border-white/20 transition-colors">
+                <div className="bg-white/5 p-5 rounded-3xl border border-white/5 flex flex-col gap-2 group hover:border-white/20 transition-colors">
                   <div className="flex items-center gap-2 mb-2">
                     <Award size={16} className="text-green-500/50" />
                     <span className="text-white/30 font-black text-[9px] uppercase tracking-[0.3em]">
@@ -884,7 +884,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                     {lifetimeStats.totalWins}
                   </div>
                 </div>
-                <div className="bg-white/5 p-8 rounded-3xl border border-white/5 flex flex-col gap-2 group hover:border-white/20 transition-colors">
+                <div className="bg-white/5 p-5 rounded-3xl border border-white/5 flex flex-col gap-2 group hover:border-white/20 transition-colors">
                   <div className="flex items-center gap-2 mb-2">
                     <Skull size={16} className="text-slate-500/50" />
                     <span className="text-white/30 font-black text-[9px] uppercase tracking-[0.3em]">
@@ -981,9 +981,9 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
-            className="w-full max-w-5xl z-10 py-12"
+            className="absolute inset-0 z-10 flex items-center justify-center px-3 py-3"
           >
-            <div className="bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="bg-slate-900/90 backdrop-blur-2xl rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col w-full max-w-5xl max-h-full">
               <div className="p-8 md:p-10 bg-slate-950/50 border-b border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
                 <div className="flex items-center gap-6">
                   <div className="w-20 h-20 bg-cyan-500/10 rounded-3xl border-2 border-cyan-500/30 flex items-center justify-center">

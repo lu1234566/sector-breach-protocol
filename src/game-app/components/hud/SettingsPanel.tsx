@@ -14,16 +14,16 @@ export function SettingsPanel({ onBack }: Props) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 z-[130] flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-md px-6"
+      className="absolute inset-0 z-[130] flex flex-col items-center overflow-y-auto custom-scrollbar bg-slate-950/95 backdrop-blur-md px-6 py-8"
     >
       <div className="text-[10px] tracking-[0.5em] text-cyan-400/80 uppercase mb-2">
         Operator Calibration
       </div>
-      <h2 className="text-4xl font-black tracking-tighter text-white mb-8 uppercase italic">
+      <h2 className="text-4xl font-black tracking-tighter text-white mb-6 uppercase italic">
         Settings
       </h2>
 
-      <div className="w-full max-w-md flex flex-col gap-6 bg-slate-900/60 border border-cyan-500/20 rounded-md p-6">
+      <div className="w-full max-w-md flex flex-col gap-4 bg-slate-900/60 border border-cyan-500/20 rounded-md p-6">
         <SensSlider
           label="Mouse Sensitivity — X"
           value={settings.mouseSensX}
