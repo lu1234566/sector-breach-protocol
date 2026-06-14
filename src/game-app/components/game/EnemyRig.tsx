@@ -1,10 +1,9 @@
 // @ts-nocheck
-// Part-based procedural enemies. Replaces the GLB-as-gameplay strategy on
-// Medium/High: each enemy is composed of a small set of meshes whose limbs,
-// torso, weapon and visor are animated by code per anim state (idle / move /
-// attack / death). The silhouettes, palette and visor/core accents are
-// deliberately tuned to look like reinterpretations of the existing GLBs in
-// public/assets/models/enemies/, but without depending on their broken rigs.
+// Part-based procedural enemies (the only enemy renderer on Medium/High):
+// each enemy is composed of a small set of meshes whose limbs, torso, weapon
+// and visor are animated by code per anim state (idle / move / attack /
+// death). Body shells stay neutral metallic gray; the type color only lights
+// the visor, core, vents and ground ring.
 //
 // Art rules (see docs/art-bible.md):
 //  - Body shells stay neutral metallic gray; the type color only lights
