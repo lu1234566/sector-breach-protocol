@@ -57,7 +57,8 @@ export const EnemyLite = React.memo(function EnemyLite({
     if (!prevPos.current) prevPos.current = new THREE.Vector2(wx, wz);
     const dx = wx - prevPos.current.x;
     const dz = wz - prevPos.current.y;
-    if (live.hp > 0 && Math.hypot(dx, dz) > cellSize * 0.0015) {
+    const moved = Math.hypot(dx, dz);
+    if (live.hp > 0 && moved > cellSize * 0.0015) {
       const targetYaw = Math.atan2(dx, dz);
       let diff = targetYaw - yawRef.current;
       diff = Math.atan2(Math.sin(diff), Math.cos(diff));

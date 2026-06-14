@@ -114,8 +114,7 @@ function RusherRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps) {
     const t = state.clock.getElapsedTime();
     const dying = hp <= 0;
     const sinceShot = (Date.now() - lastShot) / 1000;
-    const attackPulse =
-      animState === "attack" || animState === "shoot" ? Math.max(0, 1 - sinceShot / 0.25) : 0;
+    const attackPulse = Math.max(0, 1 - sinceShot / 0.25); // driven by lastShot so it fires even while moving
     lungeRef.current = lerp(lungeRef.current, attackPulse, Math.min(1, delta * 14));
 
     if (dying) {
@@ -282,8 +281,7 @@ function RiflemanRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps)
     const t = state.clock.getElapsedTime();
     const dying = hp <= 0;
     const sinceShot = (Date.now() - lastShot) / 1000;
-    const recoilPulse =
-      animState === "attack" || animState === "shoot" ? Math.max(0, 1 - sinceShot / 0.18) : 0;
+    const recoilPulse = Math.max(0, 1 - sinceShot / 0.18); // driven by lastShot so it fires even while moving
     recoilRef.current = lerp(recoilRef.current, recoilPulse, Math.min(1, delta * 18));
 
     if (muzzle.current) {
@@ -447,8 +445,7 @@ function SniperRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps) {
     const t = state.clock.getElapsedTime();
     const dying = hp <= 0;
     const sinceShot = (Date.now() - lastShot) / 1000;
-    const recoilPulse =
-      animState === "attack" || animState === "shoot" ? Math.max(0, 1 - sinceShot / 0.32) : 0;
+    const recoilPulse = Math.max(0, 1 - sinceShot / 0.32); // driven by lastShot so it fires even while moving
     recoilRef.current = lerp(recoilRef.current, recoilPulse, Math.min(1, delta * 10));
 
     if (laser.current) laser.current.visible = sinceShot > 0.4 && sinceShot < 1.2 && !dying;
@@ -604,8 +601,7 @@ function TitanRig({ cellSize, color, animState, hp, lastShot = 0 }: RigProps) {
     const t = state.clock.getElapsedTime();
     const dying = hp <= 0;
     const sinceShot = (Date.now() - lastShot) / 1000;
-    const slamPulse =
-      animState === "attack" || animState === "shoot" ? Math.max(0, 1 - sinceShot / 0.45) : 0;
+    const slamPulse = Math.max(0, 1 - sinceShot / 0.45); // driven by lastShot so it fires even while moving
     slamRef.current = lerp(slamRef.current, slamPulse, Math.min(1, delta * 8));
 
     if (dying) {

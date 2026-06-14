@@ -101,14 +101,17 @@ export const Enemy3D = React.memo(function Enemy3D({
 
     // Anim state machine — re-render the rig subtree only on transitions so
     // it always receives a fresh lastShot/hp without per-tick reconciliation.
+    // Movement WINS over attack: a soldier walking while shooting must keep
+    // its legs cycling. The recoil/muzzle pose is driven separately by
+    // lastShot inside the rig, so "move" and firing coexist.
     const sinceShot = (Date.now() - (live.lastShot ?? 0)) / 1000;
     const desired =
       hp <= 0
         ? "death"
-        : sinceShot < 0.22
-          ? "attack"
-          : speedRef.current > cellSize * 0.04
-            ? "move"
+        : speedRef.current > cellSize * 0.04
+          ? "move"
+          : sinceShot < 0.22
+            ? "attack"
             : "idle";
     if (desired !== animStateRef.current) {
       animStateRef.current = desired;
