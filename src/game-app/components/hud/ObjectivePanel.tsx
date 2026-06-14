@@ -18,7 +18,7 @@ export function ObjectivePanel({ runtime, enemiesRemaining }: Props) {
   if (!runtime || runtime.status !== "active") return null;
   const pct = Math.max(0, Math.min(1, runtime.progress));
   const seconds = Math.max(0, Math.ceil(runtime.timer / 1000));
-  const Icon = ICONS[runtime.kind];
+  const Icon = ICONS[runtime.kind] ?? Target;
 
   let detail = "";
   if (runtime.kind === "hack") {

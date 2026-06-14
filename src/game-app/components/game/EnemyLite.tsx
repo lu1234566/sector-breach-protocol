@@ -4,13 +4,20 @@ import { useFrame } from "@react-three/fiber";
 import { Billboard } from "@react-three/drei";
 import * as THREE from "three";
 
+// Single source of truth shared with Enemy3D so the boss/titan don't change
+// colour when the quality tier switches.
 const TYPE_COLOR: Record<string, string> = {
   rusher: "#e879f9",
   rifleman: "#22d3ee",
   sniper: "#fbbf24",
   titan: "#38bdf8",
-  boss: "#f43f5e",
+  boss: "#38bdf8",
 };
+
+const HP_HIGH = new THREE.Color("#22d3ee");
+const HP_MID = new THREE.Color("#fbbf24");
+const HP_LOW = new THREE.Color("#f43f5e");
+const hpColor = (pct: number) => (pct > 0.6 ? HP_HIGH : pct > 0.3 ? HP_MID : HP_LOW);
 
 function useLiteMats(color: string) {
   return useMemo(() => {
@@ -68,9 +75,11 @@ export const EnemyLite = React.memo(function EnemyLite({
 
     const sinceSpawn = (Date.now() - (live.spawnTime ?? 0)) / 1000;
     const spawnK = Math.max(0, Math.min(1, sinceSpawn / 0.45));
-    // Quick collapse while the corpse lingers for the death window
+    // Quick collapse while the corpse lingers for the death window. Guard the
+    // case where hp hit 0 but diedAt isn't set yet (treat as just-died) so a
+    // corpse never freezes at full size.
     const deadK =
-      live.hp <= 0 && live.diedAt ? Math.max(0, 1 - (Date.now() - live.diedAt) / 700) : 1;
+      live.hp <= 0 ? Math.max(0, 1 - (Date.now() - (live.diedAt ?? Date.now())) / 700) : 1;
     root.current.scale.setScalar(spawnK * (isBoss ? 2.5 : 1) * deadK);
     root.current.rotation.y =
       yawRef.current + Math.sin(state.clock.getElapsedTime() * (isBoss ? 0.7 : 1.6)) * 0.08;
@@ -281,7 +290,7 @@ function LiteHealthBar({ cellSize, live, maxHp, isBoss }: any) {
       fillRef.current.position.x = (-w * (1 - pct)) / 2;
     }
     if (fillMatRef.current) {
-      fillMatRef.current.color.set(pct > 0.6 ? "#22d3ee" : pct > 0.3 ? "#fbbf24" : "#f43f5e");
+      fillMatRef.current.color.copy(hpColor(pct));
     }
   });
 

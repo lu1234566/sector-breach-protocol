@@ -35,7 +35,17 @@ export const Particles3D = React.memo(function Particles3D({
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const colorObj = useMemo(() => new THREE.Color(), []);
+  // Cache parsed colours so the hot loop never re-parses a CSS string (the
+  // particle palette is just a handful of hex values).
+  const colorCache = useMemo(() => new Map<string, THREE.Color>(), []);
+  const colorFor = (hex: string) => {
+    let c = colorCache.get(hex);
+    if (!c) {
+      c = new THREE.Color(hex);
+      colorCache.set(hex, c);
+    }
+    return c;
+  };
 
   useFrame(() => {
     const mesh = meshRef.current;
@@ -54,7 +64,7 @@ export const Particles3D = React.memo(function Particles3D({
       dummy.scale.setScalar((p.size / 5) * Math.max(0.1, p.life));
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
-      mesh.setColorAt(i, colorObj.set(p.color));
+      mesh.setColorAt(i, colorFor(p.color));
     }
     mesh.count = n;
     mesh.instanceMatrix.needsUpdate = true;

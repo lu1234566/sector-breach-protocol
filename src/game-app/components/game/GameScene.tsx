@@ -115,7 +115,6 @@ export function GameScene({
   objective,
   debugMode,
 }: GameSceneProps) {
-  const now = Date.now();
   const [settingsState] = useSettings();
   const quality = resolveQuality(settingsState.quality);
   const isLowQuality = quality.tier === "low";
@@ -178,7 +177,7 @@ export function GameScene({
           mapHeight={mapHeight}
         />
         {visibleDecals && visibleDecals.length > 0 && (
-          <Decals3D decals={visibleDecals} cellSize={cellSize} mapData={mapData} now={now} />
+          <Decals3D decals={visibleDecals} cellSize={cellSize} mapData={mapData} />
         )}
         {objective && objective.zone && objective.status === "active" && (
           <ObjectiveZone3D objective={objective} cellSize={cellSize} mapData={mapData} />

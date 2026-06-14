@@ -31,22 +31,32 @@ export function WeaponPanel({ currentWeapon, ammo, isReloading }: Props) {
             </span>
           )}
         </div>
-        <div className="flex gap-[2px] h-1">
-          {Array.from({ length: weapon.magSize }).map((_, i) => (
+        {weapon.magSize <= 30 ? (
+          <div className="flex gap-[2px] h-1">
+            {Array.from({ length: weapon.magSize }).map((_, i) => (
+              <div
+                key={i}
+                className={`flex-1 rounded-[1px] transition-all ${
+                  isReloading
+                    ? "bg-slate-800"
+                    : i < ammo.mag
+                      ? low
+                        ? "bg-red-400/80"
+                        : "bg-cyan-400/80"
+                      : "bg-slate-800"
+                }`}
+              />
+            ))}
+          </div>
+        ) : (
+          // Large magazines: a single proportional bar instead of dozens of pips.
+          <div className="h-1 rounded-[1px] bg-slate-800 overflow-hidden">
             <div
-              key={i}
-              className={`flex-1 rounded-[1px] transition-all ${
-                isReloading
-                  ? "bg-slate-800"
-                  : i < ammo.mag
-                    ? low
-                      ? "bg-red-400/80"
-                      : "bg-cyan-400/80"
-                    : "bg-slate-800"
-              }`}
+              className={`h-full transition-all ${low ? "bg-red-400/80" : "bg-cyan-400/80"}`}
+              style={{ width: isReloading ? "0%" : `${(ammo.mag / weapon.magSize) * 100}%` }}
             />
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -26,6 +26,13 @@ const TYPE_COLOR: Record<string, string> = {
   boss: "#38bdf8",
 };
 
+// Pre-parsed health-bar colours so the per-frame fill update never re-parses
+// a CSS string.
+const HP_HIGH = new THREE.Color("#22d3ee");
+const HP_MID = new THREE.Color("#fbbf24");
+const HP_LOW = new THREE.Color("#f43f5e");
+const hpColor = (pct: number) => (pct > 0.6 ? HP_HIGH : pct > 0.3 ? HP_MID : HP_LOW);
+
 /**
  * Memoized: parent re-renders (game-state sync) bail out because every prop
  * is stable. Position, yaw, scale and health update imperatively at full
@@ -185,7 +192,7 @@ function HealthBar({ cellSize, live, maxHp, isBoss, color }: any) {
       fillRef.current.position.x = (-w * (1 - pct)) / 2;
     }
     if (fillMatRef.current) {
-      fillMatRef.current.color.set(pct > 0.6 ? "#22d3ee" : pct > 0.3 ? "#fbbf24" : "#f43f5e");
+      fillMatRef.current.color.copy(hpColor(pct));
     }
   });
 
