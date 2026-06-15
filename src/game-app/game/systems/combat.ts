@@ -176,8 +176,10 @@ export function createHandleShoot(deps: CombatDeps) {
               born: Date.now(),
               size: weapon.type === "shotgun" ? 5 : weapon.type === "sniper" ? 10 : 5,
             });
-            if (decals.current.length > 40) {
-              decals.current.splice(0, decals.current.length - 40);
+            // Cap kept low: each decal is 3 transparent meshes (overdraw), so
+            // a big pile tanks GPU on medium/high while spraying a wall.
+            if (decals.current.length > 16) {
+              decals.current.splice(0, decals.current.length - 16);
             }
             break;
           }

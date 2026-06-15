@@ -98,7 +98,7 @@ function PlayerController({
   return null;
 }
 
-export function GameScene({
+export const GameScene = React.memo(function GameScene({
   player,
   enemies,
   particlesRef,
@@ -231,4 +231,4 @@ export function GameScene({
       />
     </div>
   );
-}
+});

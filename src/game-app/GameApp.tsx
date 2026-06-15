@@ -66,7 +66,11 @@ import { tickPickups } from "./game/systems/pickups";
 import splashMissionComplete from "@/assets/splash_mission_complete.jpg";
 import splashMissionFailed from "@/assets/splash_mission_failed.jpg";
 
-const PLAYER_RADIUS = 30;
+// Collision radius. Cells are 64px and many corridors/doorways are a single
+// cell wide, so a 30px radius left only ±2px of slack to thread a gap — which
+// felt like bumping invisible walls. 22 gives ±10px and much smoother
+// movement without letting the camera clip through walls.
+const PLAYER_RADIUS = 22;
 const DEBUG_MODE =
   typeof window !== "undefined" &&
   (new URLSearchParams(window.location.search).get("debug") === "1" ||
@@ -334,9 +338,15 @@ export default function App() {
   const [enemiesState, setEnemiesState] = useState<Enemy[]>([]);
   const renderTick = useRef(0);
   const rosterKeyRef = useRef("");
-  // Slow heartbeat so transient visuals that still render declaratively
-  // (decal fade, pickup membership) refresh even when no game state changes.
-  const [, setHeartbeat] = useState(0);
+  // Membership snapshots for pickups/decals. The refs (pickups.current /
+  // decals.current) get reassigned every frame by the cleanup filters, which
+  // would churn GameScene's props and defeat its memo. We only push a new
+  // React snapshot when the *set* of items changes, so the memoized 3D scene
+  // stops re-rendering on every shot/tick.
+  const [pickupsState, setPickupsState] = useState<Pickup[]>([]);
+  const [decalsState, setDecalsState] = useState<WallDecal[]>([]);
+  const pickupRosterRef = useRef("");
+  const decalRosterRef = useRef("");
 
   const initGame = (mode: "campaign" | "endless" = gameModeRef.current) => {
     gameModeRef.current = mode;
@@ -411,6 +421,10 @@ export default function App() {
     particles.current = [];
     tracers.current = [];
     decals.current = [];
+    setPickupsState([]);
+    setDecalsState([]);
+    pickupRosterRef.current = "";
+    decalRosterRef.current = "";
     setDamageIndicators([]);
     setHitMarker({ time: 0, killed: false });
     recoilOffset.current = 0;
@@ -1020,12 +1034,6 @@ export default function App() {
               .filter((i) => i.opacity > 0),
       );
     }
-    // ~2Hz heartbeat, only while something on screen still renders
-    // declaratively from a ref (decal fade-out).
-    if (renderTick.current % 30 === 0 && decals.current.length > 0) {
-      setHeartbeat((h) => h + 1);
-    }
-
     tracers.current.forEach((t) => (t.alpha -= 0.05));
     tracers.current = tracers.current.filter((t) => t.alpha > 0);
 
@@ -1037,6 +1045,20 @@ export default function App() {
       p.life -= 0.02;
     });
     particles.current = particles.current.filter((p) => p.life > 0);
+
+    // Sync membership snapshots only when the set of pickups/decals changes —
+    // not every frame — so the memoized GameScene isn't re-rendered by the
+    // per-frame ref churn above. (Positions/opacity animate imperatively.)
+    const pickupKey = pickups.current.map((p) => p.id).join("|");
+    if (pickupKey !== pickupRosterRef.current) {
+      pickupRosterRef.current = pickupKey;
+      setPickupsState([...pickups.current]);
+    }
+    const decalKey = decals.current.map((d) => d.id).join("|");
+    if (decalKey !== decalRosterRef.current) {
+      decalRosterRef.current = decalKey;
+      setDecalsState([...decals.current]);
+    }
   };
 
   const buyUpgrade = (key: string) => {
@@ -1183,7 +1205,7 @@ export default function App() {
               enemies={enemiesState}
               particlesRef={particles}
               tracersRef={tracers}
-              decals={decals.current}
+              decals={decalsState}
               objective={objectiveSnapshot}
               mapData={mapDataState}
               cellSize={CELL_SIZE}
@@ -1192,7 +1214,7 @@ export default function App() {
               recoilOffsetRef={recoilOffset}
               screenShakeRef={screenShake}
               lastShotTimeRef={lastShotTime}
-              pickups={pickups.current}
+              pickups={pickupsState}
               debugMode={DEBUG_MODE}
             />
             {currentWeapon === "sniper" && gameState === "playing" && (
