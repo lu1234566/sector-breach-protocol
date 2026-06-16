@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { useTexture } from "@react-three/drei";
@@ -42,11 +42,15 @@ const composeM = (px, py, pz, rx = 0, ry = 0, rz = 0) =>
   );
 
 /**
- * Static arena geometry is merged per material: instead of ~800 individual
+ * Static arena geometry is MERGED per material: instead of ~800 individual
  * meshes (one per wall box, capstone, face panel, floor tile, decal…), every
  * piece that shares a material is baked into a single merged BufferGeometry =
- * one draw call. This is what cut Medium from ~830 draw calls to a couple of
- * dozen. GLB props and lights stay as separate nodes (they're few).
+ * one draw call. This cut Medium from ~830 draw calls to a couple dozen.
+ *
+ * The merge is keyed on the WALL layout only (`wallSig`) — walls never change
+ * mid-match, so it's built once and is NOT re-merged when a door opens or a
+ * barrel is destroyed (those are cheap dynamic nodes). GLB props and lights
+ * stay as separate nodes.
  */
 export const World = React.memo(function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
   const mapWidth = mapData[0].length * cellSize;
@@ -206,18 +210,28 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
     [tex],
   );
 
-  /* ---------------- Build merged geometry + prop/light nodes ---------------- */
-  const built = useMemo(() => {
+  // Wall-only signature: stable for the whole match (doors/barrels opening to
+  // floor don't change it), so the static merge is computed exactly once.
+  const wallSig = useMemo(
+    () => mapData.map((row) => row.map((c) => (c === 1 ? "1" : ".")).join("")).join("|"),
+    [mapData],
+  );
+  // Keep the latest map around for the static build closure without making the
+  // merge depend on its (per-door) identity.
+  const mapRef = React.useRef(mapData);
+  mapRef.current = mapData;
+
+  /* ---------------- Static merged geometry + wall-attached nodes ---------------- */
+  const staticBuild = useMemo(() => {
+    const md = mapRef.current;
     const buckets: Record<string, THREE.BufferGeometry[]> = {};
     const nodes: React.ReactNode[] = [];
-    // Take ownership of geo, bake matrix, bucket by material key.
     const push = (key: string, geo: THREE.BufferGeometry, matrix: THREE.Matrix4) => {
       geo.applyMatrix4(matrix);
       geo.deleteAttribute("uv2"); // keep attribute sets identical for merge
       (buckets[key] ||= []).push(geo);
     };
 
-    // Wall-face decoration → pushes pieces using the face's world matrix.
     const wallFaceDecor = (
       x: number,
       y: number,
@@ -288,12 +302,12 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
       }
     };
 
-    const rows = mapData.length;
-    const cols = mapData[0].length;
+    const rows = md.length;
+    const cols = md[0].length;
 
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
-        const cell = mapData[y][x];
+        const cell = md[y][x];
         const posX = x * cellSize + cellSize / 2;
         const posZ = y * cellSize + cellSize / 2;
 
@@ -372,29 +386,29 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
           }
         }
 
-        /* ---------- Walls ---------- */
+        /* ---------- Walls (static — never change mid-match) ---------- */
         if (cell === 1) {
           const faces = [
             {
-              exposed: !isWall(mapData[y]?.[x + 1]),
+              exposed: !isWall(md[y]?.[x + 1]),
               pos: [cellSize * 0.495, 0, 0],
               rot: [0, -Math.PI / 2, 0],
               salt: 11,
             },
             {
-              exposed: !isWall(mapData[y]?.[x - 1]),
+              exposed: !isWall(md[y]?.[x - 1]),
               pos: [-cellSize * 0.495, 0, 0],
               rot: [0, Math.PI / 2, 0],
               salt: 12,
             },
             {
-              exposed: !isWall(mapData[y + 1]?.[x]),
+              exposed: !isWall(md[y + 1]?.[x]),
               pos: [0, 0, cellSize * 0.495],
               rot: [0, 0, 0],
               salt: 13,
             },
             {
-              exposed: !isWall(mapData[y - 1]?.[x]),
+              exposed: !isWall(md[y - 1]?.[x]),
               pos: [0, 0, -cellSize * 0.495],
               rot: [0, Math.PI, 0],
               salt: 14,
@@ -404,7 +418,6 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
           const accentKey =
             cellHash < 0.6 ? "neonCyan" : cellHash < 0.85 ? "neonMagenta" : "neonAmber";
 
-          // Base box + capstone
           push(
             "wallDark",
             new THREE.BoxGeometry(cellSize * 0.99, cellSize, cellSize * 0.99),
@@ -425,15 +438,16 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
             wallFaceDecor(x, y, f.salt, accentKey, fm);
           });
 
-          // Wall-base bollard (rare) — kept as a node (procedural, low count).
+          // Wall-base bollard (rare, procedural)
           if (h(x, y, 20) < 0.08 * propsDensity) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
-              const bx = posX + fx * 1.3;
-              const bz = posZ + fz * 1.3;
               nodes.push(
-                <group key={`bol-${x}-${y}`} position={[bx, cellSize * 0.12, bz]}>
+                <group
+                  key={`bol-${x}-${y}`}
+                  position={[posX + fx * 1.3, cellSize * 0.12, posZ + fz * 1.3]}
+                >
                   <mesh material={mats.terminalBody}>
                     <cylinderGeometry
                       args={[cellSize * 0.045, cellSize * 0.06, cellSize * 0.22, 8]}
@@ -448,7 +462,6 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
               );
             }
           }
-
           // Wall-mounted terminal (GLB, rare)
           if (h(x, y, 21) < 0.05 * propsDensity) {
             const exposed = faces.find((f) => f.exposed);
@@ -471,7 +484,6 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
               );
             }
           }
-
           // Decorative wall panel (GLB)
           if (h(x, y, 22) < 0.18 * propsDensity) {
             const exposed = faces.find((f) => f.exposed);
@@ -494,30 +506,6 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
               );
             }
           }
-        } else if (cell === 2) {
-          nodes.push(
-            <group key={`crate-${x}-${y}`} position={[posX, 0, posZ]}>
-              <PropModel
-                modelKey="crate"
-                cellSize={cellSize}
-                accentColor="#fbbf24"
-                emissiveBoost={0.1}
-              />
-            </group>,
-          );
-        } else if (cell === 3) {
-          nodes.push(
-            <group key={`bar-${x}-${y}`} position={[posX, 0, posZ]}>
-              <PropModel
-                modelKey="barrel"
-                cellSize={cellSize}
-                accentColor={NEON_CYAN}
-                pulse
-                emissiveBoost={0}
-                emissiveBase={0.08}
-              />
-            </group>,
-          );
         }
       }
     }
@@ -528,7 +516,7 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
     while (lightSpots.length < 6 && lightAttempt < 60) {
       const cx = Math.floor(h(lightAttempt, 0, 30) * cols);
       const cy = Math.floor(h(0, lightAttempt, 31) * rows);
-      if (mapData[cy]?.[cx] === 0) {
+      if (md[cy]?.[cx] === 0) {
         const colorPick = h(cx, cy, 32);
         lightSpots.push({
           px: cx * cellSize + cellSize / 2,
@@ -577,15 +565,58 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
     }
 
     return { mergedMeshes, nodes, mergedGeos };
-  }, [mapData, cellSize, mats, propsDensity]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wallSig, cellSize, mats, propsDensity]);
 
-  // Dispose merged geometries when the world rebuilds (arena change) or unmounts.
-  const builtRef = useRef(built);
-  builtRef.current = built;
+  // Dispose merged geometries when the static build rebuilds (arena change) or unmounts.
   useEffect(() => {
-    const geos = built.mergedGeos;
+    const geos = staticBuild.mergedGeos;
     return () => geos.forEach((g) => g.dispose());
-  }, [built]);
+  }, [staticBuild]);
+
+  /* ---------------- Dynamic props: crates (2) & barrels (3) ---------------- */
+  // These are the ONLY cells that change mid-match (doors open, barrels blow),
+  // so they live in their own light memo — a door opening no longer re-merges
+  // the whole arena.
+  const dynamicProps = useMemo(() => {
+    const out: React.ReactNode[] = [];
+    const rows = mapData.length;
+    const cols = mapData[0].length;
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const cell = mapData[y][x];
+        if (cell !== 2 && cell !== 3) continue;
+        const posX = x * cellSize + cellSize / 2;
+        const posZ = y * cellSize + cellSize / 2;
+        if (cell === 2) {
+          out.push(
+            <group key={`crate-${x}-${y}`} position={[posX, 0, posZ]}>
+              <PropModel
+                modelKey="crate"
+                cellSize={cellSize}
+                accentColor="#fbbf24"
+                emissiveBoost={0.1}
+              />
+            </group>,
+          );
+        } else {
+          out.push(
+            <group key={`bar-${x}-${y}`} position={[posX, 0, posZ]}>
+              <PropModel
+                modelKey="barrel"
+                cellSize={cellSize}
+                accentColor={NEON_CYAN}
+                pulse
+                emissiveBoost={0}
+                emissiveBase={0.08}
+              />
+            </group>,
+          );
+        }
+      }
+    }
+    return out;
+  }, [mapData, cellSize]);
 
   /* ----------------------------- Final scene ----------------------------- */
   return (
@@ -620,8 +651,9 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
         position={[mapWidth * 0.82, cellSize * 1.2, mapHeight * 0.82]}
       />
 
-      {built.mergedMeshes}
-      {built.nodes}
+      {staticBuild.mergedMeshes}
+      {staticBuild.nodes}
+      {dynamicProps}
     </group>
   );
 });
