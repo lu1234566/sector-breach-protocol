@@ -462,58 +462,22 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
               );
             }
           }
-          // Wall-mounted terminal (GLB, rare)
-          if (h(x, y, 21) < 0.05 * propsDensity) {
-            const exposed = faces.find((f) => f.exposed);
-            if (exposed) {
-              const [fx, , fz] = exposed.pos as number[];
-              nodes.push(
-                <group
-                  key={`term-${x}-${y}`}
-                  position={[posX + fx * 0.6, 0, posZ + fz * 0.6]}
-                  rotation={exposed.rot as any}
-                >
-                  <PropModel
-                    modelKey="terminal"
-                    cellSize={cellSize}
-                    accentColor={NEON_CYAN}
-                    flicker
-                    emissiveBoost={0.25}
-                  />
-                </group>,
-              );
-            }
-          }
-          // Decorative wall panel (GLB)
-          if (h(x, y, 22) < 0.18 * propsDensity) {
-            const exposed = faces.find((f) => f.exposed);
-            if (exposed) {
-              const [fx, , fz] = exposed.pos as number[];
-              nodes.push(
-                <group
-                  key={`wp-${x}-${y}`}
-                  position={[posX + fx * 0.96, cellSize * 0.5, posZ + fz * 0.96]}
-                  rotation={exposed.rot as any}
-                >
-                  <PropModel
-                    modelKey="wallPanel"
-                    cellSize={cellSize}
-                    accentColor={NEON_CYAN}
-                    emissiveBoost={0.18}
-                    noFloorSnap
-                  />
-                </group>,
-              );
-            }
-          }
+          // NOTE: the GLB "terminal" and "wallPanel" wall props were removed —
+          // they were embedded inside the wall surface (placed at 0.30 / 0.475
+          // cells while the face is at 0.495) and each added GLB draw calls +
+          // triangles that hurt Medium/High FPS. The merged face decoration
+          // (panels/trims/LEDs) already keeps the walls detailed.
         }
       }
     }
 
     /* ----------------------------- Ambient lights ----------------------------- */
+    // Fewer fill lights on top of the 3 arena lights + GameScene's
+    // ambient/hemisphere/directional. Every extra dynamic light multiplies the
+    // MeshStandardMaterial per-pixel cost, which is what bottlenecks Medium.
     const lightSpots: { px: number; pz: number; color: string }[] = [];
     let lightAttempt = 0;
-    while (lightSpots.length < 6 && lightAttempt < 60) {
+    while (lightSpots.length < 3 && lightAttempt < 60) {
       const cx = Math.floor(h(lightAttempt, 0, 30) * cols);
       const cy = Math.floor(h(0, lightAttempt, 31) * rows);
       if (md[cy]?.[cx] === 0) {
