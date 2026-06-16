@@ -1216,6 +1216,7 @@ export default function App() {
               lastShotTimeRef={lastShotTime}
               pickups={pickupsState}
               debugMode={DEBUG_MODE}
+              paused={gameState !== "playing"}
             />
             {currentWeapon === "sniper" && gameState === "playing" && (
               <SniperScope playerRef={player} />
