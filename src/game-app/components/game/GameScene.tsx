@@ -119,6 +119,7 @@ export const GameScene = React.memo(function GameScene({
   decals,
   objective,
   debugMode,
+  paused,
 }: GameSceneProps) {
   const [settingsState] = useSettings();
   const quality = resolveQuality(settingsState.quality);
@@ -131,15 +132,28 @@ export const GameScene = React.memo(function GameScene({
   const visibleDecals = isLowQuality ? [] : decals;
   const EnemyRenderer = isLowQuality ? EnemyLite : Enemy3D;
 
+  const perfEnabled = usePerfHudEnabled();
+  const [perfSample, setPerfSample] = useState<{
+    fps: number;
+    calls: number;
+    triangles: number;
+  } | null>(null);
+
+  // Hard DPR caps per tier — never let auto-DPR reach 2.
+  // Low ≤ 0.75, medium ≤ 1.0, high ≤ 1.25.
+  const dprCap = isLowQuality ? 0.75 : quality.tier === "medium" ? 1.0 : 1.25;
+  const dprFloor = isLowQuality ? 0.5 : 0.6;
+  const dpr: [number, number] = [dprFloor, Math.min(dprCap, quality.pixelRatio)];
+
   return (
     <div style={{ width: "100%", height: "100%", position: "relative" }}>
       <Canvas
         shadows={false}
-        dpr={
-          isLowQuality
-            ? [0.45, 0.55]
-            : [0.6, Math.min(quality.pixelRatio, quality.tier === "high" ? 1.5 : 1)]
-        }
+        dpr={dpr}
+        // When the player opens any modal (pause/settings/death), drop to
+        // demand frameloop. The scene stays mounted (no GLB re-load on resume)
+        // but the GPU stops re-rendering the same frame at 60 Hz behind UI.
+        frameloop={paused ? "demand" : "always"}
         gl={{
           antialias: false,
           alpha: false,
@@ -149,6 +163,7 @@ export const GameScene = React.memo(function GameScene({
         }}
         performance={{ min: isLowQuality ? 0.25 : 0.5 }}
       >
+        {perfEnabled && <PerfProbe onSample={setPerfSample} />}
         <PerspectiveCamera makeDefault fov={75} />
         <color attach="background" args={[isLowQuality ? "#0f1724" : "#121a2a"]} />
         {!isLowQuality && <fog attach="fog" args={["#16233a", cellSize * 14, cellSize * 38]} />}
