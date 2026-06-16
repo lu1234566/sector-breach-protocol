@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { Suspense } from "react";
+import React, { Suspense, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
@@ -15,6 +15,7 @@ import { ObjectiveZone3D } from "./ObjectiveZone3D";
 import { Weapon3D } from "../../Weapon3D";
 import { resolveQuality } from "../../game/quality";
 import { useSettings } from "../../game/settings";
+import { PerfProbe, PerfHud, usePerfHudEnabled } from "./PerfHud";
 
 import {
   Player,
@@ -42,6 +43,10 @@ interface GameSceneProps {
   screenShakeRef: React.MutableRefObject<number>;
   lastShotTimeRef: React.MutableRefObject<number>;
   debugMode?: boolean;
+  /** When true, gameplay simulation is suspended (pause menu, settings,
+   *  death screen still mounted). The Canvas drops to demand frameloop so
+   *  the GPU stops burning frames behind a modal. */
+  paused?: boolean;
 }
 
 function PlayerController({
