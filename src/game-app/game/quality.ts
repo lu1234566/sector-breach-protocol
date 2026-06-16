@@ -18,7 +18,9 @@ export interface QualityPreset {
 const PRESETS: Record<"low" | "medium" | "high", QualityPreset> = {
   low: {
     tier: "low",
-    pixelRatio: 1,
+    // Hard DPR cap: low-end devices (Chromebooks, integrated GPUs) collapse
+    // above ~0.75 internal resolution. Never let auto DPR reach 2.
+    pixelRatio: 0.75,
     shadows: false,
     bloom: false,
     propsDensity: 0.5,
@@ -36,7 +38,9 @@ const PRESETS: Record<"low" | "medium" | "high", QualityPreset> = {
   },
   high: {
     tier: "high",
-    pixelRatio: Math.min(2, typeof window !== "undefined" ? window.devicePixelRatio : 1),
+    // Cap high at 1.25 even on Retina/4K displays — full native DPR doubles
+    // the fragment shader cost for marginal visual gain in an arena shooter.
+    pixelRatio: Math.min(1.25, typeof window !== "undefined" ? window.devicePixelRatio : 1),
     shadows: "pcfsoft",
     bloom: true,
     propsDensity: 1,
