@@ -1,6 +1,7 @@
 // @ts-nocheck
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { useTexture } from "@react-three/drei";
 import { PropModel } from "./PropModel";
 
@@ -32,8 +33,21 @@ const h = (x: number, y: number, salt = 0) => {
 
 const isWall = (c?: number) => c === 1; // visual occluder
 
-// Memoized: the world only re-renders when the map actually changes
-// (door opened / barrel destroyed), not on every 30Hz game-state sync.
+// World transform helper: bake a position+euler into a Matrix4.
+const composeM = (px, py, pz, rx = 0, ry = 0, rz = 0) =>
+  new THREE.Matrix4().compose(
+    new THREE.Vector3(px, py, pz),
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)),
+    new THREE.Vector3(1, 1, 1),
+  );
+
+/**
+ * Static arena geometry is merged per material: instead of ~800 individual
+ * meshes (one per wall box, capstone, face panel, floor tile, decal…), every
+ * piece that shares a material is baked into a single merged BufferGeometry =
+ * one draw call. This is what cut Medium from ~830 draw calls to a couple of
+ * dozen. GLB props and lights stay as separate nodes (they're few).
+ */
 export const World = React.memo(function World({ mapData, cellSize, propsDensity = 1 }: MapProps) {
   const mapWidth = mapData[0].length * cellSize;
   const mapHeight = mapData.length * cellSize;
@@ -149,15 +163,6 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
         depthWrite: false,
         side: THREE.DoubleSide,
       }),
-      dangerFloor: new THREE.MeshStandardMaterial({
-        color: NEON_DANGER,
-        emissive: NEON_DANGER,
-        emissiveIntensity: 0.5,
-        transparent: true,
-        opacity: 0.45,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      }),
       scuff: new THREE.MeshStandardMaterial({
         color: "#000000",
         transparent: true,
@@ -192,26 +197,6 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
         emissiveMap: tex.floorMain,
         emissiveIntensity: 0.16,
       }),
-      crateBody: new THREE.MeshStandardMaterial({
-        color: "#1a2236",
-        metalness: 0.5,
-        roughness: 0.55,
-      }),
-      crateTrim: new THREE.MeshStandardMaterial({
-        color: "#0a0f1a",
-        metalness: 0.7,
-        roughness: 0.4,
-      }),
-      barrelBody: new THREE.MeshStandardMaterial({
-        color: "#1a2236",
-        metalness: 0.6,
-        roughness: 0.4,
-      }),
-      cable: new THREE.MeshStandardMaterial({
-        color: "#0a0f1a",
-        metalness: 0.4,
-        roughness: 0.6,
-      }),
       terminalBody: new THREE.MeshStandardMaterial({
         color: "#161e2f",
         metalness: 0.55,
@@ -221,111 +206,88 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
     [tex],
   );
 
-  /* ----------------------------- Face decoration ----------------------------- */
-  const wallFaceDecor = (x: number, y: number, faceSalt: number, accent: THREE.Material) => {
-    const variant = Math.floor(h(x, y, faceSalt) * 4); // 0..3
-    const ledSide = h(x, y, faceSalt + 1) > 0.5 ? 1 : -1;
-    const items: React.ReactNode[] = [];
+  /* ---------------- Build merged geometry + prop/light nodes ---------------- */
+  const built = useMemo(() => {
+    const buckets: Record<string, THREE.BufferGeometry[]> = {};
+    const nodes: React.ReactNode[] = [];
+    // Take ownership of geo, bake matrix, bucket by material key.
+    const push = (key: string, geo: THREE.BufferGeometry, matrix: THREE.Matrix4) => {
+      geo.applyMatrix4(matrix);
+      geo.deleteAttribute("uv2"); // keep attribute sets identical for merge
+      (buckets[key] ||= []).push(geo);
+    };
 
-    // Inset panel (always)
-    items.push(
-      <mesh key="p" position={[0, 0, 0.005]} material={mats.panelA}>
-        <planeGeometry args={[cellSize * 0.82, cellSize * 0.82]} />
-      </mesh>,
-    );
-    // Top neon trim (always — gives skyline)
-    items.push(
-      <mesh key="t" position={[0, cellSize * 0.42, 0.012]} material={accent}>
-        <planeGeometry args={[cellSize * 0.82, cellSize * 0.022]} />
-      </mesh>,
-    );
-    // Horizontal seam
-    items.push(
-      <mesh key="s" position={[0, -cellSize * 0.05, 0.011]} material={mats.panelTrim}>
-        <planeGeometry args={[cellSize * 0.82, cellSize * 0.015]} />
-      </mesh>,
-    );
+    // Wall-face decoration → pushes pieces using the face's world matrix.
+    const wallFaceDecor = (
+      x: number,
+      y: number,
+      faceSalt: number,
+      accentKey: string,
+      fm: THREE.Matrix4,
+    ) => {
+      const variant = Math.floor(h(x, y, faceSalt) * 4);
+      const ledSide = h(x, y, faceSalt + 1) > 0.5 ? 1 : -1;
+      const at = (lx, ly, lz, lrz = 0) => fm.clone().multiply(composeM(lx, ly, lz, 0, 0, lrz));
 
-    if (variant === 0) {
-      // Centered indicator dot + corner LEDs
-      items.push(
-        <mesh
-          key="led1"
-          position={[ledSide * cellSize * 0.3, cellSize * 0.18, 0.015]}
-          material={mats.neonCyanDim}
-        >
-          <circleGeometry args={[cellSize * 0.018, 10]} />
-        </mesh>,
+      push("panelA", new THREE.PlaneGeometry(cellSize * 0.82, cellSize * 0.82), at(0, 0, 0.005));
+      push(
+        accentKey,
+        new THREE.PlaneGeometry(cellSize * 0.82, cellSize * 0.022),
+        at(0, cellSize * 0.42, 0.012),
       );
-      items.push(
-        <mesh
-          key="led2"
-          position={[-ledSide * cellSize * 0.34, -cellSize * 0.28, 0.015]}
-          material={mats.neonAmber}
-        >
-          <circleGeometry args={[cellSize * 0.012, 8]} />
-        </mesh>,
+      push(
+        "panelTrim",
+        new THREE.PlaneGeometry(cellSize * 0.82, cellSize * 0.015),
+        at(0, -cellSize * 0.05, 0.011),
       );
-    } else if (variant === 1) {
-      // Vertical hazard stripe (amber/black) on one side
-      const side = ledSide;
-      items.push(
-        <mesh key="haz" position={[side * cellSize * 0.35, 0, 0.013]} material={mats.neonAmber}>
-          <planeGeometry args={[cellSize * 0.045, cellSize * 0.62]} />
-        </mesh>,
-      );
-      items.push(
-        <mesh
-          key="hazshadow"
-          position={[side * cellSize * 0.3, 0, 0.012]}
-          material={mats.panelTrim}
-        >
-          <planeGeometry args={[cellSize * 0.04, cellSize * 0.62]} />
-        </mesh>,
-      );
-    } else if (variant === 2) {
-      // Bottom red warning bar + corner LEDs
-      items.push(
-        <mesh key="warn" position={[0, -cellSize * 0.4, 0.013]} material={mats.neonDanger}>
-          <planeGeometry args={[cellSize * 0.6, cellSize * 0.02]} />
-        </mesh>,
-      );
-      items.push(
-        <mesh
-          key="ledc"
-          position={[ledSide * cellSize * 0.36, cellSize * 0.32, 0.015]}
-          material={mats.neonDanger}
-        >
-          <circleGeometry args={[cellSize * 0.016, 10]} />
-        </mesh>,
-      );
-    } else {
-      // Secondary inset panel (asymmetric)
-      items.push(
-        <mesh
-          key="sub"
-          position={[ledSide * cellSize * 0.22, cellSize * 0.05, 0.011]}
-          material={mats.panelB}
-        >
-          <planeGeometry args={[cellSize * 0.32, cellSize * 0.5]} />
-        </mesh>,
-      );
-      items.push(
-        <mesh
-          key="ledd"
-          position={[ledSide * cellSize * 0.22, cellSize * 0.22, 0.016]}
-          material={mats.neonCyan}
-        >
-          <planeGeometry args={[cellSize * 0.18, cellSize * 0.012]} />
-        </mesh>,
-      );
-    }
-    return items;
-  };
 
-  /* ----------------------------- Cells ----------------------------- */
-  const cells = useMemo(() => {
-    const out: React.ReactNode[] = [];
+      if (variant === 0) {
+        push(
+          "neonCyanDim",
+          new THREE.CircleGeometry(cellSize * 0.018, 10),
+          at(ledSide * cellSize * 0.3, cellSize * 0.18, 0.015),
+        );
+        push(
+          "neonAmber",
+          new THREE.CircleGeometry(cellSize * 0.012, 8),
+          at(-ledSide * cellSize * 0.34, -cellSize * 0.28, 0.015),
+        );
+      } else if (variant === 1) {
+        push(
+          "neonAmber",
+          new THREE.PlaneGeometry(cellSize * 0.045, cellSize * 0.62),
+          at(ledSide * cellSize * 0.35, 0, 0.013),
+        );
+        push(
+          "panelTrim",
+          new THREE.PlaneGeometry(cellSize * 0.04, cellSize * 0.62),
+          at(ledSide * cellSize * 0.3, 0, 0.012),
+        );
+      } else if (variant === 2) {
+        push(
+          "neonDanger",
+          new THREE.PlaneGeometry(cellSize * 0.6, cellSize * 0.02),
+          at(0, -cellSize * 0.4, 0.013),
+        );
+        push(
+          "neonDanger",
+          new THREE.CircleGeometry(cellSize * 0.016, 10),
+          at(ledSide * cellSize * 0.36, cellSize * 0.32, 0.015),
+        );
+      } else {
+        push(
+          "panelB",
+          new THREE.PlaneGeometry(cellSize * 0.32, cellSize * 0.5),
+          at(ledSide * cellSize * 0.22, cellSize * 0.05, 0.011),
+        );
+        push(
+          "neonCyan",
+          new THREE.PlaneGeometry(cellSize * 0.18, cellSize * 0.012),
+          at(ledSide * cellSize * 0.22, cellSize * 0.22, 0.016),
+        );
+      }
+    };
+
     const rows = mapData.length;
     const cols = mapData[0].length;
 
@@ -338,108 +300,80 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
         /* ---------- Floor decoration on open cells ---------- */
         if (cell === 0) {
           const r = h(x, y, 1);
-          // Slight per-cell tile shade (no aligned grid lines — the offset makes it organic)
           if (r < 0.55) {
             const useAlt = h(x, y, 2) > 0.5;
             const off = (h(x, y, 3) - 0.5) * cellSize * 0.06;
-            out.push(
-              <mesh
-                key={`tile-${x}-${y}`}
-                position={[posX + off, 0.005, posZ - off]}
-                rotation={[-Math.PI / 2, 0, 0]}
-                material={useAlt ? mats.tilePlateAlt : mats.tilePlate}
-              >
-                <planeGeometry args={[cellSize * 0.92, cellSize * 0.92]} />
-              </mesh>,
+            push(
+              useAlt ? "tilePlateAlt" : "tilePlate",
+              new THREE.PlaneGeometry(cellSize * 0.92, cellSize * 0.92),
+              composeM(posX + off, 0.005, posZ - off, -Math.PI / 2, 0, 0),
             );
           }
 
-          // Sparse functional decals
           const d = h(x, y, 7);
           if (d < 0.05) {
-            // Cyan path arrow (chevron)
             const rot = Math.floor(h(x, y, 8) * 4) * (Math.PI / 2);
-            out.push(
-              <group
-                key={`arrow-${x}-${y}`}
-                position={[posX, 0.015, posZ]}
-                rotation={[-Math.PI / 2, 0, rot]}
-              >
-                <mesh position={[0, cellSize * 0.05, 0]} material={mats.pathFloor}>
-                  <planeGeometry args={[cellSize * 0.32, cellSize * 0.05]} />
-                </mesh>
-                <mesh material={mats.pathFloor}>
-                  <planeGeometry args={[cellSize * 0.42, cellSize * 0.05]} />
-                </mesh>
-                <mesh position={[0, -cellSize * 0.05, 0]} material={mats.pathFloor}>
-                  <planeGeometry args={[cellSize * 0.32, cellSize * 0.05]} />
-                </mesh>
-              </group>,
+            const gm = composeM(posX, 0.015, posZ, -Math.PI / 2, 0, rot);
+            push(
+              "pathFloor",
+              new THREE.PlaneGeometry(cellSize * 0.32, cellSize * 0.05),
+              gm.clone().multiply(composeM(0, cellSize * 0.05, 0)),
+            );
+            push(
+              "pathFloor",
+              new THREE.PlaneGeometry(cellSize * 0.42, cellSize * 0.05),
+              gm.clone(),
+            );
+            push(
+              "pathFloor",
+              new THREE.PlaneGeometry(cellSize * 0.32, cellSize * 0.05),
+              gm.clone().multiply(composeM(0, -cellSize * 0.05, 0)),
             );
           } else if (d < 0.09) {
-            // Sector ring + center dot
-            out.push(
-              <group key={`sec-${x}-${y}`} position={[posX, 0.012, posZ]}>
-                <mesh rotation={[-Math.PI / 2, 0, 0]} material={mats.hazardFloor}>
-                  <ringGeometry args={[cellSize * 0.24, cellSize * 0.3, 28]} />
-                </mesh>
-                <mesh rotation={[-Math.PI / 2, 0, 0]} material={mats.neonAmber}>
-                  <circleGeometry args={[cellSize * 0.04, 16]} />
-                </mesh>
-              </group>,
+            const gm = composeM(posX, 0.012, posZ).multiply(composeM(0, 0, 0, -Math.PI / 2, 0, 0));
+            push(
+              "hazardFloor",
+              new THREE.RingGeometry(cellSize * 0.24, cellSize * 0.3, 28),
+              gm.clone(),
             );
+            push("neonAmber", new THREE.CircleGeometry(cellSize * 0.04, 16), gm.clone());
           } else if (d < 0.12) {
-            // Purple contamination splotch
-            out.push(
-              <mesh
-                key={`contam-${x}-${y}`}
-                position={[posX, 0.011, posZ]}
-                rotation={[-Math.PI / 2, 0, h(x, y, 9) * Math.PI]}
-                material={mats.contamFloor}
-              >
-                <circleGeometry args={[cellSize * 0.38, 18]} />
-              </mesh>,
+            push(
+              "contamFloor",
+              new THREE.CircleGeometry(cellSize * 0.38, 18),
+              composeM(posX, 0.011, posZ, -Math.PI / 2, 0, h(x, y, 9) * Math.PI),
             );
           } else if (d < 0.18) {
-            // Scuff / wear mark
-            out.push(
-              <mesh
-                key={`scuff-${x}-${y}`}
-                position={[
-                  posX + (h(x, y, 4) - 0.5) * cellSize * 0.3,
-                  0.008,
-                  posZ + (h(x, y, 5) - 0.5) * cellSize * 0.3,
-                ]}
-                rotation={[-Math.PI / 2, 0, h(x, y, 6) * Math.PI]}
-                material={mats.scuff}
-              >
-                <planeGeometry args={[cellSize * 0.45, cellSize * 0.18]} />
-              </mesh>,
+            push(
+              "scuff",
+              new THREE.PlaneGeometry(cellSize * 0.45, cellSize * 0.18),
+              composeM(
+                posX + (h(x, y, 4) - 0.5) * cellSize * 0.3,
+                0.008,
+                posZ + (h(x, y, 5) - 0.5) * cellSize * 0.3,
+                -Math.PI / 2,
+                0,
+                h(x, y, 6) * Math.PI,
+              ),
             );
           } else if (d < 0.22) {
-            // Hazard double stripe
             const rot = h(x, y, 10) > 0.5 ? 0 : Math.PI / 2;
-            out.push(
-              <group
-                key={`stripe-${x}-${y}`}
-                position={[posX, 0.012, posZ]}
-                rotation={[-Math.PI / 2, 0, rot]}
-              >
-                <mesh position={[0, cellSize * 0.07, 0]} material={mats.hazardFloor}>
-                  <planeGeometry args={[cellSize * 0.7, cellSize * 0.05]} />
-                </mesh>
-                <mesh position={[0, -cellSize * 0.07, 0]} material={mats.hazardFloor}>
-                  <planeGeometry args={[cellSize * 0.7, cellSize * 0.05]} />
-                </mesh>
-              </group>,
+            const gm = composeM(posX, 0.012, posZ, -Math.PI / 2, 0, rot);
+            push(
+              "hazardFloor",
+              new THREE.PlaneGeometry(cellSize * 0.7, cellSize * 0.05),
+              gm.clone().multiply(composeM(0, cellSize * 0.07, 0)),
+            );
+            push(
+              "hazardFloor",
+              new THREE.PlaneGeometry(cellSize * 0.7, cellSize * 0.05),
+              gm.clone().multiply(composeM(0, -cellSize * 0.07, 0)),
             );
           }
         }
 
         /* ---------- Walls ---------- */
         if (cell === 1) {
-          // Solid base box (full cell — preserves visual occlusion same as before)
-          // Detect exposed faces (neighbors that are NOT walls get decorated)
           const faces = [
             {
               exposed: !isWall(mapData[y]?.[x + 1]),
@@ -467,37 +401,38 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
             },
           ];
           const cellHash = h(x, y, 0);
-          const accent =
-            cellHash < 0.6 ? mats.neonCyan : cellHash < 0.85 ? mats.neonMagenta : mats.neonAmber;
+          const accentKey =
+            cellHash < 0.6 ? "neonCyan" : cellHash < 0.85 ? "neonMagenta" : "neonAmber";
 
-          out.push(
-            <group key={`wall-${x}-${y}`} position={[posX, cellSize / 2, posZ]}>
-              <mesh material={mats.wallDark}>
-                <boxGeometry args={[cellSize * 0.99, cellSize, cellSize * 0.99]} />
-              </mesh>
-              {/* Capstone strip on top */}
-              <mesh position={[0, cellSize * 0.48, 0]} material={mats.wallMid}>
-                <boxGeometry args={[cellSize * 1.02, cellSize * 0.06, cellSize * 1.02]} />
-              </mesh>
-              {faces.map((f, i) =>
-                f.exposed ? (
-                  <group key={i} position={f.pos as any} rotation={f.rot as any}>
-                    {wallFaceDecor(x, y, f.salt, accent)}
-                  </group>
-                ) : null,
-              )}
-            </group>,
+          // Base box + capstone
+          push(
+            "wallDark",
+            new THREE.BoxGeometry(cellSize * 0.99, cellSize, cellSize * 0.99),
+            composeM(posX, cellSize / 2, posZ),
+          );
+          push(
+            "wallMid",
+            new THREE.BoxGeometry(cellSize * 1.02, cellSize * 0.06, cellSize * 1.02),
+            composeM(posX, cellSize / 2 + cellSize * 0.48, posZ),
           );
 
-          // Small wall-base light bollard against random exposed face (rare)
+          const wallM = composeM(posX, cellSize / 2, posZ);
+          faces.forEach((f) => {
+            if (!f.exposed) return;
+            const fm = wallM
+              .clone()
+              .multiply(composeM(f.pos[0], f.pos[1], f.pos[2], f.rot[0], f.rot[1], f.rot[2]));
+            wallFaceDecor(x, y, f.salt, accentKey, fm);
+          });
+
+          // Wall-base bollard (rare) — kept as a node (procedural, low count).
           if (h(x, y, 20) < 0.08 * propsDensity) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
-              // Place against exposed face, slightly off-center
               const bx = posX + fx * 1.3;
               const bz = posZ + fz * 1.3;
-              out.push(
+              nodes.push(
                 <group key={`bol-${x}-${y}`} position={[bx, cellSize * 0.12, bz]}>
                   <mesh material={mats.terminalBody}>
                     <cylinderGeometry
@@ -514,15 +449,17 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
             }
           }
 
-          // Wall-mounted lab terminal (GLB, very rare ~5% of exposed walls)
+          // Wall-mounted terminal (GLB, rare)
           if (h(x, y, 21) < 0.05 * propsDensity) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
-              const tx = posX + fx * 0.6;
-              const tz = posZ + fz * 0.6;
-              out.push(
-                <group key={`term-${x}-${y}`} position={[tx, 0, tz]} rotation={exposed.rot as any}>
+              nodes.push(
+                <group
+                  key={`term-${x}-${y}`}
+                  position={[posX + fx * 0.6, 0, posZ + fz * 0.6]}
+                  rotation={exposed.rot as any}
+                >
                   <PropModel
                     modelKey="terminal"
                     cellSize={cellSize}
@@ -535,17 +472,15 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
             }
           }
 
-          // Decorative wall panel (GLB, ~18% of exposed walls, deterministic).
+          // Decorative wall panel (GLB)
           if (h(x, y, 22) < 0.18 * propsDensity) {
             const exposed = faces.find((f) => f.exposed);
             if (exposed) {
               const [fx, , fz] = exposed.pos as number[];
-              const tx = posX + fx * 0.96;
-              const tz = posZ + fz * 0.96;
-              out.push(
+              nodes.push(
                 <group
                   key={`wp-${x}-${y}`}
-                  position={[tx, cellSize * 0.5, tz]}
+                  position={[posX + fx * 0.96, cellSize * 0.5, posZ + fz * 0.96]}
                   rotation={exposed.rot as any}
                 >
                   <PropModel
@@ -560,9 +495,7 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
             }
           }
         } else if (cell === 2) {
-          // Sci-fi crate (GLB) — replaces procedural box. Collision is unchanged
-          // because mapData still drives walls/blocking; this is purely visual.
-          out.push(
+          nodes.push(
             <group key={`crate-${x}-${y}`} position={[posX, 0, posZ]}>
               <PropModel
                 modelKey="crate"
@@ -573,8 +506,7 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
             </group>,
           );
         } else if (cell === 3) {
-          // Energy barrel (GLB) — metallic body with subtle cyan energy strips.
-          out.push(
+          nodes.push(
             <group key={`bar-${x}-${y}`} position={[posX, 0, posZ]}>
               <PropModel
                 modelKey="barrel"
@@ -584,20 +516,13 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
                 emissiveBoost={0}
                 emissiveBase={0.08}
               />
-              <pointLight
-                color={NEON_CYAN}
-                intensity={0.06}
-                distance={cellSize * 1.0}
-                position={[0, cellSize * 0.4, 0]}
-              />
             </group>,
           );
         }
       }
     }
 
-    /* ----------------------------- Scattered ambient lights ----------------------------- */
-    // ~6 lights deterministically chosen in open cells across the map.
+    /* ----------------------------- Ambient lights ----------------------------- */
     const lightSpots: { px: number; pz: number; color: string }[] = [];
     let lightAttempt = 0;
     while (lightSpots.length < 6 && lightAttempt < 60) {
@@ -614,7 +539,7 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
       lightAttempt++;
     }
     lightSpots.forEach((s, i) => {
-      out.push(
+      nodes.push(
         <pointLight
           key={`amb-${i}`}
           position={[s.px, cellSize * 0.9, s.pz]}
@@ -623,8 +548,7 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
           distance={cellSize * 6}
         />,
       );
-      // Tiny floor light disc to motivate the glow visually
-      out.push(
+      nodes.push(
         <mesh key={`amb-disc-${i}`} position={[s.px, 0.02, s.pz]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[cellSize * 0.06, cellSize * 0.1, 18]} />
           <meshStandardMaterial
@@ -639,13 +563,34 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
       );
     });
 
-    return out;
+    /* ----------------------------- Merge per material ----------------------------- */
+    const mergedMeshes: React.ReactNode[] = [];
+    const mergedGeos: THREE.BufferGeometry[] = [];
+    for (const key of Object.keys(buckets)) {
+      const geos = buckets[key];
+      const merged = mergeGeometries(geos, false);
+      geos.forEach((g) => g.dispose());
+      if (merged) {
+        mergedGeos.push(merged);
+        mergedMeshes.push(<mesh key={`m-${key}`} geometry={merged} material={mats[key]} />);
+      }
+    }
+
+    return { mergedMeshes, nodes, mergedGeos };
   }, [mapData, cellSize, mats, propsDensity]);
+
+  // Dispose merged geometries when the world rebuilds (arena change) or unmounts.
+  const builtRef = useRef(built);
+  builtRef.current = built;
+  useEffect(() => {
+    const geos = built.mergedGeos;
+    return () => geos.forEach((g) => g.dispose());
+  }, [built]);
 
   /* ----------------------------- Final scene ----------------------------- */
   return (
     <group position={[-mapWidth / 2, 0, -mapHeight / 2]}>
-      {/* Base floor — single dark plane (no grid lines) */}
+      {/* Base floor */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[mapWidth / 2, -0.01, mapHeight / 2]}
@@ -675,7 +620,8 @@ export const World = React.memo(function World({ mapData, cellSize, propsDensity
         position={[mapWidth * 0.82, cellSize * 1.2, mapHeight * 0.82]}
       />
 
-      {cells}
+      {built.mergedMeshes}
+      {built.nodes}
     </group>
   );
 });
