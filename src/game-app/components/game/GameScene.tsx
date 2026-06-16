@@ -249,6 +249,16 @@ export const GameScene = React.memo(function GameScene({
         recoilOffsetRef={recoilOffsetRef}
         lastShotTimeRef={lastShotTimeRef}
       />
+
+      {perfEnabled && (
+        <PerfHud
+          enemies={enemies.length}
+          particles={particlesRef.current?.length ?? 0}
+          qualityTier={quality.tier}
+          paused={!!paused}
+          sample={perfSample}
+        />
+      )}
     </div>
   );
 });
