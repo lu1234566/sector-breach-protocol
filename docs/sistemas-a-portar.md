@@ -3,6 +3,11 @@
 > Fase 0 do plano de migração. Este documento é o inventário estruturado do jogo
 > atual, extraído diretamente do código-fonte, para servir de base a uma
 > reconstrução em Unreal Engine.
+>
+> **Status (Fase 1.5):** todos os sistemas listados abaixo já têm uma
+> implementação C++ correspondente em `/game-unreal` (escrita sem a Unreal
+> Engine instalada, ainda não compilada) — ver `game-unreal/EDITOR_TODO.md`
+> para o que falta (build, Data Tables, assets de Editor).
 
 ## 0. Correção de premissa importante
 

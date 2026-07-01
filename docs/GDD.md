@@ -114,3 +114,15 @@ Unreal, desenhar esquema novo com Enhanced Input (Fase 3).
 2. Criar projeto Unreal a partir do template First Person.
 3. Prototipar o core loop mínimo: personagem FPS, 1 arma funcional, 1 bot
    com Behavior Tree básica, 1 mapa de blockout (ver plano original, Fase 2).
+
+## 12. Fase 1.5 — esqueleto C++ adiantado (status: feito, não compilado)
+
+Todo o C++ de gameplay descrito nas seções 3-6, 8 acima já existe em
+`/game-unreal` (projeto Unreal Engine 5.5, escrito sem a Engine instalada):
+personagem + Enhanced Input, sistema de armas, IA dos inimigos (state
+machine em C++), GameMode com wave spawner e objetivos, e o subsystem de
+economia/upgrades. Os balanceamentos estão em `game-unreal/Data/CSV/`,
+prontos para virar Data Table. O que falta é puramente trabalho de Editor —
+ver `game-unreal/EDITOR_TODO.md` para a lista completa (primeira compilação,
+importar Data Tables, criar assets de Enhanced Input, blockout dos 3 mapas,
+HUD, arte/áudio).
