@@ -1,0 +1,11 @@
+Name,Wave,Kind,Label,DurationMs,KillThreshold,TimeLimitMs,CoreMaxHp,ZoneTag
+Wave_1,1,Eliminate,"Neutralize Hostiles",0,0,0,0,None
+Wave_2,2,Hack,"Hack Node",12000,0,0,0,ObjectiveZone_Hack
+Wave_3,3,Eliminate,"Neutralize Hostiles",0,0,0,0,None
+Wave_4,4,Defend,"Defend Core",30000,0,0,500,ObjectiveZone_Defend
+Wave_5,5,Eliminate,"Titan Protocol",0,0,0,0,None
+Wave_6,6,Extract,"Extract",0,5,25000,0,ObjectiveZone_Extract
+Endless_Boss,0,Eliminate,"Titan Protocol",0,0,0,0,None
+Endless_Mod0,0,Eliminate,"Neutralize Hostiles",0,0,0,0,None
+Endless_Mod1,0,Hack,"Hack Node",12000,0,0,0,ObjectiveZone_Hack
+Endless_Mod2,0,Defend,"Defend Core",30000,0,0,500,ObjectiveZone_Defend

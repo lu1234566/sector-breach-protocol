@@ -1,0 +1,5 @@
+Name,EnemyType,BaseHP,BaseSpeed,BaseDamage,FireRateMs,TargetDistance,ShootRange,bIsMelee,bIsBoss
+Rusher,Rusher,60,210,14,1100,80,110,true,false
+Rifleman,Rifleman,100,120,12,900,320,1200,false,false
+Sniper,Sniper,80,90,35,3000,600,1200,false,false
+Titan,Titan,2000,84,30,600,320,1200,false,true

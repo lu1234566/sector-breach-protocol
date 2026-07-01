@@ -1,0 +1,5 @@
+Name,DisplayName,Difficulty,HPMult,DamageMult,CreditMult
+Recruit,"Recruit",Recruit,0.75,0.75,0.90
+Normal,"Normal",Normal,1.00,1.00,1.15
+Veteran,"Veteran",Veteran,1.25,1.15,1.60
+Nightmare,"Nightmare",Nightmare,1.60,1.40,2.40

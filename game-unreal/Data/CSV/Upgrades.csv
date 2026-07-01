@@ -1,0 +1,5 @@
+Name,DisplayName,Description,Costs,MaxLevel,EffectPerLevel
+ArmorPlating,"Armor Plating","+5 Max HP per level","(100,200,350,500,750)",5,5.0
+AmmoReserve,"Ammo Reserve","+20 Initial Reserve Ammo per level","(100,200,350,500,750)",5,20.0
+QuickReload,"Quick Reload","-5% Reload Time per level","(150,300,500,800,1200)",5,0.05
+Scavenger,"Scavenger","+5% Pickup Drop Chance per level","(150,300,500,800,1200)",5,0.05

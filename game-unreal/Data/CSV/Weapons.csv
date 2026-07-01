@@ -1,0 +1,5 @@
+Name,DisplayName,WeaponType,BaseDamage,FireRateMs,ReloadTimeMs,MagazineSize,Recoil,Spread,Range,bIsScoped,bIsAutomatic,PelletCount,DebugColor
+Pistol,"P-99",Pistol,20,250,1200,12,5,0.05,600,false,false,1,"(R=0.580,G=0.639,B=0.722,A=1.000)"
+Rifle,"M4-A1",Rifle,15,100,2000,30,3,0.10,800,false,true,1,"(R=0.118,G=0.161,B=0.231,A=1.000)"
+Shotgun,"KRM-262",Shotgun,60,800,2500,6,20,0.50,300,false,false,8,"(R=0.200,G=0.255,B=0.333,A=1.000)"
+Sniper,"DL-Q33",Sniper,100,1500,3000,5,40,0.01,1500,true,false,1,"(R=0.059,G=0.090,B=0.165,A=1.000)"
