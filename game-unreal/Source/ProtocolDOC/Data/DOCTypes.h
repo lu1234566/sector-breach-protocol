@@ -64,6 +64,18 @@ enum class EDOCObjectiveStatus : uint8
 	Failed
 };
 
+// The three independent per-weapon upgrade tracks (docs/scorestreaks.md
+// #4): damage +5%/level, stability -5% spread&recoil/level, reload -4%
+// reload time/level. Same cost table and max level for all three
+// (DT_WeaponUpgradeConfig, row "Default").
+UENUM(BlueprintType)
+enum class EDOCWeaponUpgradeStat : uint8
+{
+	Damage,
+	Stability,
+	Reload
+};
+
 // Mirrors the implicit per-frame decision tree in the web AI
 // (src/game-app/game/systems/enemyAI.ts), made explicit as a real state
 // machine. See docs/bots-ia.md #2.
