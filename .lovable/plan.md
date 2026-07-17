@@ -1,48 +1,39 @@
-## Problemas e correções
+# Add OAuth-protected MCP server to Protocol DOC
 
-### 1. Inimigos invisíveis
+You chose "Protected with OAuth" for MCP access. The app currently has no user accounts and stores all progress in browser localStorage, so this needs three layers built together: accounts, server-side player data, and the MCP server itself.
 
-**Causa provável:** após a compressão dos GLBs, o `EnemyMesh.tsx` está substituindo o material original por um `MeshStandardMaterial` novo sem o `map` correto (textura WebP da compressão pode estar em formato que o `source?.map` não devolve), e/ou o `scene.clone(true)` não clona materiais — ao trocar materiais, vários meshes podem ficar com referência inválida.
+## What ships
 
-**Correção:**
+1. **Lovable Cloud + accounts** — email/password + Google sign-in, a `profiles` table, and an `_authenticated` route gate.
+2. **Player data mirrored server-side** — new `player_stats` and `player_runs` tables (lifetime stats + per-run history), RLS-scoped to the signed-in user. LocalStorage keeps working offline; when signed in, stats sync up on run end.
+3. **Managed OAuth 2.1 authorization server** activated via `supabase--configure_oauth_server`, plus the consent route at `src/routes/[.]lovable.oauth.consent.tsx` that preserves `authorization_id` through login/signup/Google.
+4. **MCP server at `/mcp`** using `@lovable.dev/mcp-js`, verifying Supabase bearer tokens (`auth.oauth.issuer`, issuer built from `VITE_SUPABASE_PROJECT_ID`).
+5. **Tools exposed** (each acts as the signed-in user via RLS):
+   - `get_lifetime_stats` — kills, deaths, wins, best wave, best endless wave, total credits.
+   - `list_recent_runs` — last N runs with wave reached, arena, difficulty, kills, outcome.
+   - `get_leaderboard_position` — user's rank on best endless wave (reads a public view).
+   - `get_arena_catalog` — static arena metadata (read-only, no user data).
+6. A simple favicon so connector clients show a proper icon.
 
-- Em `src/game-app/components/game/EnemyMesh.tsx`:
-  - Clonar materiais explicitamente (`o.material = o.material.clone()`) antes de modificar, em vez de criar `MeshStandardMaterial` do zero.
-  - Em vez de substituir, **boostar** o material existente: subir `emissiveIntensity`, clarear cor se muito escura, manter o `map` original intacto (mesma abordagem que já funciona em `Weapon3D`).
-  - Garantir `frustumCulled = false` em meshes pequenos para evitar culling agressivo.
-  - Adicionar fallback visível (caixa neon) caso o `useGLTF` falhe — hoje o `Fallback` só aparece no Suspense, não em erro.
+## Not in scope
 
-### 2. Rifle/assault apontando para o céu
+- Rewriting the game loop or moving live gameplay server-side. Only end-of-run summaries sync.
+- Write/mutation tools (grant credits, reset progress). Read-only first; we can add mutations later behind `destructiveHint`.
+- Migrating existing local progress into new accounts — first sign-in starts fresh server-side; local save keeps working.
 
-**Causa:** em `WEAPON_MODELS.rifle` a rotação é `[-Math.PI/2, 0, 0]`, que está girando o cano para cima em vez de para frente. O eixo "comprido" do rifle não é Y como assumido.
+## Technical notes
 
-**Correção:**
+- `src/lib/mcp/index.ts` + one file per tool under `src/lib/mcp/tools/`. `mcpPlugin()` added to `vite.config.ts`; do not hand-write `src/routes/mcp.ts`.
+- Issuer: `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/auth/v1`, `acceptedAudiences: "authenticated"`.
+- Tool handlers build a per-request Supabase client with `Authorization: Bearer ${ctx.getToken()}` so RLS runs as the caller.
+- New migration creates `profiles`, `player_stats`, `player_runs` with GRANTs to `authenticated` + `service_role` and RLS policies scoped to `auth.uid()`.
+- Run-end sync: a `createServerFn` (`recordRun`) writes to `player_runs` and upserts `player_stats` when a session is present; unauthenticated play keeps using localStorage only.
+- Consent route uses `supabase.auth.oauth` and forwards `next` through email/password, signup `emailRedirectTo`, and Google `redirect_uri`.
+- After edits: run `app_mcp_server--extract_mcp_manifest` to validate.
 
-- Em `src/game-app/Weapon3D.tsx`, **auto-detectar a orientação** do GLB:
-  - Computar a bbox **sem rotação**, pegar o eixo mais longo (X/Y/Z).
-  - Gerar a rotação que alinha esse eixo a -Z automaticamente, em vez de depender de tabela manual por arma.
-  - Isso resolve rifle, shotgun e sniper de uma vez (qualquer asset novo passa a alinhar sozinho).
-- Manter `offset`/`targetLength`/`kickZ` por arma na config.
+## Confirm before I build
 
-### 3. Pistola com braços gigantes
+Two things worth flagging:
 
-O `hideMeshes: /arm/i` está deixando passar — o asset tem os braços bem integrados e mesmo escondendo o mesh `arms_arms_0` o resultado fica ruim. Solução acordada: **trocar o asset**.
-
-**Correção:**
-
-- Aguardar o usuário enviar um novo `pistol.glb` sem braços embutidos.
-- Quando chegar: comprimir com `gltf-transform` (mesmo pipeline: WebP 512, Draco, simplify 0.5), substituir `public/assets/weapons/pistol.glb`, remover `hideMeshes` da config.
-- Como fallback imediato (antes do novo asset), apertar o filtro para esconder também `hand`, `glove`, `finger`, `forearm`, `wrist` — qualquer mesh que não seja o corpo da arma.
-
-## Arquivos a editar
-
-- `src/game-app/components/game/EnemyMesh.tsx` — preservar material original, fallback de erro.
-- `src/game-app/Weapon3D.tsx` — auto-detecção do eixo do cano, regex de hide mais agressivo na pistola.
-- `public/assets/weapons/pistol.glb` — substituir quando o usuário enviar o novo asset.
-
-## Ordem de execução
-
-1. Aplicar fix do `EnemyMesh` (inimigos voltam a aparecer).
-2. Aplicar auto-orientação no `Weapon3D` (rifle/shotgun/sniper alinham).
-3. Apertar filtro temporário da pistola.
-4. Quando o novo asset da pistola chegar, comprimir e trocar.
+- **Adding accounts changes the game's UX** (menu now needs Sign in / Continue as guest). OK to add?
+- **Tool set above** — is read-only lifetime stats + run history + leaderboard the right first cut, or do you want different tools (e.g. "start a run from a chat command", "grant credits")?
