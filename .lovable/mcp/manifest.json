@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "sdk_version": "0.23.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://xfoktmjploqoifaxssms.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "protocol-doc-mcp",
+      "version": "0.1.0",
+      "title": "Protocol DOC — Arena Stats"
+    },
+    "tools": [
+      {
+        "name": "get_lifetime_stats",
+        "title": "Get lifetime stats",
+        "description": "Return the signed-in operator's career totals: kills, deaths, wins, games played, credits earned, best campaign wave, best endless wave.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_recent_runs",
+        "title": "List recent runs",
+        "description": "Return the operator's most recent completed runs (default 10, max 50). Each row includes arena, difficulty, mode, wave reached, kills, credits earned, outcome, and timestamp.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10,
+              "description": "How many runs to return."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_leaderboard_position",
+        "title": "Get leaderboard position",
+        "description": "Return the operator's rank on the global endless-mode leaderboard, plus the top 10 for context.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_arena_catalog",
+        "title": "Get arena catalog",
+        "description": "Return the static list of Protocol DOC arenas (id, name, tagline, accent color). No user data.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
