@@ -14,10 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      player_runs: {
+        Row: {
+          arena: string
+          created_at: string
+          credits_earned: number
+          difficulty: string
+          id: string
+          kills: number
+          mode: string
+          outcome: string
+          user_id: string
+          wave_reached: number
+        }
+        Insert: {
+          arena: string
+          created_at?: string
+          credits_earned?: number
+          difficulty: string
+          id?: string
+          kills?: number
+          mode?: string
+          outcome?: string
+          user_id: string
+          wave_reached?: number
+        }
+        Update: {
+          arena?: string
+          created_at?: string
+          credits_earned?: number
+          difficulty?: string
+          id?: string
+          kills?: number
+          mode?: string
+          outcome?: string
+          user_id?: string
+          wave_reached?: number
+        }
+        Relationships: []
+      }
+      player_stats: {
+        Row: {
+          best_endless_wave: number
+          best_wave: number
+          total_credits: number
+          total_deaths: number
+          total_games: number
+          total_kills: number
+          total_wins: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_endless_wave?: number
+          best_wave?: number
+          total_credits?: number
+          total_deaths?: number
+          total_games?: number
+          total_kills?: number
+          total_wins?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_endless_wave?: number
+          best_wave?: number
+          total_credits?: number
+          total_deaths?: number
+          total_games?: number
+          total_kills?: number
+          total_wins?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      endless_leaderboard: {
+        Row: {
+          best_endless_wave: number | null
+          display_name: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
